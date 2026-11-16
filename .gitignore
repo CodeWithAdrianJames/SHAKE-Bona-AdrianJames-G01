@@ -1,0 +1,39 @@
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+env/
+
+# Python bytecode & caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local databases (PostgreSQL/Supabase is required; never commit SQLite files)
+db.sqlite3
+db.sqlite3-journal
+*.sqlite3
+
+# User-uploaded media files (profile photos, uploaded PDFs, etc.)
+/media/
+media/
+
+# Collected static files
+/staticfiles/
+staticfiles/
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
