@@ -1,7 +1,9 @@
 from django.contrib import messages
 from django.contrib.auth.views import LoginView, LogoutView
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.generic import CreateView
+
+from dashboard.views import get_role_dashboard_url
 
 from .forms import BootstrapAuthenticationForm, CustomUserCreationForm
 
@@ -39,8 +41,9 @@ SignUpView = RegisterView
 
 class CustomLoginView(LoginView):
     """
-    Login view authenticating SHAKE users and displaying clear error feedback
-    when credentials are invalid.
+    Login view authenticating SHAKE users, displaying clear error feedback
+    when credentials are invalid, and redirecting authenticated users directly
+    to their role-specific SHAKE dashboard (/dashboard/admin/ or /dashboard/encoder/).
     """
 
     authentication_form = BootstrapAuthenticationForm
@@ -54,6 +57,13 @@ class CustomLoginView(LoginView):
             f"Welcome back, {user.full_name_or_username}! Signed in as {user.get_role_display()}.",
         )
         return super().form_valid(form)
+
+    def get_success_url(self):
+        redirect_to = self.get_redirect_url()
+        generic_roots = {reverse("dashboard"), reverse("dashboard_root")}
+        if redirect_to and redirect_to not in generic_roots:
+            return redirect_to
+        return get_role_dashboard_url(self.request.user)
 
 
 class CustomLogoutView(LogoutView):
