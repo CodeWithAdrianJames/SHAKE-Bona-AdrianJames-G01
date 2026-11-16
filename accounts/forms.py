@@ -175,3 +175,100 @@ class CustomUserCreationForm(BootstrapFormMixin, UserCreationForm):
     def clean_role(self):
         role = self.cleaned_data.get("role")
         return role if role else CustomUser.Role.ENCODER
+
+
+class UserProfileUpdateForm(BootstrapFormMixin, forms.ModelForm):
+    """
+    Self-service profile update form for authenticated SHAKE users.
+    Allows updating personal details, operational department, contact number,
+    and profile photo while enforcing required fields and case-insensitive
+    email uniqueness (excluding the current user).
+    """
+
+    first_name = forms.CharField(
+        max_length=150,
+        required=True,
+        label="First Name",
+        widget=forms.TextInput(attrs={"placeholder": "e.g., Adrian James"}),
+    )
+    last_name = forms.CharField(
+        max_length=150,
+        required=True,
+        label="Last Name",
+        widget=forms.TextInput(attrs={"placeholder": "e.g., Bona"}),
+    )
+    email = forms.EmailField(
+        max_length=254,
+        required=True,
+        label="Work Email Address",
+        widget=forms.EmailInput(
+            attrs={"placeholder": "name@logistics-company.com", "autocomplete": "email"}
+        ),
+    )
+    department = forms.CharField(
+        max_length=100,
+        required=False,
+        label="Department",
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "e.g., Pricing, Documentation, IT Operations",
+                "list": "shake-department-options",
+            }
+        ),
+    )
+    contact_number = forms.CharField(
+        max_length=30,
+        required=False,
+        label="Contact Number",
+        widget=forms.TextInput(attrs={"placeholder": "e.g., +63 917 123 4567"}),
+    )
+    profile_photo = forms.ImageField(
+        required=False,
+        label="Profile Photo",
+        help_text="Upload a PNG, JPG, or WEBP avatar image (optional).",
+        widget=forms.ClearableFileInput(attrs={"accept": "image/*"}),
+    )
+
+    class Meta:
+        model = CustomUser
+        fields = (
+            "first_name",
+            "last_name",
+            "email",
+            "contact_number",
+            "department",
+            "profile_photo",
+        )
+
+    def clean_first_name(self):
+        first_name = (self.cleaned_data.get("first_name") or "").strip()
+        if not first_name:
+            raise forms.ValidationError("First name is required.")
+        return first_name
+
+    def clean_last_name(self):
+        last_name = (self.cleaned_data.get("last_name") or "").strip()
+        if not last_name:
+            raise forms.ValidationError("Last name is required.")
+        return last_name
+
+    def clean_email(self):
+        email = (self.cleaned_data.get("email") or "").strip().lower()
+        if not email:
+            raise forms.ValidationError("A valid email address is required.")
+        if (
+            CustomUser.objects.filter(email__iexact=email)
+            .exclude(pk=self.instance.pk)
+            .exists()
+        ):
+            raise forms.ValidationError(
+                "This email address is already in use by another account."
+            )
+        return email
+
+    def clean_contact_number(self):
+        return (self.cleaned_data.get("contact_number") or "").strip()
+
+    def clean_department(self):
+        return (self.cleaned_data.get("department") or "").strip()
+

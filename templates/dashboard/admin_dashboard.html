@@ -122,9 +122,13 @@
                 <tr>
                     <td class="ps-4 fw-semibold">
                         <div class="d-flex align-items-center gap-2">
-                            <span class="shake-avatar-fallback" style="width: 30px; height: 30px; font-size: 0.75rem;">
-                                {{ member.initials }}
-                            </span>
+                            {% if member.profile_photo %}
+                                <img src="{{ member.profile_photo.url }}" alt="{{ member.username }}" class="shake-avatar" style="width: 30px; height: 30px;">
+                            {% else %}
+                                <span class="shake-avatar-fallback" style="width: 30px; height: 30px; font-size: 0.75rem;">
+                                    {{ member.initials }}
+                                </span>
+                            {% endif %}
                             <span>{{ member.username }}</span>
                         </div>
                     </td>

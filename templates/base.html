@@ -127,14 +127,15 @@
                             </li>
                         {% endif %}
                         <li class="nav-item">
-                            <a class="nav-link" href="#profile-stage4" title="Profile Management (wired in Stage 4)">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'profile' or request.resolver_match.url_name == 'profile_edit' %}active fw-semibold{% endif %}"
+                               href="{% url 'profile' %}">
                                 <i class="bi bi-person-badge me-1"></i>Profile
                             </a>
                         </li>
                     </ul>
 
                     <div class="d-flex flex-wrap align-items-center gap-3">
-                        <div class="d-flex align-items-center gap-2 text-white">
+                        <a href="{% url 'profile' %}" class="d-flex align-items-center gap-2 text-white text-decoration-none">
                             {% if user.profile_photo %}
                                 <img src="{{ user.profile_photo.url }}" alt="{{ user.username }}" class="shake-avatar">
                             {% else %}
@@ -148,7 +149,7 @@
                                     {{ user.get_role_display }}
                                 </span>
                             </div>
-                        </div>
+                        </a>
 
                         <form method="post" action="{% url 'logout' %}" class="m-0">
                             {% csrf_token %}
