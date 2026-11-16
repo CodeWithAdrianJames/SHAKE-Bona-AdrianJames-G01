@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}SHAKE — Create Account{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-2">
+    <div class="col-12 col-lg-8 col-xl-7">
+        <div class="card shadow-sm overflow-hidden">
+            <div class="card-header bg-dark text-white p-4 border-0">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-info text-dark fw-bold">SHAKE</span>
+                    <span class="small text-light opacity-75">Account Onboarding</span>
+                </div>
+                <h1 class="h4 fw-bold mb-1">Create your SHAKE account</h1>
+                <p class="small text-light opacity-75 mb-0">
+                    Register as a <strong>Freight Analyst / Encoder</strong> or <strong>Operations Admin</strong> to start processing carrier rate contracts.
+                </p>
+            </div>
+
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger d-flex align-items-start gap-2" role="alert">
+                            <i class="bi bi-exclamation-octagon-fill mt-1"></i>
+                            <div>
+                                {% for error in form.non_field_errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        <!-- First Name & Last Name -->
+                        <div class="col-12 col-md-6">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label fw-semibold small text-secondary mb-1">
+                                {{ form.first_name.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.first_name }}
+                            {% for error in form.first_name.errors %}
+                                <div class="invalid-feedback d-block text-danger small mt-1">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label fw-semibold small text-secondary mb-1">
+                                {{ form.last_name.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.last_name }}
+                            {% for error in form.last_name.errors %}
+                                <div class="invalid-feedback d-block text-danger small mt-1">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Username & Email -->
+                        <div class="col-12 col-md-6">
+                            <label for="{{ form.username.id_for_label }}" class="form-label fw-semibold small text-secondary mb-1">
+                                {{ form.username.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.username }}
+                            {% for error in form.username.errors %}
+                                <div class="invalid-feedback d-block text-danger small mt-1">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                </div>
+                            {% endfor %}
+                            {% if form.username.help_text %}
+                                <div class="form-text small text-muted">{{ form.username.help_text|safe }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold small text-secondary mb-1">
+                                {{ form.email.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.email }}
+                            {% for error in form.email.errors %}
+                                <div class="invalid-feedback d-block text-danger small mt-1">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Operational Role & Department -->
+                        <div class="col-12 col-md-6">
+                            <label for="{{ form.role.id_for_label }}" class="form-label fw-semibold small text-secondary mb-1">
+                                {{ form.role.label }}
+                            </label>
+                            {{ form.role }}
+                            {% for error in form.role.errors %}
+                                <div class="invalid-feedback d-block text-danger small mt-1">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                </div>
+                            {% endfor %}
+                            {% if form.role.help_text %}
+                                <div class="form-text small text-muted">{{ form.role.help_text|safe }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label for="{{ form.department.id_for_label }}" class="form-label fw-semibold small text-secondary mb-1">
+                                {{ form.department.label }}
+                            </label>
+                            {{ form.department }}
+                            <datalist id="shake-department-options">
+                                <option value="Pricing & Tariff Management"></option>
+                                <option value="Documentation"></option>
+                                <option value="IT Operations"></option>
+                                <option value="Carrier Relations"></option>
+                                <option value="Ocean Freight Audit"></option>
+                            </datalist>
+                            {% for error in form.department.errors %}
+                                <div class="invalid-feedback d-block text-danger small mt-1">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Contact Number -->
+                        <div class="col-12">
+                            <label for="{{ form.contact_number.id_for_label }}" class="form-label fw-semibold small text-secondary mb-1">
+                                {{ form.contact_number.label }}
+                            </label>
+                            {{ form.contact_number }}
+                            {% for error in form.contact_number.errors %}
+                                <div class="invalid-feedback d-block text-danger small mt-1">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Password & Confirm Password -->
+                        <div class="col-12 col-md-6">
+                            <label for="{{ form.password1.id_for_label }}" class="form-label fw-semibold small text-secondary mb-1">
+                                {{ form.password1.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.password1 }}
+                            {% for error in form.password1.errors %}
+                                <div class="invalid-feedback d-block text-danger small mt-1">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                </div>
+                            {% endfor %}
+                            {% if form.password1.help_text %}
+                                <div class="form-text small text-muted">{{ form.password1.help_text|safe }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label for="{{ form.password2.id_for_label }}" class="form-label fw-semibold small text-secondary mb-1">
+                                {{ form.password2.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.password2 }}
+                            {% for error in form.password2.errors %}
+                                <div class="invalid-feedback d-block text-danger small mt-1">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                </div>
+                            {% endfor %}
+                            {% if form.password2.help_text %}
+                                <div class="form-text small text-muted">{{ form.password2.help_text|safe }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold mt-4">
+                        <i class="bi bi-person-check-fill me-1"></i>Create SHAKE Account
+                    </button>
+                </form>
+            </div>
+
+            <div class="card-footer text-center bg-light py-3">
+                <span class="text-muted small">Already have a SHAKE account?</span>
+                <a href="{% url 'login' %}" class="fw-semibold text-decoration-none ms-1">
+                    Sign In
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

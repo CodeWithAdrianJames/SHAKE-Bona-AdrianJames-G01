@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}SHAKE — Workspace{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <span class="badge {% if user.role == 'ADMIN' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} mb-2">
+                    {{ user.get_role_display }}
+                </span>
+                <h1 class="h3 fw-bold mb-1">Welcome, {{ user.full_name_or_username }}!</h1>
+                <p class="text-muted mb-0">
+                    Authenticated SHAKE session active &mdash; role-specific dashboards and strict URL access control will be connected in Stage 3.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-sm-6 col-lg-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">Username</div>
+                <div class="fs-5 fw-semibold">{{ user.username }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-lg-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">Operational Role</div>
+                <div class="fs-5 fw-semibold">{{ user.get_role_display }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-lg-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">Department</div>
+                <div class="fs-5 fw-semibold">{{ user.department|default:"Not specified" }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-lg-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">Contact Number</div>
+                <div class="fs-5 fw-semibold">{{ user.contact_number|default:"Not set" }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,177 @@
+from django import forms
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+
+from .models import CustomUser
+
+
+class BootstrapFormMixin:
+    """Apply the appropriate Bootstrap 5 CSS classes to every form widget."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._apply_bootstrap_classes()
+
+    def _apply_bootstrap_classes(self):
+        for field in self.fields.values():
+            widget = field.widget
+            if isinstance(
+                widget,
+                (forms.CheckboxInput, forms.RadioSelect, forms.CheckboxSelectMultiple),
+            ):
+                css = "form-check-input"
+            elif isinstance(widget, (forms.Select, forms.SelectMultiple)):
+                css = "form-select"
+            else:
+                css = "form-control"
+            existing = widget.attrs.get("class", "")
+            classes = existing.split()
+            if css not in classes:
+                classes.append(css)
+            widget.attrs["class"] = " ".join(classes)
+
+    def full_clean(self):
+        super().full_clean()
+        if self.is_bound:
+            for name, field in self.fields.items():
+                if name in self._errors:
+                    existing = field.widget.attrs.get("class", "")
+                    classes = existing.split()
+                    if "is-invalid" not in classes:
+                        classes.append("is-invalid")
+                    field.widget.attrs["class"] = " ".join(classes)
+
+
+class BootstrapAuthenticationForm(BootstrapFormMixin, AuthenticationForm):
+    """Bootstrap 5 styled login form with clear error messaging."""
+
+    error_messages = {
+        "invalid_login": (
+            "Invalid username or password. Please verify your SHAKE credentials and try again."
+        ),
+        "inactive": "This account is currently inactive. Please contact an Operations Admin.",
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["username"].widget.attrs.update(
+            {
+                "placeholder": "Enter your username",
+                "autocomplete": "username",
+                "autofocus": True,
+            }
+        )
+        self.fields["password"].widget.attrs.update(
+            {
+                "placeholder": "Enter your password",
+                "autocomplete": "current-password",
+            }
+        )
+
+
+class CustomUserCreationForm(BootstrapFormMixin, UserCreationForm):
+    """
+    Registration form for SHAKE users.
+    Validates required fields, valid email format, case-insensitive unique username
+    and email, and matching password confirmation, hashing passwords via UserCreationForm.
+    """
+
+    first_name = forms.CharField(
+        max_length=150,
+        required=True,
+        label="First Name",
+        widget=forms.TextInput(attrs={"placeholder": "e.g., Adrian James"}),
+    )
+    last_name = forms.CharField(
+        max_length=150,
+        required=True,
+        label="Last Name",
+        widget=forms.TextInput(attrs={"placeholder": "e.g., Bona"}),
+    )
+    email = forms.EmailField(
+        max_length=254,
+        required=True,
+        label="Work Email Address",
+        widget=forms.EmailInput(
+            attrs={"placeholder": "name@logistics-company.com", "autocomplete": "email"}
+        ),
+    )
+    role = forms.ChoiceField(
+        choices=CustomUser.Role.choices,
+        required=False,
+        initial=CustomUser.Role.ENCODER,
+        label="Operational Role",
+        help_text="Select your SHAKE workspace role (defaults to Freight Analyst / Encoder).",
+    )
+    department = forms.CharField(
+        max_length=100,
+        required=False,
+        label="Department",
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "e.g., Pricing, Documentation, IT Operations",
+                "list": "shake-department-options",
+            }
+        ),
+    )
+    contact_number = forms.CharField(
+        max_length=30,
+        required=False,
+        label="Contact Number",
+        widget=forms.TextInput(attrs={"placeholder": "e.g., +63 917 123 4567"}),
+    )
+
+    class Meta(UserCreationForm.Meta):
+        model = CustomUser
+        fields = (
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "role",
+            "department",
+            "contact_number",
+        )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["username"].widget.attrs.update(
+            {"placeholder": "Choose a unique username", "autocomplete": "username"}
+        )
+        self.fields["password1"].widget.attrs.update(
+            {"placeholder": "Create a strong password", "autocomplete": "new-password"}
+        )
+        self.fields["password2"].widget.attrs.update(
+            {"placeholder": "Confirm your password", "autocomplete": "new-password"}
+        )
+
+    def clean_username(self):
+        username = (self.cleaned_data.get("username") or "").strip()
+        if not username:
+            raise forms.ValidationError("Username is required.")
+        if CustomUser.objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError("A user with that username already exists.")
+        return username
+
+    def clean_email(self):
+        email = (self.cleaned_data.get("email") or "").strip().lower()
+        if not email:
+            raise forms.ValidationError("A valid email address is required.")
+        if CustomUser.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("This email address is already in use.")
+        return email
+
+    def clean_first_name(self):
+        first_name = (self.cleaned_data.get("first_name") or "").strip()
+        if not first_name:
+            raise forms.ValidationError("First name is required.")
+        return first_name
+
+    def clean_last_name(self):
+        last_name = (self.cleaned_data.get("last_name") or "").strip()
+        if not last_name:
+            raise forms.ValidationError("Last name is required.")
+        return last_name
+
+    def clean_role(self):
+        role = self.cleaned_data.get("role")
+        return role if role else CustomUser.Role.ENCODER
