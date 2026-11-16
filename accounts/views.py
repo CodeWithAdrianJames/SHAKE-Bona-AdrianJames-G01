@@ -1,11 +1,18 @@
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import reverse, reverse_lazy
-from django.views.generic import CreateView
+from django.views.generic import CreateView, DetailView, UpdateView
 
 from dashboard.views import get_role_dashboard_url
 
-from .forms import BootstrapAuthenticationForm, CustomUserCreationForm
+from .forms import (
+    BootstrapAuthenticationForm,
+    CustomUserCreationForm,
+    UserProfileUpdateForm,
+)
+from .models import CustomUser
+
 
 
 class RegisterView(CreateView):
@@ -82,3 +89,57 @@ class CustomLogoutView(LogoutView):
             "You have been securely logged out of your SHAKE session.",
         )
         return response
+
+
+class ProfileDetailView(LoginRequiredMixin, DetailView):
+    """
+    Self-only Profile Detail View (`/accounts/profile/`).
+    Always resolves `get_object()` from `self.request.user` to prevent IDOR
+    and ensure users can only view their own profile.
+    """
+
+    model = CustomUser
+    template_name = "accounts/profile.html"
+    context_object_name = "profile_user"
+
+    def get_object(self, queryset=None):
+        return self.request.user
+
+
+ProfileView = ProfileDetailView
+
+
+class ProfileUpdateView(LoginRequiredMixin, UpdateView):
+    """
+    Self-only Profile Update View (`/accounts/profile/edit/`).
+    Always resolves `get_object()` from `self.request.user` to prevent IDOR
+    and allows the logged-in user to update their profile details and photo.
+    """
+
+    model = CustomUser
+    form_class = UserProfileUpdateForm
+    template_name = "accounts/profile_edit.html"
+    context_object_name = "profile_user"
+    success_url = reverse_lazy("profile")
+
+    def get_object(self, queryset=None):
+        return self.request.user
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(
+            self.request,
+            "Your SHAKE profile has been updated successfully.",
+        )
+        return response
+
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            "Profile update could not be saved. Please review and fix the errors below.",
+        )
+        return super().form_invalid(form)
+
+
+ProfileEditView = ProfileUpdateView
+

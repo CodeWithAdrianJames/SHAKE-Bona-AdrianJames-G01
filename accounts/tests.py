@@ -1,9 +1,16 @@
+import io
+import shutil
+import tempfile
+
 from django import forms
-from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
 from django.urls import reverse
+from PIL import Image
 
 from .forms import BootstrapFormMixin
 from .models import CustomUser
+
 
 
 class CustomUserModelTests(TestCase):
@@ -130,3 +137,147 @@ class BootstrapFormMixinTests(TestCase):
         self.assertIn("form-control", form.fields["text"].widget.attrs["class"])
         self.assertIn("form-select", form.fields["choice"].widget.attrs["class"])
         self.assertIn("form-check-input", form.fields["agree"].widget.attrs["class"])
+
+
+class UserProfileTests(TestCase):
+    """
+    Stage 4 test suite verifying self-only profile detail & update views,
+    IDOR prevention, field/email validation, and profile photo uploads.
+    """
+
+    def setUp(self):
+        self.temp_media_dir = tempfile.mkdtemp()
+        self.password = "Str0ngPass!2026"
+        self.user = CustomUser.objects.create_user(
+            username="analyst_adrian",
+            email="adrian@shakelogistics.com",
+            password=self.password,
+            first_name="Adrian James",
+            last_name="Bona",
+            role=CustomUser.Role.ENCODER,
+            department="Pricing & Tariff Management",
+            contact_number="+63 917 111 2222",
+        )
+        self.other_user = CustomUser.objects.create_user(
+            username="ops_colleague",
+            email="colleague@shakelogistics.com",
+            password=self.password,
+            first_name="Elena",
+            last_name="Vance",
+            role=CustomUser.Role.ADMIN,
+            department="IT Operations",
+            contact_number="+63 917 999 8888",
+        )
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_media_dir, ignore_errors=True)
+
+    @staticmethod
+    def _generate_test_image_file(filename="avatar.png"):
+        buffer = io.BytesIO()
+        image = Image.new("RGB", (32, 32), color=(2, 132, 199))
+        image.save(buffer, format="PNG")
+        buffer.seek(0)
+        return SimpleUploadedFile(
+            filename,
+            buffer.read(),
+            content_type="image/png",
+        )
+
+    def test_unauthenticated_users_redirected_to_login_from_profile_routes(self):
+        for route_name in ("profile", "profile_edit"):
+            with self.subTest(route=route_name):
+                target_url = reverse(route_name)
+                response = self.client.get(target_url)
+                self.assertRedirects(
+                    response,
+                    f"{reverse('login')}?next={target_url}",
+                )
+
+    def test_logged_in_user_views_only_own_profile_details(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("profile"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/profile.html")
+        self.assertContains(response, "Adrian James Bona")
+        self.assertContains(response, "analyst_adrian")
+        self.assertContains(response, "adrian@shakelogistics.com")
+        self.assertContains(response, "Freight Analyst / Encoder")
+        self.assertContains(response, "Pricing &amp; Tariff Management")
+        self.assertContains(response, "+63 917 111 2222")
+        self.assertContains(response, reverse("profile_edit"))
+        self.assertNotContains(response, "colleague@shakelogistics.com")
+
+    def test_profile_update_fields_and_photo_upload(self):
+        self.client.force_login(self.user)
+        with override_settings(MEDIA_ROOT=self.temp_media_dir):
+            avatar = self._generate_test_image_file("adrian_avatar.png")
+            response = self.client.post(
+                reverse("profile_edit"),
+                {
+                    "first_name": "Adrian",
+                    "last_name": "Bona Jr.",
+                    "email": "Adrian.Updated@ShakeLogistics.com",
+                    "department": "Ocean Freight Audit",
+                    "contact_number": "+63 918 555 7777",
+                    "profile_photo": avatar,
+                },
+                follow=True,
+            )
+
+            self.assertRedirects(response, reverse("profile"))
+            self.assertContains(
+                response,
+                "Your SHAKE profile has been updated successfully.",
+            )
+
+            self.user.refresh_from_db()
+            self.assertEqual(self.user.first_name, "Adrian")
+            self.assertEqual(self.user.last_name, "Bona Jr.")
+            self.assertEqual(self.user.email, "adrian.updated@shakelogistics.com")
+            self.assertEqual(self.user.department, "Ocean Freight Audit")
+            self.assertEqual(self.user.contact_number, "+63 918 555 7777")
+            self.assertTrue(bool(self.user.profile_photo))
+            self.assertIn("profile_photos/", self.user.profile_photo.name)
+            self.assertContains(response, self.user.profile_photo.url)
+
+    def test_profile_update_rejects_duplicate_email_from_another_user(self):
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("profile_edit"),
+            {
+                "first_name": "Adrian James",
+                "last_name": "Bona",
+                "email": "COLLEAGUE@SHAKELOGISTICS.COM",
+                "department": "Pricing & Tariff Management",
+                "contact_number": "+63 917 111 2222",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/profile_edit.html")
+        self.assertContains(
+            response,
+            "This email address is already in use by another account.",
+        )
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "adrian@shakelogistics.com")
+
+    def test_profile_update_allows_keeping_own_current_email(self):
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("profile_edit"),
+            {
+                "first_name": "Adrian James",
+                "last_name": "Bona",
+                "email": "ADRIAN@SHAKELOGISTICS.COM",
+                "department": "Carrier Relations",
+                "contact_number": "+63 917 333 4444",
+            },
+            follow=True,
+        )
+        self.assertRedirects(response, reverse("profile"))
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "adrian@shakelogistics.com")
+        self.assertEqual(self.user.department, "Carrier Relations")
+        self.assertEqual(self.user.contact_number, "+63 917 333 4444")
+
