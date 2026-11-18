@@ -19,7 +19,7 @@ __pycache__/
 .coverage
 htmlcov/
 
-# Local databases (PostgreSQL/Supabase is required; never commit SQLite files)
+# Local SQLite databases (never commit SQLite files)
 db.sqlite3
 db.sqlite3-journal
 *.sqlite3

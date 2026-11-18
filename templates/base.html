@@ -99,13 +99,21 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'admin_dashboard' %}#user-roster">
-                                    <i class="bi bi-people me-1"></i>User Roster
+                                <a class="nav-link {% if request.resolver_match.url_name == 'contract_list' or request.resolver_match.url_name == 'contract_detail' or request.resolver_match.url_name == 'contract_edit' or request.resolver_match.url_name == 'rate_create' or request.resolver_match.url_name == 'rate_edit' %}active fw-semibold{% endif %}"
+                                   href="{% url 'contract_list' %}">
+                                    <i class="bi bi-file-earmark-text me-1"></i>All Contracts
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'admin_dashboard' %}#carrier-parsers">
-                                    <i class="bi bi-cpu me-1"></i>Carrier Parsers
+                                <a class="nav-link {% if request.resolver_match.url_name == 'contract_upload' %}active fw-semibold{% endif %}"
+                                   href="{% url 'contract_upload' %}">
+                                    <i class="bi bi-cloud-arrow-up me-1"></i>Upload Contract
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.resolver_match.url_name == 'carrier_list' or request.resolver_match.url_name == 'carrier_create' or request.resolver_match.url_name == 'carrier_edit' %}active fw-semibold{% endif %}"
+                                   href="{% url 'carrier_list' %}">
+                                    <i class="bi bi-diagram-3 me-1"></i>Carrier Profiles
                                 </a>
                             </li>
                         {% else %}
@@ -116,13 +124,15 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'encoder_dashboard' %}#upload-contract">
+                                <a class="nav-link {% if request.resolver_match.url_name == 'contract_upload' %}active fw-semibold{% endif %}"
+                                   href="{% url 'contract_upload' %}">
                                     <i class="bi bi-cloud-arrow-up me-1"></i>Upload Contract
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'encoder_dashboard' %}#extraction-queue">
-                                    <i class="bi bi-table me-1"></i>Extraction Queue
+                                <a class="nav-link {% if request.resolver_match.url_name == 'contract_list' or request.resolver_match.url_name == 'contract_detail' or request.resolver_match.url_name == 'contract_edit' or request.resolver_match.url_name == 'rate_create' or request.resolver_match.url_name == 'rate_edit' %}active fw-semibold{% endif %}"
+                                   href="{% url 'contract_list' %}">
+                                    <i class="bi bi-table me-1"></i>My Contracts
                                 </a>
                             </li>
                         {% endif %}
