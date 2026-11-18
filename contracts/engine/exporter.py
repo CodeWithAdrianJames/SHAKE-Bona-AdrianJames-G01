@@ -38,13 +38,20 @@ def export_result(result: MappingResult, output_dir: Path | str, stem: str) -> N
         json.dumps(payload, indent=2), encoding="utf-8"
     )
 
+    has_any_rows = any(bool(rows) for rows, _ in buckets.values())
+
     excel_path = out_dir / f"{stem}_mapped.xlsx"
     with pd.ExcelWriter(excel_path, engine="openpyxl") as writer:
-        for sheet_name, (rows, columns) in buckets.items():
-            if not rows:
-                continue
-            df = pd.DataFrame(rows).reindex(columns=columns)
-            df.to_excel(writer, sheet_name=sheet_name, index=False)
-            df.to_csv(out_dir / f"{stem}_{sheet_name}.csv", index=False)
+        if not has_any_rows:
+            empty_df = pd.DataFrame(columns=COLUMNS_RATES)
+            empty_df.to_excel(writer, sheet_name="Rates", index=False)
+            empty_df.to_csv(out_dir / f"{stem}_Rates.csv", index=False)
+        else:
+            for sheet_name, (rows, columns) in buckets.items():
+                if not rows:
+                    continue
+                df = pd.DataFrame(rows).reindex(columns=columns)
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
+                df.to_csv(out_dir / f"{stem}_{sheet_name}.csv", index=False)
 
     logger.info("Exported %s -> %s", stem, out_dir)

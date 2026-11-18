@@ -3,11 +3,22 @@ from functools import wraps
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import redirect_to_login
+from django.db.models import Count
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.generic import RedirectView, TemplateView
 
 from accounts.models import CustomUser
+from contracts.models import (
+    ArbitraryCharge,
+    BatchUpload,
+    CarrierProfile,
+    ContractMetadata,
+    DocumentFile,
+    ExportRecord,
+    FreightRate,
+    ProcessingJob,
+)
 
 UNAUTHORIZED_DASHBOARD_MESSAGE = (
     "Unauthorized access: you do not have permission to view that dashboard."
@@ -128,8 +139,9 @@ class AdminDashboardView(RoleRequiredMixin, TemplateView):
     """
     Operations Admin Dashboard (`/dashboard/admin/`).
     Restricted strictly to users with `CustomUser.Role.ADMIN`.
-    Displays system user metrics, the registered user roster, carrier parser templates,
-    and Offline OpenDataLoader AST Engine health status.
+    Displays live PostgreSQL system metrics, the registered user roster,
+    carrier parser profiles, recent processing/export activity, and Offline
+    OpenDataLoader AST Engine health status.
     """
 
     required_role = CustomUser.Role.ADMIN
@@ -137,46 +149,53 @@ class AdminDashboardView(RoleRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        users_qs = CustomUser.objects.all().order_by("-date_joined")
+        users_qs = CustomUser.objects.annotate(
+            batch_count=Count("batch_uploads", distinct=True)
+        ).order_by("-date_joined")
+        carrier_profiles = list(
+            CarrierProfile.objects.annotate(
+                contract_count=Count("contracts", distinct=True)
+            ).order_by("carrier_code")
+        )
+        active_carriers_count = sum(1 for c in carrier_profiles if c.is_active)
 
-        carrier_parsers = [
-            {
-                "carrier": "MSC",
-                "full_name": "Mediterranean Shipping Company",
-                "template_code": "MSC-SEA-2026-V4",
-                "rate_sections": "Base Ocean Freight, Origin/Destination Arbitraries, Bunker & PSS",
-                "ast_strategy": "Multi-page header stitching & commodity group hierarchy",
-                "supported_containers": "20GP, 40GP, 40HQ, 40RH",
-                "status": "Active",
-            },
-            {
-                "carrier": "CMA CGM",
-                "full_name": "CMA CGM Group",
-                "template_code": "CMACGM-ASIA-EUR-V3",
-                "rate_sections": "Mainline Tariff Grids, Outport Add-Ons, Local THC & Surcharges",
-                "ast_strategy": "Bounding-box column alignment & footnote clause resolution",
-                "supported_containers": "20ST, 40ST, 40HC",
-                "status": "Active",
-            },
-            {
-                "carrier": "COSCO",
-                "full_name": "COSCO Shipping Lines",
-                "template_code": "COSCO-GLOBAL-SC-V2",
-                "rate_sections": "Service Contract Appendices, Inland Arbitraries, Equipment Matrix",
-                "ast_strategy": "Merged-cell span normalization & currency/unit disambiguation",
-                "supported_containers": "20GP, 40GP, 40HQ",
-                "status": "Active",
-            },
-        ]
+        recent_jobs = list(
+            ProcessingJob.objects.select_related(
+                "document",
+                "document__batch",
+                "document__batch__user",
+                "document__contract_metadata",
+                "document__contract_metadata__carrier",
+            ).order_by("-started_at")[:10]
+        )
+        recent_exports = list(
+            ExportRecord.objects.select_related(
+                "user",
+                "contract",
+                "contract__carrier",
+            ).order_by("-exported_at")[:10]
+        )
 
         context.update(
             {
                 "registered_users": users_qs,
-                "total_users_count": users_qs.count(),
-                "admin_users_count": users_qs.filter(role=CustomUser.Role.ADMIN).count(),
-                "encoder_users_count": users_qs.filter(role=CustomUser.Role.ENCODER).count(),
-                "active_parsers_count": len(carrier_parsers),
-                "carrier_parsers": carrier_parsers,
+                "total_users_count": CustomUser.objects.count(),
+                "admin_users_count": CustomUser.objects.filter(
+                    role=CustomUser.Role.ADMIN
+                ).count(),
+                "encoder_users_count": CustomUser.objects.filter(
+                    role=CustomUser.Role.ENCODER
+                ).count(),
+                "total_batches_count": BatchUpload.objects.count(),
+                "extracted_contracts_count": ContractMetadata.objects.count(),
+                "total_rate_rows_count": FreightRate.objects.count(),
+                "total_arb_rows_count": ArbitraryCharge.objects.count(),
+                "total_exports_count": ExportRecord.objects.count(),
+                "active_carriers_count": active_carriers_count,
+                "active_parsers_count": active_carriers_count,
+                "carrier_profiles": carrier_profiles,
+                "recent_jobs": recent_jobs,
+                "recent_exports": recent_exports,
                 "engine_status": {
                     "name": "OpenDataLoader AST Engine v2.4",
                     "mode": "100% Offline Air-Gapped Execution",
@@ -193,7 +212,7 @@ class EncoderDashboardView(RoleRequiredMixin, TemplateView):
     """
     Freight Analyst / Encoder Dashboard (`/dashboard/encoder/`).
     Restricted strictly to users with `CustomUser.Role.ENCODER`.
-    Displays the Ocean Freight Contract PDF upload dropzone, recent extraction jobs,
+    Displays live personal extraction KPIs, quick-upload CTA, recent extraction jobs,
     and standardized output schema specifications (.xlsx, .csv, .json).
     """
 
@@ -202,68 +221,33 @@ class EncoderDashboardView(RoleRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        user = self.request.user
 
-        carrier_options = [
-            {
-                "code": "MSC",
-                "label": "MSC — Mediterranean Shipping Company (MSC-SEA-2026-V4)",
-            },
-            {
-                "code": "CMA_CGM",
-                "label": "CMA CGM — Service Contract Tariff (CMACGM-ASIA-EUR-V3)",
-            },
-            {
-                "code": "COSCO",
-                "label": "COSCO — Ocean Freight Rate Appendix (COSCO-GLOBAL-SC-V2)",
-            },
-        ]
+        user_batches_count = BatchUpload.objects.filter(user=user).count()
+        extracted_contracts_count = ContractMetadata.objects.filter(
+            document__batch__user=user
+        ).count()
+        total_rate_rows_count = FreightRate.objects.filter(
+            contract__document__batch__user=user
+        ).count()
+        total_arb_rows_count = ArbitraryCharge.objects.filter(
+            contract__document__batch__user=user
+        ).count()
+        exports_generated_count = ExportRecord.objects.filter(user=user).count()
 
-        recent_extractions = [
-            {
-                "job_id": "JOB-2026-0104",
-                "carrier": "MSC",
-                "pdf_filename": "MSC_Service_Contract_PH_EU_2026_Amend3.pdf",
-                "ocean_rate_rows": 418,
-                "arbitrary_rows": 96,
-                "total_rows": 514,
-                "processed_at": "Today, 14:20 PST",
-                "status": "Exported",
-                "status_badge": "bg-success-subtle text-success border border-success-subtle",
-            },
-            {
-                "job_id": "JOB-2026-0103",
-                "carrier": "CMA CGM",
-                "pdf_filename": "CMACGM_Q4_Asia_Med_Tariff_Schedule.pdf",
-                "ocean_rate_rows": 284,
-                "arbitrary_rows": 62,
-                "total_rows": 346,
-                "processed_at": "Today, 11:05 PST",
-                "status": "Parsed",
-                "status_badge": "bg-info-subtle text-info-emphasis border border-info-subtle",
-            },
-            {
-                "job_id": "JOB-2026-0102",
-                "carrier": "COSCO",
-                "pdf_filename": "COSCO_Transpacific_Contract_Appendix_B.pdf",
-                "ocean_rate_rows": 510,
-                "arbitrary_rows": 118,
-                "total_rows": 628,
-                "processed_at": "Yesterday, 17:42 PST",
-                "status": "Exported",
-                "status_badge": "bg-success-subtle text-success border border-success-subtle",
-            },
-            {
-                "job_id": "JOB-2026-0101",
-                "carrier": "MSC",
-                "pdf_filename": "MSC_IntraAsia_Reefer_Dry_Tariff_2026.pdf",
-                "ocean_rate_rows": 192,
-                "arbitrary_rows": 44,
-                "total_rows": 236,
-                "processed_at": "Nov 14, 09:15 PST",
-                "status": "Parsed",
-                "status_badge": "bg-info-subtle text-info-emphasis border border-info-subtle",
-            },
-        ]
+        recent_documents = list(
+            DocumentFile.objects.filter(batch__user=user)
+            .select_related("batch", "contract_metadata", "contract_metadata__carrier")
+            .annotate(
+                rate_count=Count("contract_metadata__freight_rates", distinct=True),
+                arb_count=Count("contract_metadata__arbitrary_charges", distinct=True),
+            )
+            .prefetch_related("jobs")
+            .order_by("-uploaded_at")[:10]
+        )
+        active_carriers = list(
+            CarrierProfile.objects.filter(is_active=True).order_by("carrier_code")
+        )
 
         output_schemas = [
             {
@@ -272,10 +256,10 @@ class EncoderDashboardView(RoleRequiredMixin, TemplateView):
                 "icon": "bi-file-earmark-excel-fill",
                 "accent_class": "text-success",
                 "badge_class": "bg-success-subtle text-success border border-success-subtle",
-                "sheets_or_structure": "4 Standardized Tabs: Ocean_Rates, Origin_Arbitraries, Dest_Arbitraries, Surcharges",
+                "sheets_or_structure": "3 Normalized Tabs: Rates, Origin_Arbitraries, Destination_Arbitraries",
                 "description": (
-                    "Normalized multi-sheet workbook with frozen headers, validated currency codes, "
-                    "and side-by-side 20GP / 40GP / 40HQ container rate columns."
+                    "Normalized multi-sheet workbook with validated currency codes "
+                    "and side-by-side 20GP / 40GP / 40HC / 45HC container rate columns."
                 ),
             },
             {
@@ -284,7 +268,7 @@ class EncoderDashboardView(RoleRequiredMixin, TemplateView):
                 "icon": "bi-filetype-csv",
                 "accent_class": "text-primary",
                 "badge_class": "bg-primary-subtle text-primary border border-primary-subtle",
-                "sheets_or_structure": "UTF-8 Delimited • 18 Canonical Columns per Trade Lane Row",
+                "sheets_or_structure": "UTF-8 Delimited • Canonical Rate Columns per Trade Lane Row",
                 "description": (
                     "Denormalized flat file engineered for direct bulk ingestion into TMS/ERP rate "
                     "tables and PostgreSQL analytics pipelines."
@@ -296,21 +280,24 @@ class EncoderDashboardView(RoleRequiredMixin, TemplateView):
                 "icon": "bi-filetype-json",
                 "accent_class": "text-warning-emphasis",
                 "badge_class": "bg-warning-subtle text-warning-emphasis border border-warning-subtle",
-                "sheets_or_structure": "Hierarchical JSON Schema v2 • Page & Bounding-Box Coordinates",
+                "sheets_or_structure": "Hierarchical JSON Schema • Rates & Arbitrary Sections",
                 "description": (
-                    "Complete Abstract Syntax Tree preserving source PDF table coordinates, commodity "
-                    "footnotes, validity windows, and surcharge rule references."
+                    "Complete structured contract payload preserving carrier metadata, "
+                    "validity dates, trade scope, commodity, and normalized rates."
                 ),
             },
         ]
 
         context.update(
             {
-                "carrier_options": carrier_options,
-                "recent_extractions": recent_extractions,
+                "user_batches_count": user_batches_count,
+                "extracted_contracts_count": extracted_contracts_count,
+                "total_rate_rows_count": total_rate_rows_count,
+                "total_arb_rows_count": total_arb_rows_count,
+                "exports_generated_count": exports_generated_count,
+                "recent_documents": recent_documents,
+                "active_carriers": active_carriers,
                 "output_schemas": output_schemas,
-                "total_parsed_contracts": len(recent_extractions),
-                "total_extracted_rows": sum(job["total_rows"] for job in recent_extractions),
             }
         )
         return context

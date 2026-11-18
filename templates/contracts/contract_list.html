@@ -120,10 +120,34 @@
                     {% if is_admin_view %}
                     <td class="small">{{ contract.document.batch.user.username }}</td>
                     {% endif %}
-                    <td class="pe-4 text-end">
-                        <a href="{% url 'contract_detail' contract.pk %}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-eye me-1"></i>Inspect
-                        </a>
+                    <td class="pe-4 text-end text-nowrap">
+                        <div class="d-inline-flex align-items-center gap-1">
+                            <a href="{% url 'contract_detail' contract.pk %}" class="btn btn-sm btn-outline-primary" title="Inspect contract">
+                                <i class="bi bi-eye me-1"></i>Inspect
+                            </a>
+                            <a href="{% url 'contract_edit' contract.pk %}" class="btn btn-sm btn-outline-secondary" title="Edit metadata">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-download me-1"></i>Export
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="{% url 'contract_export' contract.pk 'json' %}"><i class="bi bi-filetype-json me-2 text-warning-emphasis"></i>JSON (.json)</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'contract_export' contract.pk 'xlsx' %}"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Excel (.xlsx)</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'contract_export' contract.pk 'csv' %}"><i class="bi bi-filetype-csv me-2 text-primary"></i>CSV (.csv)</a></li>
+                                </ul>
+                            </div>
+                            {% if contract.document.status != 'ARCHIVED' %}
+                                <form method="post" action="{% url 'contract_archive' contract.pk %}" class="d-inline m-0">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-dark" title="Archive contract (BR-09)">
+                                        <i class="bi bi-archive"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% empty %}
@@ -174,7 +198,8 @@
                     <th class="ps-4">Batch #</th>
                     <th>Filename</th>
                     <th>Status</th>
-                    <th class="pe-4">Diagnostic</th>
+                    <th>Diagnostic</th>
+                    <th class="pe-4 text-end">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -183,10 +208,18 @@
                     <td class="ps-4"><code>{{ doc.batch.batch_number }}</code></td>
                     <td>{{ doc.original_file_name }}</td>
                     <td><span class="badge bg-danger">{{ doc.status }}</span></td>
-                    <td class="pe-4 small text-muted">
+                    <td class="small text-muted">
                         {% with last_job=doc.jobs.all.0 %}
                             {{ last_job.error_message|default:"Pipeline execution failed."|truncatechars:140 }}
                         {% endwith %}
+                    </td>
+                    <td class="pe-4 text-end">
+                        <form method="post" action="{% url 'document_delete' doc.pk %}" class="d-inline m-0">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete failed document">
+                                <i class="bi bi-trash me-1"></i>Delete
+                            </button>
+                        </form>
                     </td>
                 </tr>
                 {% endfor %}

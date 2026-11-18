@@ -2,15 +2,30 @@ from __future__ import annotations
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Count, Q
-from django.shortcuts import redirect
-from django.urls import reverse
-from django.views.generic import DetailView, FormView, ListView
+from django.db.models import Count, Max, Q
+from django.http import Http404, HttpResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse, reverse_lazy
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views import View
+from django.views.generic import CreateView, DetailView, FormView, ListView, UpdateView
 
 from accounts.models import CustomUser
-from contracts.forms import ContractUploadForm
-from contracts.models import ContractMetadata, DocumentFile
+from contracts.forms import (
+    CarrierProfileForm,
+    ContractMetadataForm,
+    ContractUploadForm,
+    FreightRateForm,
+)
+from contracts.models import (
+    CarrierProfile,
+    ContractMetadata,
+    DocumentFile,
+    FreightRate,
+)
+from contracts.services.exporter import export_contract_artifact
 from contracts.services.pipeline import ingest_uploaded_files
+from dashboard.views import RoleRequiredMixin
 
 
 class ContractOwnershipMixin(LoginRequiredMixin):
@@ -32,6 +47,15 @@ class ContractOwnershipMixin(LoginRequiredMixin):
         if getattr(self.request.user, "role", None) == CustomUser.Role.ADMIN:
             return qs
         return qs.filter(document__batch__user=self.request.user)
+
+    def get_scoped_contract(self, pk: int) -> ContractMetadata:
+        return get_object_or_404(ContractOwnershipMixin.get_queryset(self), pk=pk)
+
+    def get_scoped_document(self, doc_id: int) -> DocumentFile:
+        qs = DocumentFile.objects.select_related("batch", "batch__user")
+        if getattr(self.request.user, "role", None) != CustomUser.Role.ADMIN:
+            qs = qs.filter(batch__user=self.request.user)
+        return get_object_or_404(qs, pk=doc_id)
 
 
 class ContractUploadView(LoginRequiredMixin, FormView):
@@ -174,6 +198,7 @@ class ContractDetailView(ContractOwnershipMixin, DetailView):
                 "freight_rates",
                 "arbitrary_charges",
                 "document__jobs",
+                "export_records__user",
             )
         )
 
@@ -183,13 +208,325 @@ class ContractDetailView(ContractOwnershipMixin, DetailView):
         freight_rates = list(contract.freight_rates.all())
         arbitrary_charges = list(contract.arbitrary_charges.all())
         processing_jobs = list(contract.document.jobs.all())
+        export_records = list(contract.export_records.select_related("user").all())
         context.update(
             {
                 "freight_rates": freight_rates,
                 "arbitrary_charges": arbitrary_charges,
                 "processing_jobs": processing_jobs,
+                "export_records": export_records,
                 "rate_count": len(freight_rates),
                 "arb_count": len(arbitrary_charges),
             }
         )
         return context
+
+
+class ContractMetadataUpdateView(ContractOwnershipMixin, UpdateView):
+    """Edit extracted ContractMetadata fields while enforcing BR-10 and BR-11."""
+
+    model = ContractMetadata
+    form_class = ContractMetadataForm
+    template_name = "contracts/contract_form.html"
+    context_object_name = "contract"
+
+    def get_success_url(self):
+        return reverse("contract_detail", kwargs={"pk": self.object.pk})
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(
+            self.request,
+            f"Updated contract metadata for '{self.object.contract_number}'.",
+        )
+        return response
+
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            "Contract metadata could not be updated. Please fix the validation errors below.",
+        )
+        return super().form_invalid(form)
+
+
+class FreightRateCreateView(ContractOwnershipMixin, CreateView):
+    """Create a normalized base FreightRate row for a scoped contract."""
+
+    model = FreightRate
+    form_class = FreightRateForm
+    template_name = "contracts/rate_form.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        self.contract = self.get_scoped_contract(self.kwargs["pk"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        max_seq = (
+            self.contract.freight_rates.aggregate(max_seq=Max("line_item_sequence"))[
+                "max_seq"
+            ]
+            or 0
+        )
+        form.instance.contract = self.contract
+        form.instance.line_item_sequence = max_seq + 1
+        response = super().form_valid(form)
+        messages.success(
+            self.request,
+            f"Added rate row #{self.object.line_item_sequence} "
+            f"({self.object.origin_port_code} -> {self.object.destination_port_code} "
+            f"{self.object.equipment_type}).",
+        )
+        return response
+
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            "Freight rate could not be saved. Please review the errors below.",
+        )
+        return super().form_invalid(form)
+
+    def get_success_url(self):
+        return reverse("contract_detail", kwargs={"pk": self.contract.pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({"contract": self.contract, "is_edit": False})
+        return context
+
+
+class FreightRateUpdateView(ContractOwnershipMixin, UpdateView):
+    """Update an existing normalized FreightRate row for a scoped contract."""
+
+    model = FreightRate
+    form_class = FreightRateForm
+    template_name = "contracts/rate_form.html"
+    pk_url_kwarg = "rate_id"
+    context_object_name = "rate"
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        self.contract = self.get_scoped_contract(self.kwargs["pk"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return FreightRate.objects.filter(contract=self.contract)
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(
+            self.request,
+            f"Updated rate row #{self.object.line_item_sequence} "
+            f"({self.object.origin_port_code} -> {self.object.destination_port_code}).",
+        )
+        return response
+
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            "Freight rate changes could not be saved. Please review the errors below.",
+        )
+        return super().form_invalid(form)
+
+    def get_success_url(self):
+        return reverse("contract_detail", kwargs={"pk": self.contract.pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({"contract": self.contract, "is_edit": True})
+        return context
+
+
+class FreightRateDeleteView(ContractOwnershipMixin, View):
+    """POST-only deletion of an individual FreightRate row."""
+
+    http_method_names = ["post", "options"]
+
+    def post(self, request, pk: int, rate_id: int):
+        contract = self.get_scoped_contract(pk)
+        rate = get_object_or_404(FreightRate, pk=rate_id, contract=contract)
+        seq = rate.line_item_sequence
+        lane = f"{rate.origin_port_code} -> {rate.destination_port_code} ({rate.equipment_type})"
+        rate.delete()
+        messages.success(request, f"Deleted freight rate row #{seq} ({lane}).")
+        return redirect(reverse("contract_detail", kwargs={"pk": contract.pk}))
+
+
+class DocumentFileDeleteView(ContractOwnershipMixin, View):
+    """
+    POST-only hard deletion permitted strictly for PENDING or FAILED documents
+    without linked ContractMetadata (BR-09).
+    """
+
+    http_method_names = ["post", "options"]
+
+    def post(self, request, doc_id: int):
+        doc = self.get_scoped_document(doc_id)
+        linked_contract = ContractMetadata.objects.filter(document=doc).first()
+        deletable_statuses = {DocumentFile.Status.PENDING, DocumentFile.Status.FAILED}
+
+        if linked_contract is not None or doc.status not in deletable_statuses:
+            messages.error(
+                request,
+                f"Cannot hard-delete '{doc.original_file_name}': extracted or archived "
+                "documents are protected by BR-09. Use Archive instead.",
+            )
+            if linked_contract is not None:
+                return redirect(
+                    reverse("contract_detail", kwargs={"pk": linked_contract.pk})
+                )
+            return redirect(reverse("contract_list"))
+
+        filename = doc.original_file_name
+        if doc.uploaded_file:
+            try:
+                doc.uploaded_file.delete(save=False)
+            except Exception:
+                pass
+        doc.delete()
+        messages.success(request, f"Deleted unextracted document '{filename}'.")
+        return redirect(reverse("contract_list"))
+
+
+class ContractArchiveView(ContractOwnershipMixin, View):
+    """POST-only non-destructive archive transition (DocumentFile.status = ARCHIVED, BR-09)."""
+
+    http_method_names = ["post", "options"]
+
+    def post(self, request, pk: int):
+        contract = self.get_scoped_contract(pk)
+        doc = contract.document
+        if doc.status != DocumentFile.Status.ARCHIVED:
+            doc.status = DocumentFile.Status.ARCHIVED
+            doc.save(update_fields=["status"])
+            messages.success(
+                request,
+                f"Contract '{contract.contract_number}' has been archived (BR-09).",
+            )
+        else:
+            messages.info(
+                request,
+                f"Contract '{contract.contract_number}' is already archived.",
+            )
+
+        next_url = (request.POST.get("next") or "").strip()
+        if next_url and url_has_allowed_host_and_scheme(
+            next_url, allowed_hosts={request.get_host()}
+        ):
+            return redirect(next_url)
+        return redirect(reverse("contract_detail", kwargs={"pk": contract.pk}))
+
+
+class ContractExportView(ContractOwnershipMixin, View):
+    """Export contract data to JSON, XLSX, or CSV via contracts.engine.exporter and log ExportRecord."""
+
+    http_method_names = ["get", "head", "options"]
+
+    def get(self, request, pk: int, fmt: str):
+        contract = self.get_scoped_contract(pk)
+        try:
+            artifact = export_contract_artifact(
+                contract=contract,
+                user=request.user,
+                fmt=fmt,
+            )
+        except ValueError as exc:
+            raise Http404(str(exc)) from exc
+
+        response = HttpResponse(artifact.content_bytes, content_type=artifact.content_type)
+        response["Content-Disposition"] = f'attachment; filename="{artifact.filename}"'
+        return response
+
+
+class CarrierProfileListView(RoleRequiredMixin, ListView):
+    """Admin-only list of registered shipping carrier profiles (F-02)."""
+
+    required_role = CustomUser.Role.ADMIN
+    template_name = "contracts/carrier_list.html"
+    context_object_name = "carriers"
+
+    def get_queryset(self):
+        return CarrierProfile.objects.annotate(
+            contract_count=Count("contracts", distinct=True)
+        ).order_by("carrier_code")
+
+
+class CarrierProfileCreateView(RoleRequiredMixin, CreateView):
+    """Admin-only create view for CarrierProfile (BR-03)."""
+
+    required_role = CustomUser.Role.ADMIN
+    model = CarrierProfile
+    form_class = CarrierProfileForm
+    template_name = "contracts/carrier_form.html"
+    success_url = reverse_lazy("carrier_list")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(
+            self.request,
+            f"Created carrier profile '{self.object.carrier_code} — {self.object.carrier_name}'.",
+        )
+        return response
+
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            "Carrier profile could not be created. Please review the errors below.",
+        )
+        return super().form_invalid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_edit"] = False
+        return context
+
+
+class CarrierProfileUpdateView(RoleRequiredMixin, UpdateView):
+    """Admin-only update view for CarrierProfile (BR-03)."""
+
+    required_role = CustomUser.Role.ADMIN
+    model = CarrierProfile
+    form_class = CarrierProfileForm
+    template_name = "contracts/carrier_form.html"
+    context_object_name = "carrier"
+    success_url = reverse_lazy("carrier_list")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(
+            self.request,
+            f"Updated carrier profile '{self.object.carrier_code} — {self.object.carrier_name}'.",
+        )
+        return response
+
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            "Carrier profile could not be updated. Please review the errors below.",
+        )
+        return super().form_invalid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_edit"] = True
+        return context
+
+
+class CarrierProfileToggleView(RoleRequiredMixin, View):
+    """Admin-only POST action to activate or deactivate a CarrierProfile."""
+
+    required_role = CustomUser.Role.ADMIN
+    http_method_names = ["post", "options"]
+
+    def post(self, request, pk: int):
+        carrier = get_object_or_404(CarrierProfile, pk=pk)
+        carrier.is_active = not carrier.is_active
+        carrier.save(update_fields=["is_active"])
+        state_label = "activated" if carrier.is_active else "deactivated"
+        messages.success(
+            request,
+            f"Carrier profile '{carrier.carrier_code}' has been {state_label}.",
+        )
+        return redirect(reverse("carrier_list"))

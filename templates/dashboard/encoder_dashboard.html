@@ -18,7 +18,7 @@
                 </div>
                 <h1 class="h3 fw-bold mb-1">Freight Analyst &amp; Contract Encoder Workspace</h1>
                 <p class="text-light opacity-75 mb-0 small">
-                    Transform complex MSC, CMA CGM, and COSCO ocean freight rate &amp; arbitrary PDF contracts into standardized Excel (<code>.xlsx</code>), CSV (<code>.csv</code>), and JSON AST (<code>.json</code>) feeds.
+                    Transform ocean freight service contract PDFs into standardized Excel (<code>.xlsx</code>), CSV (<code>.csv</code>), and JSON AST (<code>.json</code>) feeds stored in PostgreSQL.
                 </p>
             </div>
             <div class="text-md-end">
@@ -32,153 +32,200 @@
     </div>
 </div>
 
-<!-- Upload Ocean Freight Contract PDF Card -->
-<div id="upload-contract" class="card shadow-sm mb-4">
-    <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <div>
-            <h2 class="h5 fw-bold mb-0">
-                <i class="bi bi-cloud-arrow-up-fill me-2 text-primary"></i>Upload Ocean Freight Contract PDF
-            </h2>
-            <p class="text-muted small mb-0">
-                Select a carrier parser template and drop a service contract PDF for deterministic offline AST table extraction
-            </p>
-        </div>
-        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
-            Zero-Cloud Local Parser
-        </span>
-    </div>
-    <div class="card-body p-4">
-        <form id="shakeUploadPreviewForm" onsubmit="return false;">
-            <div class="row g-3 align-items-end mb-3">
-                <div class="col-12 col-md-5">
-                    <label for="carrierSelect" class="form-label fw-semibold small text-uppercase text-muted">
-                        1. Carrier Contract Template
-                    </label>
-                    <select id="carrierSelect" class="form-select">
-                        {% for carrier in carrier_options %}
-                            <option value="{{ carrier.code }}">{{ carrier.label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-12 col-md-4">
-                    <label for="exportFormatSelect" class="form-label fw-semibold small text-uppercase text-muted">
-                        2. Target Output Bundle
-                    </label>
-                    <select id="exportFormatSelect" class="form-select">
-                        <option value="ALL">Full Bundle — Unified .xlsx + Flattened .csv + Canonical .json</option>
-                        <option value="XLSX">Unified Excel Workbook (.xlsx) Only</option>
-                        <option value="CSV">Flattened ERP / TMS Rate Table (.csv) Only</option>
-                        <option value="JSON">Canonical Document AST (.json) Only</option>
-                    </select>
-                </div>
-                <div class="col-12 col-md-3 d-grid">
-                    <button type="button" id="queueExtractionBtn" class="btn btn-primary fw-semibold">
-                        <i class="bi bi-lightning-charge-fill me-1"></i>Queue Offline AST Parse
-                    </button>
-                </div>
-            </div>
-
-            <!-- Drag-and-Drop PDF Dropzone -->
-            <div id="pdfDropzone" class="shake-dropzone p-4 text-center" onclick="document.getElementById('contractPdfInput').click();">
-                <input type="file" id="contractPdfInput" accept=".pdf,application/pdf" class="d-none">
-                <div class="mb-2">
-                    <i class="bi bi-file-earmark-pdf-fill text-danger display-5"></i>
-                </div>
-                <h3 class="h6 fw-bold mb-1" id="dropzoneTitle">
-                    Drag &amp; drop an Ocean Freight Contract PDF here, or click to browse
-                </h3>
-                <p class="text-muted small mb-2" id="dropzoneSubtitle">
-                    Supports multi-page <strong>MSC</strong>, <strong>CMA CGM</strong>, and <strong>COSCO</strong> rate schedules, inland arbitrary appendices, and surcharge matrices (.pdf)
-                </p>
-                <div class="d-flex justify-content-center flex-wrap gap-2">
-                    <span class="badge bg-white text-secondary border">Max 100 MB PDF</span>
-                    <span class="badge bg-white text-secondary border">Auto-Detects 20GP / 40GP / 40HQ Grids</span>
-                    <span class="badge bg-white text-secondary border">Preserves Footnotes &amp; Validity Dates</span>
-                </div>
-            </div>
-
-            <div id="uploadPreviewFeedback" class="alert alert-info mt-3 mb-0 d-none align-items-center justify-content-between" role="alert">
+<!-- Live Personal KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body d-flex align-items-center justify-content-between">
                 <div>
-                    <i class="bi bi-check2-circle me-2"></i>
-                    <span id="uploadPreviewText">Ready for offline AST extraction.</span>
+                    <div class="text-muted small fw-medium text-uppercase">My Batches</div>
+                    <div class="display-6 fw-bold text-dark mt-1">{{ user_batches_count }}</div>
+                    <div class="small text-muted mt-1">Uploaded ingestion batches</div>
                 </div>
-                <span class="badge bg-info text-dark">Stage 3 UI Workspace</span>
+                <div class="rounded-3 bg-primary-subtle text-primary p-3 fs-3">
+                    <i class="bi bi-collection-fill"></i>
+                </div>
             </div>
-        </form>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="text-muted small fw-medium text-uppercase">Extracted Contracts</div>
+                    <div class="display-6 fw-bold text-dark mt-1">{{ extracted_contracts_count }}</div>
+                    <div class="small text-muted mt-1">Structured contract records</div>
+                </div>
+                <div class="rounded-3 bg-success-subtle text-success p-3 fs-3">
+                    <i class="bi bi-file-earmark-check-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="text-muted small fw-medium text-uppercase">Total Rate Rows</div>
+                    <div class="display-6 fw-bold text-dark mt-1">{{ total_rate_rows_count }}</div>
+                    <div class="small text-muted mt-1">+ {{ total_arb_rows_count }} arbitrary charge{{ total_arb_rows_count|pluralize }}</div>
+                </div>
+                <div class="rounded-3 bg-info-subtle text-info-emphasis p-3 fs-3">
+                    <i class="bi bi-table"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="text-muted small fw-medium text-uppercase">Exports Generated</div>
+                    <div class="display-6 fw-bold text-dark mt-1">{{ exports_generated_count }}</div>
+                    <div class="small text-muted mt-1">JSON / XLSX / CSV downloads</div>
+                </div>
+                <div class="rounded-3 bg-warning-subtle text-warning-emphasis p-3 fs-3">
+                    <i class="bi bi-download"></i>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Recent Contract Extraction Jobs Table -->
+<!-- Primary CTA Banner -->
+<div id="upload-contract" class="card shadow-sm mb-4 border-primary-subtle">
+    <div class="card-body p-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h2 class="h5 fw-bold mb-0">
+                    <i class="bi bi-cloud-arrow-up-fill me-2 text-primary"></i>Upload Ocean Freight Contract PDF
+                </h2>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                    Zero-Cloud Local Parser
+                </span>
+            </div>
+            <p class="text-muted small mb-2">
+                Ingest digital vector-text shipping contracts with SHA-256 deduplication (<code>BR-06</code>) and automatic container rate unpivoting.
+            </p>
+            <div class="d-flex flex-wrap gap-1">
+                {% for carrier in active_carriers %}
+                    <span class="badge bg-light text-dark border font-monospace">{{ carrier.carrier_code }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'contract_list' %}" class="btn btn-outline-secondary fw-semibold">
+                <i class="bi bi-folder2-open me-1"></i>View All My Contracts
+            </a>
+            <a href="{% url 'contract_upload' %}" class="btn btn-primary fw-semibold px-4">
+                <i class="bi bi-cloud-arrow-up-fill me-1"></i>Upload Ocean Freight Contract PDF
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Extraction Jobs Table -->
 <div id="extraction-queue" class="card shadow-sm mb-4">
     <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
             <h2 class="h5 fw-bold mb-0">
-                <i class="bi bi-table me-2 text-primary"></i>Recent Contract Extraction Jobs
+                <i class="bi bi-clock-history me-2 text-primary"></i>Recent Extraction Jobs
             </h2>
             <p class="text-muted small mb-0">
-                Completed and staged ocean freight PDF parsing runs for {{ user.full_name_or_username }}
+                Latest uploaded contract PDFs and normalized rate counts for {{ user.full_name_or_username }}
             </p>
         </div>
-        <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-light text-dark border">
-                {{ total_parsed_contracts }} Contracts
-            </span>
-            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
-                {{ total_extracted_rows }} Total Rate &amp; Arbitrary Rows
-            </span>
-        </div>
+        <a href="{% url 'contract_list' %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-table me-1"></i>Manage Contracts
+        </a>
     </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="ps-4">Job ID</th>
+                    <th class="ps-4">Batch #</th>
+                    <th>Filename / Contract</th>
                     <th>Carrier</th>
-                    <th>Contract PDF Filename</th>
-                    <th>Extracted Rate / Arbitrary Rows</th>
-                    <th>Processed</th>
                     <th>Status</th>
-                    <th class="pe-4 text-end">Outputs</th>
+                    <th class="text-center">Extracted Rows</th>
+                    <th>Uploaded</th>
+                    <th class="pe-4 text-end">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                {% for job in recent_extractions %}
+                {% for doc in recent_documents %}
                 <tr>
                     <td class="ps-4">
-                        <code class="text-dark fw-semibold">{{ job.job_id }}</code>
-                    </td>
-                    <td>
-                        <span class="badge bg-dark">{{ job.carrier }}</span>
+                        <code class="text-dark fw-semibold small">{{ doc.batch.batch_number }}</code>
                     </td>
                     <td>
                         <div class="fw-semibold d-flex align-items-center gap-2">
                             <i class="bi bi-file-earmark-pdf text-danger"></i>
-                            <span>{{ job.pdf_filename }}</span>
+                            <span>{{ doc.original_file_name }}</span>
                         </div>
+                        {% if doc.contract_metadata %}
+                            <div class="small text-muted">Contract: <strong>{{ doc.contract_metadata.contract_number }}</strong></div>
+                        {% endif %}
                     </td>
                     <td>
-                        <div class="fw-semibold">{{ job.total_rows }} rows extracted</div>
-                        <div class="text-muted small">
-                            {{ job.ocean_rate_rows }} Ocean Freight Rates &bull; {{ job.arbitrary_rows }} Port Arbitraries
-                        </div>
+                        {% if doc.contract_metadata %}
+                            <span class="badge bg-dark font-monospace">{{ doc.contract_metadata.carrier.carrier_code }}</span>
+                        {% else %}
+                            <span class="text-muted small">—</span>
+                        {% endif %}
                     </td>
-                    <td class="text-muted small">{{ job.processed_at }}</td>
                     <td>
-                        <span class="badge {{ job.status_badge }}">
-                            {% if job.status == 'Exported' %}
-                                <i class="bi bi-check-circle-fill me-1"></i>
-                            {% else %}
-                                <i class="bi bi-diagram-2-fill me-1"></i>
+                        {% if doc.status == 'EXTRACTED' %}
+                            <span class="badge bg-success">EXTRACTED</span>
+                        {% elif doc.status == 'ARCHIVED' %}
+                            <span class="badge bg-secondary">ARCHIVED</span>
+                        {% elif doc.status == 'FAILED' %}
+                            <span class="badge bg-danger">FAILED</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">{{ doc.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if doc.contract_metadata %}
+                            <span class="fw-semibold">{{ doc.rate_count }}</span>
+                            <span class="text-muted small">rate{{ doc.rate_count|pluralize }}</span>
+                            {% if doc.arb_count %}
+                                <div class="text-muted small">+ {{ doc.arb_count }} arb</div>
                             {% endif %}
-                            {{ job.status }}
-                        </span>
+                        {% else %}
+                            <span class="text-muted small">0</span>
+                        {% endif %}
                     </td>
-                    <td class="pe-4 text-end">
-                        <div class="btn-group btn-group-sm" role="group" aria-label="Export formats">
-                            <span class="btn btn-outline-success disabled opacity-100">.xlsx</span>
-                            <span class="btn btn-outline-primary disabled opacity-100">.csv</span>
-                            <span class="btn btn-outline-secondary disabled opacity-100">.json</span>
-                        </div>
+                    <td class="text-muted small text-nowrap">{{ doc.uploaded_at|date:"Y-m-d H:i" }}</td>
+                    <td class="pe-4 text-end text-nowrap">
+                        {% if doc.contract_metadata %}
+                            <a href="{% url 'contract_detail' doc.contract_metadata.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye me-1"></i>Inspect
+                            </a>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Export
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="{% url 'contract_export' doc.contract_metadata.pk 'json' %}">.json</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'contract_export' doc.contract_metadata.pk 'xlsx' %}">.xlsx</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'contract_export' doc.contract_metadata.pk 'csv' %}">.csv</a></li>
+                                </ul>
+                            </div>
+                        {% else %}
+                            {% with last_job=doc.jobs.all.0 %}
+                                <span class="small text-danger">{{ last_job.error_message|default:"Ingestion failed"|truncatechars:40 }}</span>
+                            {% endwith %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">
+                        No contract PDFs uploaded yet. Click <strong>Upload Ocean Freight Contract PDF</strong> above to begin.
                     </td>
                 </tr>
                 {% endfor %}
@@ -194,7 +241,7 @@
             <h2 class="h5 fw-bold mb-0">
                 <i class="bi bi-boxes me-2 text-primary"></i>Standardized SHAKE Output Schemas
             </h2>
-            <p class="text-muted small mb-0">Every parsed carrier contract is normalized into three structured data artifacts</p>
+            <p class="text-muted small mb-0">Every extracted contract can be exported into three canonical formats</p>
         </div>
     </div>
 
@@ -229,67 +276,4 @@
         {% endfor %}
     </div>
 </div>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-    (function () {
-        const fileInput = document.getElementById("contractPdfInput");
-        const dropzone = document.getElementById("pdfDropzone");
-        const dropzoneTitle = document.getElementById("dropzoneTitle");
-        const carrierSelect = document.getElementById("carrierSelect");
-        const queueBtn = document.getElementById("queueExtractionBtn");
-        const feedbackBox = document.getElementById("uploadPreviewFeedback");
-        const feedbackText = document.getElementById("uploadPreviewText");
-
-        if (!dropzone || !fileInput) return;
-
-        fileInput.addEventListener("change", function () {
-            if (fileInput.files && fileInput.files.length > 0) {
-                const fileName = fileInput.files[0].name;
-                dropzoneTitle.textContent = "Selected PDF: " + fileName;
-                feedbackBox.classList.remove("d-none");
-                feedbackBox.classList.add("d-flex");
-                feedbackText.textContent =
-                    "Staged '" + fileName + "' under carrier profile [" + carrierSelect.value + "] for offline OpenDataLoader AST extraction.";
-            }
-        });
-
-        ["dragenter", "dragover"].forEach(function (evtName) {
-            dropzone.addEventListener(evtName, function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                dropzone.classList.add("dragover");
-            });
-        });
-
-        ["dragleave", "drop"].forEach(function (evtName) {
-            dropzone.addEventListener(evtName, function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                dropzone.classList.remove("dragover");
-            });
-        });
-
-        dropzone.addEventListener("drop", function (e) {
-            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                fileInput.files = e.dataTransfer.files;
-                fileInput.dispatchEvent(new Event("change"));
-            }
-        });
-
-        if (queueBtn) {
-            queueBtn.addEventListener("click", function () {
-                const selectedFile =
-                    fileInput.files && fileInput.files.length > 0
-                        ? fileInput.files[0].name
-                        : "Sample_" + carrierSelect.value + "_Contract_2026.pdf";
-                feedbackBox.classList.remove("d-none");
-                feedbackBox.classList.add("d-flex");
-                feedbackText.textContent =
-                    "Queued '" + selectedFile + "' with carrier parser [" + carrierSelect.value + "] — Offline AST pipeline ready.";
-            });
-        }
-    })();
-</script>
 {% endblock %}

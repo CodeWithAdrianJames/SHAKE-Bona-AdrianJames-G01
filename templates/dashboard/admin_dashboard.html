@@ -18,7 +18,7 @@
                 </div>
                 <h1 class="h3 fw-bold mb-1">Operations Admin Control Center</h1>
                 <p class="text-light opacity-75 mb-0 small">
-                    Manage SHAKE user accounts, monitor carrier PDF contract parser templates (MSC, CMA CGM, COSCO), and verify Offline OpenDataLoader AST Engine health.
+                    Monitor system-wide PostgreSQL ingestion batches, contracts, freight rate rows, user accounts, and carrier profiles.
                 </p>
             </div>
             <div class="text-md-end">
@@ -30,15 +30,15 @@
     </div>
 </div>
 
-<!-- Summary Metric Cards -->
+<!-- Live System-Wide KPI Cards -->
 <div class="row g-3 mb-4">
-    <div class="col-12 col-sm-6 col-xl-3">
+    <div class="col-12 col-sm-6 col-xl">
         <div class="card shadow-sm h-100">
             <div class="card-body d-flex align-items-center justify-content-between">
                 <div>
-                    <div class="text-muted small fw-medium text-uppercase">Total Registered Users</div>
+                    <div class="text-muted small fw-medium text-uppercase">Total Users</div>
                     <div class="display-6 fw-bold text-dark mt-1">{{ total_users_count }}</div>
-                    <div class="small text-muted mt-1">Active PostgreSQL accounts</div>
+                    <div class="small text-muted mt-1">{{ admin_users_count }} Admin &bull; {{ encoder_users_count }} Encoder</div>
                 </div>
                 <div class="rounded-3 bg-primary-subtle text-primary p-3 fs-3">
                     <i class="bi bi-people-fill"></i>
@@ -47,53 +47,70 @@
         </div>
     </div>
 
-    <div class="col-12 col-sm-6 col-xl-3">
+    <div class="col-12 col-sm-6 col-xl">
         <div class="card shadow-sm h-100">
             <div class="card-body d-flex align-items-center justify-content-between">
                 <div>
-                    <div class="text-muted small fw-medium text-uppercase">Operations Admins</div>
-                    <div class="display-6 fw-bold text-dark mt-1">{{ admin_users_count }}</div>
-                    <div class="small text-muted mt-1">System &amp; parser governance</div>
-                </div>
-                <div class="rounded-3 bg-warning-subtle text-warning-emphasis p-3 fs-3">
-                    <i class="bi bi-shield-check"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card shadow-sm h-100">
-            <div class="card-body d-flex align-items-center justify-content-between">
-                <div>
-                    <div class="text-muted small fw-medium text-uppercase">Freight Encoders</div>
-                    <div class="display-6 fw-bold text-dark mt-1">{{ encoder_users_count }}</div>
-                    <div class="small text-muted mt-1">Contract analysts &amp; tarifff encoders</div>
+                    <div class="text-muted small fw-medium text-uppercase">Total Batches</div>
+                    <div class="display-6 fw-bold text-dark mt-1">{{ total_batches_count }}</div>
+                    <div class="small text-muted mt-1">PDF ingestion batches</div>
                 </div>
                 <div class="rounded-3 bg-info-subtle text-info-emphasis p-3 fs-3">
-                    <i class="bi bi-file-earmark-bar-graph-fill"></i>
+                    <i class="bi bi-collection-fill"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-12 col-sm-6 col-xl-3">
+    <div class="col-12 col-sm-6 col-xl">
         <div class="card shadow-sm h-100">
             <div class="card-body d-flex align-items-center justify-content-between">
                 <div>
-                    <div class="text-muted small fw-medium text-uppercase">Active Carrier Parsers</div>
-                    <div class="display-6 fw-bold text-dark mt-1">{{ active_parsers_count }}</div>
-                    <div class="small text-success fw-semibold mt-1">MSC &bull; CMA CGM &bull; COSCO</div>
+                    <div class="text-muted small fw-medium text-uppercase">Extracted Contracts</div>
+                    <div class="display-6 fw-bold text-dark mt-1">{{ extracted_contracts_count }}</div>
+                    <div class="small text-muted mt-1">1:1 contract metadata</div>
                 </div>
                 <div class="rounded-3 bg-success-subtle text-success p-3 fs-3">
-                    <i class="bi bi-cpu-fill"></i>
+                    <i class="bi bi-file-earmark-check-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl">
+        <div class="card shadow-sm h-100">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="text-muted small fw-medium text-uppercase">Total Rate Rows</div>
+                    <div class="display-6 fw-bold text-dark mt-1">{{ total_rate_rows_count }}</div>
+                    <div class="small text-muted mt-1">{{ total_exports_count }} export{{ total_exports_count|pluralize }} logged</div>
+                </div>
+                <div class="rounded-3 bg-warning-subtle text-warning-emphasis p-3 fs-3">
+                    <i class="bi bi-table"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl">
+        <div class="card shadow-sm h-100">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="text-muted small fw-medium text-uppercase">Active Carriers</div>
+                    <div class="display-6 fw-bold text-dark mt-1">{{ active_carriers_count }}</div>
+                    <div class="small text-success fw-semibold mt-1">
+                        <a href="{% url 'carrier_list' %}" class="text-decoration-none">Manage Carriers &rarr;</a>
+                    </div>
+                </div>
+                <div class="rounded-3 bg-dark-subtle text-dark p-3 fs-3">
+                    <i class="bi bi-diagram-3-fill"></i>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Registered Users Overview Table -->
+<!-- Registered SHAKE Users Roster Table -->
 <div id="user-roster" class="card shadow-sm mb-4">
     <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
@@ -114,7 +131,9 @@
                     <th>Full Name</th>
                     <th>Work Email</th>
                     <th>Department</th>
-                    <th class="pe-4">Operational Role</th>
+                    <th class="text-center">Batches</th>
+                    <th>Operational Role</th>
+                    <th class="pe-4">Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -139,7 +158,10 @@
                         </a>
                     </td>
                     <td>{{ member.department|default:"Unassigned" }}</td>
-                    <td class="pe-4">
+                    <td class="text-center">
+                        <span class="badge bg-light text-dark border">{{ member.batch_count }}</span>
+                    </td>
+                    <td>
                         {% if member.role == 'ADMIN' %}
                             <span class="badge bg-warning text-dark">
                                 <i class="bi bi-shield-lock-fill me-1"></i>{{ member.get_role_display }}
@@ -150,10 +172,17 @@
                             </span>
                         {% endif %}
                     </td>
+                    <td class="pe-4">
+                        {% if member.is_active %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="text-center text-muted py-4">No registered users found.</td>
+                    <td colspan="7" class="text-center text-muted py-4">No registered users found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -161,52 +190,60 @@
     </div>
 </div>
 
-<!-- Carrier Contract Template Configurations & Offline AST Engine Health -->
-<div id="carrier-parsers" class="row g-4">
+<!-- Active Carrier Profiles & Offline AST Engine Health -->
+<div id="carrier-parsers" class="row g-4 mb-4">
     <div class="col-12 col-lg-8">
         <div class="card shadow-sm h-100">
             <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <div>
                     <h2 class="h5 fw-bold mb-0">
-                        <i class="bi bi-diagram-3 me-2 text-primary"></i>Carrier Contract Template Configurations
+                        <i class="bi bi-diagram-3 me-2 text-primary"></i>Carrier Profiles &amp; Parser Registry
                     </h2>
-                    <p class="text-muted small mb-0">Deterministic AST extraction profiles for supported ocean freight carriers</p>
+                    <p class="text-muted small mb-0">Live shipping line configurations in PostgreSQL (<code>carrier_profiles</code>)</p>
                 </div>
-                <span class="badge bg-success-subtle text-success border border-success-subtle">
-                    All 3 Carrier Profiles Active
-                </span>
+                <a href="{% url 'carrier_list' %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-sliders me-1"></i>Manage Carriers
+                </a>
             </div>
             <div class="table-responsive">
                 <table class="table align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-4">Carrier</th>
-                            <th>Template Code</th>
-                            <th>Extracted Rate &amp; Arbitrary Sections</th>
-                            <th>AST Anchor Strategy</th>
+                            <th class="ps-4">Code</th>
+                            <th>Carrier Name</th>
+                            <th>Template Version</th>
+                            <th class="text-center">Contracts</th>
                             <th class="pe-4">Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for parser in carrier_parsers %}
+                        {% for carrier in carrier_profiles %}
                         <tr>
                             <td class="ps-4">
-                                <div class="fw-bold">{{ parser.carrier }}</div>
-                                <div class="text-muted small">{{ parser.full_name }}</div>
+                                <span class="badge bg-dark font-monospace">{{ carrier.carrier_code }}</span>
                             </td>
+                            <td class="fw-semibold">{{ carrier.carrier_name }}</td>
                             <td>
-                                <code class="bg-light px-2 py-1 rounded border text-dark">{{ parser.template_code }}</code>
+                                <code class="bg-light px-2 py-1 rounded border text-dark">{{ carrier.template_version }}</code>
                             </td>
-                            <td class="small">
-                                <div>{{ parser.rate_sections }}</div>
-                                <div class="text-muted mt-1">Containers: <strong>{{ parser.supported_containers }}</strong></div>
-                            </td>
-                            <td class="small text-secondary">{{ parser.ast_strategy }}</td>
-                            <td class="pe-4">
-                                <span class="badge bg-success-subtle text-success border border-success-subtle">
-                                    <i class="bi bi-check-circle-fill me-1"></i>{{ parser.status }}
+                            <td class="text-center">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                    {{ carrier.contract_count }}
                                 </span>
                             </td>
+                            <td class="pe-4">
+                                {% if carrier.is_active %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                        <i class="bi bi-check-circle-fill me-1"></i>Active
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">No carrier profiles found.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -243,12 +280,12 @@
                             <span class="fw-semibold text-success">{{ engine_status.status_label }}</span>
                         </li>
                         <li class="list-group-item px-0 d-flex justify-content-between">
-                            <span class="text-muted">Supported Carriers</span>
-                            <span class="fw-semibold">MSC, CMA CGM, COSCO</span>
+                            <span class="text-muted">Active Carrier Profiles</span>
+                            <span class="fw-semibold">{{ active_carriers_count }}</span>
                         </li>
                         <li class="list-group-item px-0 d-flex justify-content-between">
-                            <span class="text-muted">Throughput Benchmark</span>
-                            <span class="fw-semibold">{{ engine_status.latency_target }}</span>
+                            <span class="text-muted">Arbitrary Surcharges</span>
+                            <span class="fw-semibold">{{ total_arb_rows_count }} rows</span>
                         </li>
                         <li class="list-group-item px-0 d-flex justify-content-between">
                             <span class="text-muted">Export Schemas</span>
@@ -257,10 +294,107 @@
                     </ul>
                 </div>
 
-                <div class="mt-3 pt-3 border-top small text-muted">
-                    <i class="bi bi-lock-fill me-1 text-secondary"></i>
-                    Role Guard Active: Restricted strictly to <strong>Operations Admin</strong> (`Role.ADMIN`).
+                <div class="mt-3 pt-3 border-top d-flex justify-content-between align-items-center small">
+                    <span class="text-muted"><i class="bi bi-lock-fill me-1"></i>Admin Only</span>
+                    <a href="{% url 'contract_list' %}" class="btn btn-sm btn-outline-primary">View All Contracts</a>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent System Extraction Jobs & Export Activity -->
+<div class="row g-4">
+    <div class="col-12 col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h2 class="h6 fw-bold mb-0">
+                    <i class="bi bi-activity me-2 text-primary"></i>Recent System Processing Jobs
+                </h2>
+                <a href="{% url 'contract_list' %}" class="small text-decoration-none">All Contracts &rarr;</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Document</th>
+                            <th>Operator</th>
+                            <th>Status</th>
+                            <th class="pe-4">Started</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in recent_jobs %}
+                        <tr>
+                            <td class="ps-4 small fw-semibold">
+                                {% if job.document.contract_metadata %}
+                                    <a href="{% url 'contract_detail' job.document.contract_metadata.pk %}" class="text-decoration-none">
+                                        {{ job.document.original_file_name|truncatechars:28 }}
+                                    </a>
+                                {% else %}
+                                    {{ job.document.original_file_name|truncatechars:28 }}
+                                {% endif %}
+                            </td>
+                            <td class="small text-muted">{{ job.document.batch.user.username }}</td>
+                            <td>
+                                {% if job.status == 'COMPLETED' %}
+                                    <span class="badge bg-success">COMPLETED</span>
+                                {% elif job.status == 'FAILED' %}
+                                    <span class="badge bg-danger">FAILED</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">{{ job.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-4 small text-muted text-nowrap">{{ job.started_at|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">No processing jobs recorded yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h2 class="h6 fw-bold mb-0">
+                    <i class="bi bi-journal-check me-2 text-primary"></i>Recent Export Audit Activity
+                </h2>
+                <span class="badge bg-light text-dark border">{{ total_exports_count }} Total</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Contract</th>
+                            <th>Format</th>
+                            <th>User</th>
+                            <th class="pe-4">Exported</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exp in recent_exports %}
+                        <tr>
+                            <td class="ps-4 small fw-semibold">
+                                <a href="{% url 'contract_detail' exp.contract.pk %}" class="text-decoration-none">
+                                    {{ exp.contract.contract_number }}
+                                </a>
+                            </td>
+                            <td><span class="badge bg-dark font-monospace">{{ exp.export_format }}</span></td>
+                            <td class="small text-muted">{{ exp.user.username }}</td>
+                            <td class="pe-4 small text-muted text-nowrap">{{ exp.exported_at|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">No export downloads recorded yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
