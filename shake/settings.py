@@ -1,14 +1,17 @@
 """
 Django settings for SHAKE (Structured Handling and Automated Knowledge Extraction).
 
-Full Stack Django (Django Backend + Django Templates Frontend) configured strictly
-for PostgreSQL / Supabase via environment variables.
+Full Stack Django (Django Backend + Django Templates Frontend) configured with
+automatic SQLite fallback for local development and optional PostgreSQL via DATABASE_URL.
 """
 
 import os
 from pathlib import Path
 
-import dj_database_url
+try:
+    import dj_database_url
+except ImportError:  # pragma: no cover - optional when running SQLite-only
+    dj_database_url = None
 from django.contrib.messages import constants as message_constants
 from dotenv import load_dotenv
 
@@ -88,15 +91,20 @@ ASGI_APPLICATION = 'shake.asgi.application'
 
 
 # ==============================================================================
-# Database Configuration — PostgreSQL / Supabase ONLY (No SQLite)
+# Database Configuration — SQLite Default with Optional PostgreSQL (DATABASE_URL)
 # ==============================================================================
-# Supports either:
-#   1. DATABASE_URL (e.g. Supabase connection pooler URI), or
-#   2. Individual DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT variables.
+# Supports:
+#   1. PostgreSQL (Neon / Supabase / Local) when DATABASE_URL is non-empty, or
+#   2. Local SQLite (BASE_DIR / 'db.sqlite3') when DATABASE_URL is unset or empty.
 
 DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
 
 if DATABASE_URL:
+    if dj_database_url is None:
+        raise ImportError(
+            "dj-database-url is required when DATABASE_URL is configured. "
+            "Install dependencies via `pip install -r requirements.txt`."
+        )
     DATABASES = {
         'default': dj_database_url.parse(
             DATABASE_URL,
@@ -107,15 +115,8 @@ if DATABASE_URL:
 else:
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('DB_NAME', 'postgres'),
-            'USER': os.environ.get('DB_USER', 'postgres'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-            'HOST': os.environ.get('DB_HOST', 'localhost'),
-            'PORT': os.environ.get('DB_PORT', '5432'),
-            'OPTIONS': {
-                'sslmode': os.environ.get('DB_SSLMODE', 'prefer'),
-            },
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
 

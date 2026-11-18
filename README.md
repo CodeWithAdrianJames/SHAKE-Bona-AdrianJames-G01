@@ -11,16 +11,16 @@
 | **Student** | Adrian James F. Bona |
 | **Course & Section** | CSIT327 (Information Management 2) — Section G1 |
 | **Phase** | Phase 1 — Project Setup & Account Feature (Stages 1–4 Complete) |
-| **Tech Stack** | Full Stack Django (Django Backend + Django Templates + Bootstrap 5.3 CDN) & PostgreSQL (Neon / Supabase / Local) |
+| **Tech Stack** | Full Stack Django (Django Backend + Django Templates + Bootstrap 5.3 CDN) & SQLite (default) / PostgreSQL (optional via `DATABASE_URL`) |
 
 ---
 
 ## Implemented Account Feature Modules
 
-### 1. Custom User Model & PostgreSQL Foundation (`accounts.CustomUser`)
+### 1. Custom User Model & Dual Database Foundation (`accounts.CustomUser`)
 - Extends `AbstractUser` with role-based access control (`Role.ADMIN` = **Operations Admin**, `Role.ENCODER` = **Freight Analyst / Encoder**), `department`, `contact_number`, and `profile_photo` (`ImageField` with automatic initials avatar fallback).
 - Custom `CustomUserManager` ensures superusers created via `createsuperuser` automatically receive the `ADMIN` role.
-- Strict PostgreSQL-only database configuration (`dj-database-url` + `psycopg[binary]`) driven via `.env` variables (supports Neon, Supabase, or local PostgreSQL instances).
+- Dual-database configuration in `shake/settings.py`: defaults cleanly to local SQLite (`db.sqlite3`) when `DATABASE_URL` is unset or empty, and switches to PostgreSQL (`dj-database-url` + `psycopg[binary]`) whenever `DATABASE_URL` is provided in `.env` or the environment.
 
 ### 2. User Registration, Login & CSRF-Protected Logout (`accounts`)
 - **Account Registration (`/accounts/register/`, `/accounts/signup/`)**: `CustomUserCreationForm` (with `BootstrapFormMixin`) enforces required fields (`first_name`, `last_name`, `username`, `email`), valid email format, case-insensitive username & email uniqueness, and PBKDF2 password hashing before redirecting to `/accounts/login/` with a Bootstrap success alert.
@@ -54,9 +54,17 @@
 
 ---
 
-## Local Setup Instructions (PostgreSQL / Neon / Supabase)
+## Quick Start (SQLite — Default)
 
-1. **Create and activate a virtual environment**
+Run SHAKE locally with zero external database setup (`db.sqlite3` is created automatically when `DATABASE_URL` is unset):
+
+1. **Clone the repository and enter the project directory**
+   ```bash
+   git clone <repository-url>
+   cd SHAKE-Bona-AdrianJames-G01
+   ```
+
+2. **Create and activate a virtual environment**
    - **Windows (PowerShell):**
      ```powershell
      python -m venv .venv
@@ -68,42 +76,61 @@
      source .venv/bin/activate
      ```
 
-2. **Install dependencies**
+3. **Install dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Configure environment variables (`.env`)**
-   Copy `.env.example` to `.env`:
+4. **Apply database migrations (creates `db.sqlite3` and seeds default carriers)**
+   ```bash
+   python manage.py migrate
+   ```
+
+5. **Create test accounts (optional)**
+   - Create an **Operations Admin** (`Role.ADMIN`) via `createsuperuser`:
+     ```bash
+     python manage.py createsuperuser
+     ```
+     *(Suggested evaluator credentials: username `admin`, email `admin@shake.local`)*
+   - Register a **Freight Analyst / Encoder** (`Role.ENCODER`) directly in the web UI at `/accounts/register/` *(e.g., `encoder@shake.local`)*.
+
+6. **Start the development server**
+   ```bash
+   python manage.py runserver
+   ```
+   Open `http://127.0.0.1:8000/` in your browser.
+
+7. **Run the automated test suite (SQLite)**
+   ```bash
+   python manage.py test -v 2
+   ```
+
+---
+
+## PostgreSQL Setup (Optional `.env`)
+
+To run SHAKE against **Neon**, **Supabase**, or a local **PostgreSQL** instance instead of `db.sqlite3`:
+
+1. **Copy `.env.example` to `.env`**
    ```bash
    cp .env.example .env
    ```
-   Configure either a single PostgreSQL connection string (`DATABASE_URL` — recommended for **Neon** or **Supabase**) or individual `DB_*` variables in `.env`:
+
+2. **Uncomment and set `DATABASE_URL` in `.env`**
    ```ini
    SECRET_KEY=replace-with-a-secure-django-secret-key
    DEBUG=True
    ALLOWED_HOSTS=127.0.0.1,localhost
 
-   # Option A: Neon / Supabase / PostgreSQL URI
    DATABASE_URL=postgresql://user:password@ep-example.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
    DB_SSL_REQUIRE=True
-
-   # Option B: Individual PostgreSQL Variables (used when DATABASE_URL is blank)
-   DB_NAME=postgres
-   DB_USER=postgres
-   DB_PASSWORD=your_password
-   DB_HOST=localhost
-   DB_PORT=5432
-   DB_SSLMODE=prefer
    ```
 
-4. **Apply database migrations & start the development server**
+3. **Apply migrations, start the server, and run tests against PostgreSQL**
    ```bash
    python manage.py migrate
    python manage.py runserver
+   python manage.py test --keepdb -v 2
    ```
 
-5. **Run the automated test suite**
-   ```bash
-   python manage.py test
-   ```
+> **Tip:** Even when `.env` defines `DATABASE_URL`, you can temporarily force SQLite in bash (`DATABASE_URL="" python manage.py test -v 2`) or PowerShell (`$env:DATABASE_URL=" "; python manage.py test -v 2`).
