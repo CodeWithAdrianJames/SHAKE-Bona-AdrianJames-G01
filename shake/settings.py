@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     # SHAKE Apps
     'accounts',
     'dashboard',
+    'contracts',
 ]
 
 MIDDLEWARE = [

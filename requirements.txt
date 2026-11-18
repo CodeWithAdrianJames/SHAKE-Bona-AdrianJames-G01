@@ -3,3 +3,8 @@ psycopg[binary]>=3.2
 dj-database-url>=2.2
 python-dotenv>=1.0
 Pillow>=11.0
+pymupdf>=1.24
+opendataloader-pdf>=2.0
+pandas>=2.2
+openpyxl>=3.1
+
