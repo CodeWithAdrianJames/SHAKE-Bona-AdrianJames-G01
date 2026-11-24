@@ -41,6 +41,18 @@ DATE_EFFECTIVE_HEADER_RX = re.compile(
 DATE_COMPACT_RX = re.compile(r"^(\d{4})(\d{2})(\d{2})$")
 DATE_ISO_RX = re.compile(r"^(\d{4})-(\d{1,2})-(\d{1,2})$")
 
+# Page furniture (running headers/footers) that must never be read as data or context
+PAGE_BOILERPLATE_RX = re.compile(
+    r"^(?:page\s+\d+(?:\s*(?:of|/)\s*\d+)?"
+    r"|\d+\s*(?:of|/)\s*\d+"
+    r"|-\s*\d+\s*-"
+    r"|confidential\b.*)$",
+    re.I,
+)
+
+# Table cells
+AMOUNT_CELL_RX = re.compile(r"^[A-Z$€£¥]{0,3}\s*-?\d[\d,]*(?:\.\d+)?$", re.I)
+
 # Cleaners
 COMMODITY_TRUNC_RX = re.compile(r"\s*(?:ORIGIN|NOTE|REMARK|;)", re.IGNORECASE)
 CITY_PAREN_STRIP_RX = re.compile(r"\s*\([^)]*\)\s*$")
