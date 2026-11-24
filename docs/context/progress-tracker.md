@@ -1,0 +1,68 @@
+# Progress Tracker
+
+Update this file whenever the current phase, active feature, or implementation state changes.
+
+## Current Phase
+
+- **Project Development 2 (Core Feature Vertical Slice):** Completed and merged into `main`.
+- **Project Development 3 (Loopback REST API `F-11` & SDD Polish):** Ready to begin — spec-driven context files are synced into the repository.
+
+## Current Goal
+
+- Begin PD3 with `F-11` (Lightweight Local Loopback REST API) once its authentication open question is resolved.
+
+## Completed
+
+- **PD1 — Authentication, RBAC & Base Dashboards (`F-01`, `BR-01`, `BR-02`):**
+  - Implemented `accounts.CustomUser` with `ADMIN` and `ENCODER` roles, email login, registration, CSRF-safe `POST` logout, self-only profile management, and `RoleRequiredMixin`.
+- **PD2 Slice 01 — Normalized Schema & Offline Vector Extraction Engine (`F-02`–`F-08`, `BR-03`–`BR-08`, `BR-11`):**
+  - Implemented 8 normalized domain models in `contracts/models.py` (`CarrierProfile`, `BatchUpload`, `DocumentFile`, `ProcessingJob`, `ContractMetadata`, `FreightRate`, `ArbitraryCharge`, `ExportRecord`) plus initial migration `0001_initial.py` and carrier seed migration `0002_seed_default_carriers.py` (`CMDU`, `COSU`, `MAEU`, `MSCU`, `UNKN`).
+  - Ported offline vector PDF ingestion, OpenDataLoader Java AST + PyMuPDF extraction, cross-page table stitching, canonical mapping, and SHA-256 duplicate prevention (`contracts/engine/*`, `contracts/services/pipeline.py`).
+  - Implemented single/batch upload (`/contracts/upload/`), contract list (`/contracts/`), and contract detail inspection (`/contracts/<pk>/`) guarded by `ContractOwnershipMixin`.
+- **PD2 Slice 02 — Contract/Rate CRUD, Non-Destructive Archiving, Multi-Format Exports, Carrier Admin & Live Dashboards (`F-02`, `F-08`–`F-10`, `BR-03`, `BR-09`–`BR-13`):**
+  - Implemented `ContractMetadataUpdateView` (`/contracts/<pk>/edit/`), `FreightRateCreateView` (`/contracts/<pk>/rates/add/`), `FreightRateUpdateView` (`/contracts/<pk>/rates/<rate_id>/edit/`), and `POST`-only `FreightRateDeleteView`.
+  - Implemented `POST`-only `DocumentFileDeleteView` (blocking deletion of extracted contracts) and `POST`-only `ContractArchiveView` (`/contracts/<pk>/archive/` setting `DocumentFile.status = 'ARCHIVED'`).
+  - Implemented canonical `JSON`, multi-sheet `.xlsx`, and `CSV` exporters (`/contracts/<pk>/export/<fmt>/`) with persistent `ExportRecord` audit logging.
+  - Implemented `RoleRequiredMixin(ADMIN)`-guarded `CarrierProfile` list/create/edit/toggle views (`/contracts/carriers/*`).
+  - Wired live database metrics and activity tables into `/dashboard/encoder/`, `/dashboard/admin/`, and `templates/base.html`.
+  - Configured automatic local SQLite (`db.sqlite3`) default fallback in `shake/settings.py` alongside optional PostgreSQL (`DATABASE_URL`).
+- **Verification & Documentation:**
+  - Verified 45/45 automated tests passing on PostgreSQL (44 passed, 1 external-fixture skipped on SQLite).
+  - Re-verified 45 tests on SQLite (44 passed, 1 skipped) in a freshly created `.venv` during the context sync.
+  - Merged `feature/contract-ingestion-engine` and `feature/contract-crud-and-exports` into `develop`, released `develop` -> `main`, and committed `docs/SHAKE-Bona-AdrianJames-G1-PD2.pdf` to `main`.
+- **Spec-Driven Context Sync:**
+  - Committed `AGENTS.md` and `docs/context/*.md` on `develop` and released `develop` -> `main` via Pull Request.
+  - Audited context files against the codebase and corrected drift: context paths now point to `docs/context/`, `BatchUpload` uploader FK documented as `user` (not `uploaded_by`), `RoleRequiredMixin` / `@role_required` documented in `dashboard/views.py`, and `BootstrapFormMixin` documented in `accounts/forms.py`.
+
+## In Progress
+
+- None.
+
+## Next Up
+
+- **PD3 Feature Spec 03 — Lightweight Local Loopback REST API (`F-11`, SDD Should Have):**
+  - Implement authenticated localhost endpoints `/api/v1/ingest` (accepting PDF uploads through the offline pipeline) and `/api/v1/contracts/{id}` (returning canonical JSON contract payloads) with automated API tests.
+- **PD3 Optional Enhancements (SDD Could Have):**
+  - Evaluate manual extraction boundary override UI for custom carrier layouts.
+  - Evaluate user-configured currency converter presets and inland port synonym mappings.
+
+## Open Questions
+
+- For `F-11` (`/api/v1/ingest` and `/api/v1/contracts/{id}`), should authentication use a dedicated per-user `APIToken` model (`Authorization: Bearer <token>`) alongside Django session auth, or HTTP Basic / header token auth?
+- Which SDD `Could Have` feature (manual extraction boundary override vs. custom port synonym/currency rules) should be prioritized after `F-11`?
+- `ui-context.md` defines target design tokens (`--bg-base`, `--accent-primary` `#3f2870`, etc.) and `Varela Round` / `JetBrains Mono` fonts, but `templates/base.html` currently uses `--shake-*` variables with a system font stack. Should the templates be migrated to the documented tokens, or should `ui-context.md` be revised to match the shipped theme?
+- `ui-context.md` and `code-standards.md` require offline-safe templates without external CDN dependencies, but `templates/base.html` loads Bootstrap 5.3.3 and Bootstrap Icons from `cdn.jsdelivr.net`. Should these assets be vendored into a local `static/` directory?
+- `docs/feature-specs/01`–`10` exist locally but are not yet tracked in git; should they be committed alongside the context files?
+
+## Architecture Decisions
+
+- **Dual SQLite / PostgreSQL Runtime (`shake/settings.py`):** Defaults to local `db.sqlite3` when `DATABASE_URL` is unset so evaluators and offline workstations can run immediately, while supporting PostgreSQL via `dj-database-url` when `.env` is configured.
+- **Offline Hybrid Extraction (`contracts/engine/extraction.py`):** Uses local OpenDataLoader Java AST table extraction when Java is available and falls back seamlessly to local PyMuPDF (`fitz`) vector block parsing with zero external cloud dependencies.
+- **Strict Ownership & Non-Destructive Retention (`ContractOwnershipMixin`, `BR-09`):** Enforces per-uploader scoping for `ENCODER` users and preserves extracted contract audit trails via `ARCHIVED` status rather than hard deletion.
+
+## Session Notes
+
+- Repository: `https://github.com/CodeWithAdrianJames/SHAKE-Bona-AdrianJames-G01.git`
+- Local test runner command (SQLite): `$env:DATABASE_URL=""; .\.venv\Scripts\python.exe manage.py test -v 2`
+- Local test runner command (PostgreSQL): `.\.venv\Scripts\python.exe manage.py test --keepdb -v 2`
+- Always follow GitFlow (`feature/*` -> `develop` -> `main` via PR; never commit directly to `main`; keep feature branches undeleted; omit AI agent names/trailers from commit messages).
