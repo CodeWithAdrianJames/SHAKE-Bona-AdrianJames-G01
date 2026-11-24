@@ -4,13 +4,14 @@ import tempfile
 
 from django import forms
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
+from django.db import IntegrityError, connection, transaction
+from django.db.migrations.executor import MigrationExecutor
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.urls import reverse
 from PIL import Image
 
-from .forms import BootstrapFormMixin
+from .forms import BootstrapFormMixin, CustomUserCreationForm
 from .models import CustomUser
-
 
 
 class CustomUserModelTests(TestCase):
@@ -104,10 +105,10 @@ class RegistrationAndAuthTests(TestCase):
     def test_invalid_login_displays_error(self):
         response = self.client.post(
             reverse("login"),
-            {"username": "nonexistent", "password": "wrongpassword"},
+            {"email": "nobody@shake.local", "password": "wrongpassword"},
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Invalid username or password")
+        self.assertContains(response, "Invalid email or password")
 
     def test_protected_dashboard_redirects_anonymous_user_to_login(self):
         dashboard_url = reverse("dashboard")
@@ -124,6 +125,268 @@ class RegistrationAndAuthTests(TestCase):
         response = self.client.post(reverse("logout"), follow=True)
         self.assertRedirects(response, reverse("login"))
         self.assertContains(response, "logged out")
+
+    def test_registration_form_does_not_expose_role_field(self):
+        self.assertNotIn("role", CustomUserCreationForm().fields)
+        response = self.client.get(reverse("register"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'name="role"')
+
+    def test_registration_cannot_self_assign_admin_role(self):
+        response = self.client.post(
+            reverse("register"),
+            {
+                "username": "sneaky_admin",
+                "email": "sneaky@shake.local",
+                "first_name": "Sneaky",
+                "last_name": "Admin",
+                "role": CustomUser.Role.ADMIN,
+                "password1": "Str0ngPass!234",
+                "password2": "Str0ngPass!234",
+            },
+        )
+        self.assertRedirects(response, reverse("login"))
+        user = CustomUser.objects.get(username="sneaky_admin")
+        self.assertEqual(user.role, CustomUser.Role.ENCODER)
+        self.assertFalse(user.is_staff)
+        self.assertFalse(user.is_superuser)
+
+
+class EmailLoginTests(TestCase):
+    """BR-01: users sign in with their unique email address (case-insensitive)."""
+
+    def setUp(self):
+        self.password = "Str0ngPass!234"
+        self.encoder = CustomUser.objects.create_user(
+            username="login_encoder",
+            email="encoder.login@shake.local",
+            password=self.password,
+        )
+        self.admin_user = CustomUser.objects.create_user(
+            username="login_admin",
+            email="admin.login@shake.local",
+            password=self.password,
+            role=CustomUser.Role.ADMIN,
+        )
+
+    def test_login_form_uses_email_instead_of_username(self):
+        response = self.client.get(reverse("login"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="email"')
+        self.assertNotContains(response, 'name="username"')
+
+    def test_encoder_logs_in_with_email_and_lands_on_encoder_dashboard(self):
+        response = self.client.post(
+            reverse("login"),
+            {"email": "encoder.login@shake.local", "password": self.password},
+        )
+        self.assertRedirects(response, reverse("encoder_dashboard"))
+        self.assertEqual(int(self.client.session["_auth_user_id"]), self.encoder.pk)
+
+    def test_admin_logs_in_with_email_and_lands_on_admin_dashboard(self):
+        response = self.client.post(
+            reverse("login"),
+            {"email": "admin.login@shake.local", "password": self.password},
+        )
+        self.assertRedirects(response, reverse("admin_dashboard"))
+
+    def test_email_login_is_case_insensitive(self):
+        response = self.client.post(
+            reverse("login"),
+            {"email": "  Encoder.LOGIN@Shake.Local ", "password": self.password},
+        )
+        self.assertRedirects(response, reverse("encoder_dashboard"))
+        self.assertEqual(int(self.client.session["_auth_user_id"]), self.encoder.pk)
+
+    def test_login_with_username_is_rejected(self):
+        response = self.client.post(
+            reverse("login"),
+            {"username": "login_encoder", "password": self.password},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_login_with_wrong_password_is_rejected(self):
+        response = self.client.post(
+            reverse("login"),
+            {"email": "encoder.login@shake.local", "password": "WrongPass!999"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Invalid email or password")
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_inactive_user_cannot_log_in(self):
+        self.encoder.is_active = False
+        self.encoder.save()
+        response = self.client.post(
+            reverse("login"),
+            {"email": "encoder.login@shake.local", "password": self.password},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+
+class UserDatabaseConstraintTests(TestCase):
+    """BR-01 / BR-02 are enforced by the database, not only by forms."""
+
+    def test_email_is_normalized_to_lowercase_on_save(self):
+        user = CustomUser.objects.create_user(
+            username="mixedcase",
+            email="  Mixed.Case@SHAKE.Local ",
+            password="Str0ngPass!234",
+        )
+        user.refresh_from_db()
+        self.assertEqual(user.email, "mixed.case@shake.local")
+
+    def test_duplicate_email_rejected_by_database(self):
+        CustomUser.objects.create_user(
+            username="first", email="dup.db@shake.local", password="x"
+        )
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            CustomUser.objects.create_user(
+                username="second", email="DUP.DB@shake.local", password="x"
+            )
+
+    def test_invalid_role_rejected_by_database(self):
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            CustomUser.objects.create_user(
+                username="superrole",
+                email="superrole@shake.local",
+                password="x",
+                role="SUPERADMIN",
+            )
+
+
+class UserConstraintsMigrationTests(TransactionTestCase):
+    """0002_user_constraints normalizes legacy rows before adding constraints."""
+
+    migrate_from = [("accounts", "0001_initial")]
+    migrate_to = [("accounts", "0002_user_constraints")]
+
+    def tearDown(self):
+        executor = MigrationExecutor(connection)
+        executor.loader.build_graph()
+        executor.migrate(executor.loader.graph.leaf_nodes())
+
+    def test_blank_and_duplicate_emails_are_normalized(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate(self.migrate_from)
+        old_apps = executor.loader.project_state(self.migrate_from).apps
+        LegacyUser = old_apps.get_model("accounts", "CustomUser")
+
+        keeper = LegacyUser.objects.create(username="keeper", email=" Shared@Shake.Local ")
+        duplicate = LegacyUser.objects.create(username="duplicate", email="shared@shake.local")
+        blank_a = LegacyUser.objects.create(username="blank_a", email="")
+        blank_b = LegacyUser.objects.create(username="blank_b", email="")
+        bad_role = LegacyUser.objects.create(
+            username="bad_role", email="bad.role@shake.local", role="ROOT"
+        )
+
+        executor = MigrationExecutor(connection)
+        executor.loader.build_graph()
+        executor.migrate(self.migrate_to)
+        new_apps = executor.loader.project_state(self.migrate_to).apps
+        User = new_apps.get_model("accounts", "CustomUser")
+
+        self.assertEqual(User.objects.get(pk=keeper.pk).email, "shared@shake.local")
+        dup_email = User.objects.get(pk=duplicate.pk).email
+        self.assertNotEqual(dup_email, "shared@shake.local")
+        self.assertTrue(dup_email.endswith("@users.shake.invalid"))
+        blank_emails = {
+            User.objects.get(pk=blank_a.pk).email,
+            User.objects.get(pk=blank_b.pk).email,
+        }
+        self.assertEqual(len(blank_emails), 2)
+        self.assertNotIn("", blank_emails)
+        self.assertEqual(User.objects.get(pk=bad_role.pk).role, "ENCODER")
+
+        emails = list(User.objects.values_list("email", flat=True))
+        self.assertEqual(len(emails), len(set(emails)))
+
+
+class PasswordChangeTests(TestCase):
+    """Self-service password change at /accounts/password/."""
+
+    def setUp(self):
+        self.old_password = "Str0ngPass!234"
+        self.new_password = "N3wStr0ngPass!567"
+        self.user = CustomUser.objects.create_user(
+            username="pw_user",
+            email="pw.user@shake.local",
+            password=self.old_password,
+        )
+        self.url = reverse("password_change")
+
+    def test_password_change_route_and_profile_link(self):
+        self.assertEqual(self.url, "/accounts/password/")
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("profile"))
+        self.assertContains(response, self.url)
+
+    def test_anonymous_user_redirected_to_login(self):
+        response = self.client.get(self.url)
+        self.assertRedirects(response, f"{reverse('login')}?next={self.url}")
+
+    def test_password_change_succeeds_and_keeps_session(self):
+        self.client.force_login(self.user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/password_change.html")
+
+        response = self.client.post(
+            self.url,
+            {
+                "old_password": self.old_password,
+                "new_password1": self.new_password,
+                "new_password2": self.new_password,
+            },
+            follow=True,
+        )
+        self.assertRedirects(response, reverse("profile"))
+        self.assertContains(response, "Your SHAKE password has been changed successfully.")
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(self.new_password))
+        self.assertFalse(self.user.check_password(self.old_password))
+        # Session auth hash was refreshed, so the user remains signed in.
+        self.assertEqual(self.client.get(reverse("profile")).status_code, 200)
+
+        # The new password works for email login.
+        self.client.logout()
+        response = self.client.post(
+            reverse("login"),
+            {"email": "pw.user@shake.local", "password": self.new_password},
+        )
+        self.assertRedirects(response, reverse("encoder_dashboard"))
+
+    def test_wrong_current_password_is_rejected(self):
+        self.client.force_login(self.user)
+        response = self.client.post(
+            self.url,
+            {
+                "old_password": "NotMyPassword!1",
+                "new_password1": self.new_password,
+                "new_password2": self.new_password,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["form"].errors.get("old_password"))
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(self.old_password))
+
+    def test_mismatched_new_passwords_are_rejected(self):
+        self.client.force_login(self.user)
+        response = self.client.post(
+            self.url,
+            {
+                "old_password": self.old_password,
+                "new_password1": self.new_password,
+                "new_password2": "Different!Pass789",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["form"].errors.get("new_password2"))
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(self.old_password))
 
 
 class BootstrapFormMixinTests(TestCase):
