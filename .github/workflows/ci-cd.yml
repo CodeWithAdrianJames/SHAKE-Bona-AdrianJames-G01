@@ -1,0 +1,176 @@
+name: SHAKE CI/CD Pipeline
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+  push:
+    branches:
+      - develop
+      - main
+      - "feature/**"
+      - "ci/**"
+      - "docs/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUNBUFFERED: "1"
+  SECRET_KEY: "ci-ephemeral-secret-key-not-for-production"
+  DEBUG: "False"
+  ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
+
+jobs:
+  test-sqlite:
+    name: CI · Django Checks & SQLite Tests
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ""
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Verify migration consistency
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Run Django system checks
+        run: python manage.py check
+
+      - name: Apply SQLite migrations
+        run: python manage.py migrate --noinput
+
+      - name: Run test suite (SQLite)
+        run: python manage.py test -v 2
+
+  test-postgres:
+    name: CI · PostgreSQL Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: shake_ci
+          POSTGRES_USER: shake_user
+          POSTGRES_PASSWORD: shake_ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U shake_user -d shake_ci"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: "postgresql://shake_user:shake_ci_password@127.0.0.1:5432/shake_ci"
+      DB_SSL_REQUIRE: "False"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Apply PostgreSQL migrations
+        run: python manage.py migrate --noinput
+
+      - name: Run test suite (PostgreSQL)
+        run: python manage.py test -v 2
+
+  privacy-and-security-guard:
+    name: CI · Offline Privacy & Security Audit
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ""
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Enforce zero external cloud egress in extraction engine
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+
+          forbidden = {"boto3", "botocore", "openai", "anthropic", "google.cloud", "requests", "httpx", "aiohttp"}
+          violations = []
+
+          for path in Path("contracts/engine").rglob("*.py"):
+              tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+              for node in ast.walk(tree):
+                  if isinstance(node, ast.Import):
+                      for alias in node.names:
+                          if any(alias.name == pkg or alias.name.startswith(pkg + ".") for pkg in forbidden):
+                              violations.append(f"{path}:{node.lineno} imports {alias.name}")
+                  elif isinstance(node, ast.ImportFrom) and node.module:
+                      if any(node.module == pkg or node.module.startswith(pkg + ".") for pkg in forbidden):
+                          violations.append(f"{path}:{node.lineno} imports {node.module}")
+
+          if violations:
+              raise SystemExit("Offline privacy invariant violated:\n" + "\n".join(violations))
+          print("Offline engine privacy check passed (0 external network/cloud imports).")
+          PY
+
+      - name: Run Django deployment check
+        run: python manage.py check --deploy --fail-level ERROR
+
+  package-release:
+    name: CD · Package Verified Offline Release Bundle
+    needs:
+      - test-sqlite
+      - test-postgres
+      - privacy-and-security-guard
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main release commit
+        uses: actions/checkout@v4
+
+      - name: Build offline deployment archive and SHA-256 checksum
+        run: |
+          mkdir -p dist
+          ARCHIVE_NAME="SHAKE-offline-release-${GITHUB_SHA::7}.zip"
+          git archive --format=zip --output="dist/${ARCHIVE_NAME}" HEAD
+          sha256sum "dist/${ARCHIVE_NAME}" > "dist/${ARCHIVE_NAME}.sha256"
+          ls -lh dist/
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SHAKE-offline-release-${{ github.sha }}
+          path: dist/*
+          retention-days: 30

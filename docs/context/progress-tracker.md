@@ -36,7 +36,13 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## In Progress
 
-- None.
+- **CI/CD Pipeline (GitHub Actions) on `ci/github-actions-pipeline`:**
+  - Added `.github/workflows/ci-cd.yml` (runs on push to `develop`, `main`, `feature/**`, `ci/**`, `docs/**` and on PRs into `develop`/`main`) with four jobs:
+    - `test-sqlite`: `makemigrations --check --dry-run`, `check`, `migrate`, and the full test suite on SQLite (`DATABASE_URL=""`).
+    - `test-postgres`: migrations + full test suite against a `postgres:16-alpine` service container (`DB_SSL_REQUIRE=False` because the service container does not serve SSL and `shake/settings.py` defaults `DB_SSL_REQUIRE` to `True`).
+    - `privacy-and-security-guard`: AST scan rejecting cloud/network imports (`boto3`, `botocore`, `openai`, `anthropic`, `google.cloud`, `requests`, `httpx`, `aiohttp`) in `contracts/engine/` (Zero Cloud Egress invariant), plus `check --deploy --fail-level ERROR`.
+    - `package-release` (CD): on pushes to `main` only, after all three CI jobs pass, builds a `git archive` zip + SHA-256 checksum and uploads it as a 30-day workflow artifact.
+  - Locally verified with the CI environment values: YAML parses, `makemigrations --check` reports no changes, `check` is clean, `check --deploy` reports warnings only (W004, W008, W009, W012, W016), the privacy scan passes, and 45 SQLite tests run (44 passed, 1 external-fixture skipped). The PostgreSQL job has not been verified locally (psycopg `pq` DLL is blocked on this workstation) and will first be verified on GitHub Actions.
 
 ## Next Up
 
@@ -65,4 +71,5 @@ Update this file whenever the current phase, active feature, or implementation s
 - Repository: `https://github.com/CodeWithAdrianJames/SHAKE-Bona-AdrianJames-G01.git`
 - Local test runner command (SQLite): `$env:DATABASE_URL=""; .\.venv\Scripts\python.exe manage.py test -v 2`
 - Local test runner command (PostgreSQL): `.\.venv\Scripts\python.exe manage.py test --keepdb -v 2`
+- CI/CD: `.github/workflows/ci-cd.yml` runs SQLite tests, PostgreSQL tests, and the offline privacy/deploy audit on every push/PR; release bundles are packaged only on pushes to `main`.
 - Always follow GitFlow (`feature/*` -> `develop` -> `main` via PR; never commit directly to `main`; keep feature branches undeleted; omit AI agent names/trailers from commit messages).
