@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from contracts.engine.models import MappingResult
@@ -49,6 +50,31 @@ HEADER_MAP: dict[str, str] = {
 MAPPED_RATE_KEYS = ["BaseRate 20", "BaseRate 40", "BaseRate 40H", "BaseRate 45"]
 
 
+def _signature(text: str) -> str:
+    return re.sub(r"[^A-Z0-9]", "", str(text or "").upper())
+
+
+def _is_header_echo(row: dict[str, str]) -> bool:
+    """A repeated column header row that survived extraction (values == header names)."""
+    filled = [(k, v) for k, v in row.items() if str(v or "").strip()]
+    return len(filled) >= 2 and all(_signature(k) == _signature(v) for k, v in filled)
+
+
+def _page_span(table: dict, index: int) -> tuple[int, int]:
+    """Resolve the true page span of row ``index``, falling back to the table span."""
+    table_start = int(
+        table.get("source_page_start") or table.get("page_number") or 1
+    )
+    table_end = int(table.get("source_page_end") or table_start)
+    spans = table.get("row_page_spans") or []
+    if index < len(spans) and spans[index]:
+        start, end = int(spans[index][0]), int(spans[index][1])
+    else:
+        start, end = table_start, table_end
+    start = max(1, start)
+    return start, max(start, end)
+
+
 def map_table(
     table: dict, carrier: str, contract_id: str, section: str
 ) -> list[dict]:
@@ -71,6 +97,9 @@ def map_table(
         header_map["Destination"] = "destination_city"
         header_map["Destination Via"] = "destination_via_city"
 
+    # Layout-insensitive lookup so "DestinationVia" / "DESTINATION VIA" still map.
+    header_by_signature = {_signature(k): v for k, v in header_map.items()}
+
     meta = table.get("metadata") or {}
     base_row = {
         "Carrier": carrier,
@@ -79,7 +108,6 @@ def map_table(
         "expiration_date": meta.get("expiration_date"),
         "commodity": meta.get("commodity"),
         "Scope": meta.get("Scope"),
-        "source_page": table.get("page_number") or 1,
     }
 
     variable_columns = [
@@ -93,10 +121,17 @@ def map_table(
             base_row[key] = meta.get(key)
 
     mapped_rows = []
-    for row in rows:
+    for index, row in enumerate(rows):
+        if _is_header_echo(row):
+            continue
         new_row = base_row.copy()
+        new_row["source_page_start"], new_row["source_page_end"] = _page_span(
+            table, index
+        )
         for raw_key, value in row.items():
-            header_key = header_map.get(raw_key, raw_key)
+            header_key = header_map.get(raw_key) or header_by_signature.get(
+                _signature(raw_key), raw_key
+            )
             if header_key in absent_columns:
                 continue
 

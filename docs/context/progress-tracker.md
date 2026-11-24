@@ -9,6 +9,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
+- Open a PR for `feature/f04-cross-page-stitching` into `develop`.
 - Begin PD3 with `F-11` (Lightweight Local Loopback REST API) once its authentication open question is resolved.
 
 ## Completed
@@ -37,6 +38,14 @@ Update this file whenever the current phase, active feature, or implementation s
   - Added `accounts/migrations/0002_user_constraints.py`: normalizes existing rows (trim/lowercase emails, replace blank/duplicate emails with `user-<pk>@users.shake.invalid` placeholders, reset invalid roles to `ENCODER`), then adds `UNIQUE (email)` and `CHECK (role IN ('ADMIN', 'ENCODER'))`. Runs non-atomically so the data fix commits before the schema change.
   - Expanded `accounts/tests.py` (email login, case-insensitivity, username rejection, inactive users, encoder-only registration, DB-level duplicate email / invalid role rejection, migration normalization, password change) and switched `dashboard/tests.py` login posts to email.
   - Verified 63 tests on SQLite (62 passed, 1 external-fixture skipped). PostgreSQL run not yet verified on this workstation: psycopg's `pq` DLL is blocked by a Windows Application Control policy.
+  - Merged into `develop` (`104c660`).
+- **PD3 — F-04 Cross-Page Table Stitching (`F-04`–`F-07`, `BR-12`, `BR-13`) on `feature/f04-cross-page-stitching`:**
+  - Replaced per-node table extraction in `contracts/engine/extraction.py` with a stitcher that compares column header signatures and horizontal column alignment between the trailing table on page `P` and the leading table on page `P+1`, prunes repeated header rows and page headers/footers, reconnects orphan split rows, and keeps distinct schemas (base rates vs. arbitraries) and context-separated blocks apart. Rules are documented in `architecture-context.md`.
+  - `contracts/engine/mapping.py` now emits `source_page_start`/`source_page_end` per row (from `row_page_spans`), drops echoed header rows, and matches headers layout-insensitively (`DestinationVia` → `destination_via_city`).
+  - `contracts/services/pipeline.py` persists true page spans into `FreightRate` (`source_page_end > source_page_start` for stitched rows; legacy `source_page` key still accepted). The PyMuPDF fallback AST now preserves reading order, excludes in-table text from paragraphs, keeps inter-word spaces in cells, and records cell bounding boxes.
+  - `contracts/tests.py`: removed the lab-PC fixture test (`SAMPLE_DIGITAL_DIR`); added `CrossPageStitchingExtractionTests` (6 AST-level cases) and `MultiPageVectorPdfPipelineTests`, which generates a 3-page vector contract in memory with PyMuPDF (rate table split across pp. 1–2 with a repeated header and a vertically split line item, origin arbitraries on p. 2, destination arbitraries on p. 3) and runs ingest → `extract()` → `map_payload()` → persist through both the PyMuPDF path and the OpenDataLoader path (the latter skips only when `java` is not on `PATH`).
+  - Committed the previously untracked `docs/feature-specs/01`–`11` with this feature.
+  - Verified 70 tests on SQLite (70 passed, 0 skipped, Java 21 present). PostgreSQL not verified locally (psycopg `pq` DLL blocked).
 - **Spec-Driven Context Sync:**
   - Committed `AGENTS.md` and `docs/context/*.md` on `develop` and released `develop` -> `main` via Pull Request.
   - Audited context files against the codebase and corrected drift: context paths now point to `docs/context/`, `BatchUpload` uploader FK documented as `user` (not `uploaded_by`), `RoleRequiredMixin` / `@role_required` documented in `dashboard/views.py`, and `BootstrapFormMixin` documented in `accounts/forms.py`.
@@ -66,7 +75,8 @@ Update this file whenever the current phase, active feature, or implementation s
 - Which SDD `Could Have` feature (manual extraction boundary override vs. custom port synonym/currency rules) should be prioritized after `F-11`?
 - `ui-context.md` defines target design tokens (`--bg-base`, `--accent-primary` `#3f2870`, etc.) and `Varela Round` / `JetBrains Mono` fonts, but `templates/base.html` currently uses `--shake-*` variables with a system font stack. Should the templates be migrated to the documented tokens, or should `ui-context.md` be revised to match the shipped theme?
 - `ui-context.md` and `code-standards.md` require offline-safe templates without external CDN dependencies, but `templates/base.html` loads Bootstrap 5.3.3 and Bootstrap Icons from `cdn.jsdelivr.net`. Should these assets be vendored into a local `static/` directory?
-- `docs/feature-specs/01`–`10` exist locally but are not yet tracked in git; should they be committed alongside the context files?
+- GitHub Actions does not run `actions/setup-java`; the OpenDataLoader end-to-end test relies on the runner image's preinstalled Java and skips if `java` is missing. Should CI pin a Java version explicitly?
+- Split-row reconnection currently merges only orphan rows whose first (identifier) column is empty. A row whose identifier text itself wraps across the page break (e.g. `HONG` / `KONG` + rates) is not reconnected. Is that layout present in real carrier contracts?
 
 ## Architecture Decisions
 

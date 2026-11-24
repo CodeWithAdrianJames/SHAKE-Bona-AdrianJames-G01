@@ -54,6 +54,15 @@
 - Input: Uploaded `.pdf` file stream and filename.
 - Execution: Validates `.pdf` header, positive byte size, and selectable vector text density (`BR-07`, `BR-08`), then parses vector coordinates via local OpenDataLoader Java AST with automatic PyMuPDF fallback (`F-04`).
 - Output: Structured raw pages, stitched cross-page tables (with repeated headers pruned), and diagnostic metadata.
+- PyMuPDF fallback AST (`contracts/services/pipeline.py` `_build_pymupdf_fallback_document`): emits text lines and tables in top-to-bottom reading order per page, excludes text inside detected tables, rebuilds cell text from positioned words, and records per-cell `bounding box` coordinates so it has the same shape as the OpenDataLoader AST.
+
+### Cross-Page Table Stitching (`F-04`, `contracts/engine/extraction.py`)
+
+- The leading table on page `P+1` continues the trailing table on page `P` only when: the section is unchanged, no recognized context line (scope, commodity, origin/via, section heading, validity dates) appears between them, the column count matches, and the horizontal column boundaries align (tolerance `max(4pt, 2%` of table width`)`; skipped when either side lacks cell coordinates).
+- Header decision: a first row whose normalized signature equals the trailing header is a repeated header and is pruned; a header-like first row with a different signature (for example `Point | Via` vs. `Destination | Destination Via`) starts a distinct table; a data first row is a header-less continuation.
+- Page furniture (`Page N of M`, `Confidential ...`, and short non-context lines repeated on two or more pages) is ignored as context and dropped from table bodies.
+- An orphan continuation row (empty first/identifier column) at the top of page `P+1` is merged into the last row of page `P`.
+- Each extracted table carries `source_page_start`/`source_page_end`, and each row carries its own span in `row_page_spans`; `mapping.py` copies the row span onto every mapped row, and `pipeline.py` persists it to `FreightRate.source_page_start`/`source_page_end` (`ArbitraryCharge.source_page_num` stores the start page).
 
 ### Canonical Mapping & Atomic Persistence (`contracts/engine/mapping.py`, `contracts/services/pipeline.py`)
 

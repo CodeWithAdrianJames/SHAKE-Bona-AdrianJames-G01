@@ -238,6 +238,16 @@ def _infer_transport_mode(row: dict[str, Any]) -> str:
     return ArbitraryCharge.TransportMode.INTERMODAL
 
 
+def _row_page_span(row: dict[str, Any]) -> tuple[int, int]:
+    """
+    Resolve a mapped row's (source_page_start, source_page_end), keeping
+    end >= start. Accepts the legacy single ``source_page`` key as a fallback.
+    """
+    start = max(1, int(row.get("source_page_start") or row.get("source_page") or 1))
+    end = max(start, int(row.get("source_page_end") or start))
+    return start, end
+
+
 def _extract_currency(row: dict[str, Any]) -> str:
     raw = (
         row.get("Cur")
@@ -263,9 +273,61 @@ def _generate_batch_number() -> str:
         seq += 1
 
 
+def _words_in_rect(words: list[tuple], rect: pymupdf.Rect) -> str:
+    """Join the page words whose centers fall inside ``rect`` in reading order."""
+    inside = [
+        w
+        for w in words
+        if pymupdf.Point((w[0] + w[2]) / 2, (w[1] + w[3]) / 2) in rect
+    ]
+    inside.sort(key=lambda w: (w[5], w[6], w[7]))  # block, line, word numbers
+    return " ".join(w[4] for w in inside)
+
+
+def _pymupdf_table_node(
+    table: Any, page_number: int, words: list[tuple]
+) -> dict[str, Any] | None:
+    """Convert a PyMuPDF table into an OpenDataLoader-shaped AST table node."""
+    raw_rows = table.extract() or []
+    if len(raw_rows) < 2:
+        return None
+
+    ast_rows = []
+    for row_idx, row in enumerate(raw_rows):
+        row_cells = table.rows[row_idx].cells if row_idx < len(table.rows) else []
+        cells = []
+        for col_idx, cell_val in enumerate(row, start=1):
+            bbox = row_cells[col_idx - 1] if col_idx - 1 < len(row_cells) else None
+            # table.extract() can drop inter-word spaces ("HONGKONG"), so rebuild
+            # the text from positioned words whenever the cell geometry is known.
+            text = _words_in_rect(words, pymupdf.Rect(bbox)) if bbox else str(cell_val or "")
+            cell: dict[str, Any] = {
+                "column number": col_idx,
+                "kids": [{"content": " ".join(text.split())}],
+            }
+            if bbox:
+                # Only x-coordinates are compared across pages, so the top-left
+                # origin of PyMuPDF does not need converting to PDF space.
+                cell["bounding box"] = [float(v) for v in bbox]
+            cells.append(cell)
+        ast_rows.append({"cells": cells})
+
+    return {
+        "type": "table",
+        "page number": page_number,
+        "bounding box": [float(v) for v in table.bbox],
+        "number of columns": max(len(r) for r in raw_rows),
+        "rows": ast_rows,
+    }
+
+
 def _build_pymupdf_fallback_document(pdf_path: Path) -> IngestedDocument:
     """
     Fallback AST builder using PyMuPDF when Java/OpenDataLoader is unavailable (Q6).
+
+    Emits text lines and tables in top-to-bottom reading order per page, excludes
+    text that sits inside a detected table, and records cell bounding boxes so
+    cross-page stitching can compare column alignment (F-04).
     """
     kids: list[dict[str, Any]] = []
     md_parts: list[str] = []
@@ -273,48 +335,49 @@ def _build_pymupdf_fallback_document(pdf_path: Path) -> IngestedDocument:
     with pymupdf.open(str(pdf_path)) as pdf_doc:
         total_pages = len(pdf_doc)
         for idx, page in enumerate(pdf_doc, start=1):
-            text = page.get_text("text") or ""
-            md_parts.append(text)
-            for line in text.splitlines():
-                stripped = line.strip()
-                if stripped:
-                    kids.append(
-                        {
-                            "type": "paragraph",
-                            "page number": idx,
-                            "content": stripped,
-                        }
+            md_parts.append(page.get_text("text") or "")
+            positioned: list[tuple[float, float, dict[str, Any]]] = []
+            table_rects: list[pymupdf.Rect] = []
+
+            try:
+                words = page.get_text("words")
+                for table in page.find_tables().tables:
+                    node = _pymupdf_table_node(table, idx, words)
+                    if node is None:
+                        continue
+                    rect = pymupdf.Rect(table.bbox)
+                    table_rects.append(rect)
+                    positioned.append((rect.y0, rect.x0, node))
+            except Exception as exc:
+                logger.warning("PyMuPDF table fallback failed on page %d: %s", idx, exc)
+
+            for block in page.get_text("dict").get("blocks", []):
+                if block.get("type") != 0:
+                    continue
+                for line in block.get("lines", []):
+                    content = "".join(span.get("text", "") for span in line.get("spans", []))
+                    content = content.strip()
+                    if not content:
+                        continue
+                    rect = pymupdf.Rect(line["bbox"])
+                    center = pymupdf.Point((rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2)
+                    if any(center in table_rect for table_rect in table_rects):
+                        continue
+                    positioned.append(
+                        (
+                            rect.y0,
+                            rect.x0,
+                            {
+                                "type": "paragraph",
+                                "page number": idx,
+                                "bounding box": [rect.x0, rect.y0, rect.x1, rect.y1],
+                                "content": content,
+                            },
+                        )
                     )
 
-            if hasattr(page, "find_tables"):
-                try:
-                    finder = page.find_tables()
-                    for table in getattr(finder, "tables", []):
-                        raw_rows = table.extract() or []
-                        if len(raw_rows) < 2:
-                            continue
-                        ast_rows = []
-                        for row in raw_rows:
-                            cells = []
-                            for col_idx, cell_val in enumerate(row, start=1):
-                                cells.append(
-                                    {
-                                        "column number": col_idx,
-                                        "kids": [
-                                            {"content": str(cell_val or "").strip()}
-                                        ],
-                                    }
-                                )
-                            ast_rows.append({"cells": cells})
-                        kids.append(
-                            {
-                                "type": "table",
-                                "page number": idx,
-                                "rows": ast_rows,
-                            }
-                        )
-                except Exception as exc:
-                    logger.warning("PyMuPDF table fallback failed on page %d: %s", idx, exc)
+            positioned.sort(key=lambda item: (item[0], item[1]))
+            kids.extend(node for _, _, node in positioned)
 
     return IngestedDocument(
         source_path=pdf_path,
@@ -500,7 +563,7 @@ def persist_mapped_contract(
             continue
 
         currency = _extract_currency(row)
-        page_num = max(1, int(row.get("source_page") or 1))
+        page_start, page_end = _row_page_span(row)
 
         for col_key, eq_type in RATE_COLUMN_TO_EQUIPMENT:
             amount = parse_decimal_amount(row.get(col_key))
@@ -518,8 +581,8 @@ def persist_mapped_contract(
                     equipment_type=eq_type,
                     currency_code=currency,
                     rate_amount=amount.quantize(Decimal("0.01")),
-                    source_page_start=page_num,
-                    source_page_end=page_num,
+                    source_page_start=page_start,
+                    source_page_end=page_end,
                     confidence_score=Decimal("0.950"),
                 )
             )
@@ -547,7 +610,7 @@ def persist_mapped_contract(
             )[:100]
             currency = _extract_currency(row)
             transport_mode = _infer_transport_mode(row)
-            page_num = max(1, int(row.get("source_page") or 1))
+            page_num, _ = _row_page_span(row)
 
             for col_key, eq_type in RATE_COLUMN_TO_EQUIPMENT:
                 amount = parse_decimal_amount(row.get(col_key))
