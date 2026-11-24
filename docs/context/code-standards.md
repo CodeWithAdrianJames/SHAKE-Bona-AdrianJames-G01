@@ -19,6 +19,7 @@
 
 - Every Django `Form` and `ModelForm` must inherit `BootstrapFormMixin` so fields automatically render Bootstrap 5 styling and `is-invalid` error feedback.
 - Normalize string codes (`carrier_code`, `origin_port_code`, `destination_port_code`, `currency_code`, `equipment_type`) to stripped uppercase inside form `clean_*` methods.
+- Never let public or self-service forms set privileged fields (`role`, `is_staff`, `is_superuser`, `is_active`); assign `role` server-side (`ENCODER` for public registration).
 - Enforce critical business rules (`BR-01`–`BR-13`) at both the Django form layer (clear user-facing validation errors) and database constraint layer (`UniqueConstraint`, `CheckConstraint`, `ForeignKey(on_delete=...)`).
 
 ## Templates and Styling

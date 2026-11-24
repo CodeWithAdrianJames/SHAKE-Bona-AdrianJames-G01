@@ -1,5 +1,10 @@
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth import authenticate
+from django.contrib.auth.forms import (
+    AuthenticationForm,
+    PasswordChangeForm,
+    UserCreationForm,
+)
 
 from .models import CustomUser
 
@@ -41,25 +46,37 @@ class BootstrapFormMixin:
                     field.widget.attrs["class"] = " ".join(classes)
 
 
-class BootstrapAuthenticationForm(BootstrapFormMixin, AuthenticationForm):
-    """Bootstrap 5 styled login form with clear error messaging."""
+class CustomLoginForm(BootstrapFormMixin, AuthenticationForm):
+    """
+    Bootstrap 5 styled login form authenticating SHAKE users by their unique
+    email address (case-insensitive, BR-01) instead of their username.
+    """
+
+    email = forms.EmailField(
+        max_length=254,
+        label="Work Email Address",
+        widget=forms.EmailInput(
+            attrs={
+                "placeholder": "name@logistics-company.com",
+                "autocomplete": "email",
+                "autofocus": True,
+            }
+        ),
+    )
+
+    field_order = ["email", "password"]
 
     error_messages = {
         "invalid_login": (
-            "Invalid username or password. Please verify your SHAKE credentials and try again."
+            "Invalid email or password. Please verify your SHAKE credentials and try again."
         ),
         "inactive": "This account is currently inactive. Please contact an Operations Admin.",
     }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["username"].widget.attrs.update(
-            {
-                "placeholder": "Enter your username",
-                "autocomplete": "username",
-                "autofocus": True,
-            }
-        )
+        # Email replaces the username credential on the public login form.
+        self.fields.pop("username", None)
         self.fields["password"].widget.attrs.update(
             {
                 "placeholder": "Enter your password",
@@ -67,12 +84,33 @@ class BootstrapAuthenticationForm(BootstrapFormMixin, AuthenticationForm):
             }
         )
 
+    def clean_email(self):
+        return (self.cleaned_data.get("email") or "").strip().lower()
+
+    def clean(self):
+        email = self.cleaned_data.get("email")
+        password = self.cleaned_data.get("password")
+
+        if email and password:
+            self.user_cache = authenticate(self.request, email=email, password=password)
+            if self.user_cache is None:
+                raise forms.ValidationError(
+                    self.error_messages["invalid_login"], code="invalid_login"
+                )
+            self.confirm_login_allowed(self.user_cache)
+
+        return self.cleaned_data
+
 
 class CustomUserCreationForm(BootstrapFormMixin, UserCreationForm):
     """
     Registration form for SHAKE users.
     Validates required fields, valid email format, case-insensitive unique username
     and email, and matching password confirmation, hashing passwords via UserCreationForm.
+
+    BR-02: public self-registration never exposes a role selector. Every account
+    created here is assigned CustomUser.Role.ENCODER server-side; ADMIN accounts
+    are provisioned only by an existing administrator (Django admin / createsuperuser).
     """
 
     first_name = forms.CharField(
@@ -94,13 +132,6 @@ class CustomUserCreationForm(BootstrapFormMixin, UserCreationForm):
         widget=forms.EmailInput(
             attrs={"placeholder": "name@logistics-company.com", "autocomplete": "email"}
         ),
-    )
-    role = forms.ChoiceField(
-        choices=CustomUser.Role.choices,
-        required=False,
-        initial=CustomUser.Role.ENCODER,
-        label="Operational Role",
-        help_text="Select your SHAKE workspace role (defaults to Freight Analyst / Encoder).",
     )
     department = forms.CharField(
         max_length=100,
@@ -127,7 +158,6 @@ class CustomUserCreationForm(BootstrapFormMixin, UserCreationForm):
             "email",
             "first_name",
             "last_name",
-            "role",
             "department",
             "contact_number",
         )
@@ -172,9 +202,13 @@ class CustomUserCreationForm(BootstrapFormMixin, UserCreationForm):
             raise forms.ValidationError("Last name is required.")
         return last_name
 
-    def clean_role(self):
-        role = self.cleaned_data.get("role")
-        return role if role else CustomUser.Role.ENCODER
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.role = CustomUser.Role.ENCODER
+        if commit:
+            user.save()
+            self.save_m2m()
+        return user
 
 
 class UserProfileUpdateForm(BootstrapFormMixin, forms.ModelForm):
@@ -272,3 +306,22 @@ class UserProfileUpdateForm(BootstrapFormMixin, forms.ModelForm):
     def clean_department(self):
         return (self.cleaned_data.get("department") or "").strip()
 
+
+
+class CustomPasswordChangeForm(BootstrapFormMixin, PasswordChangeForm):
+    """
+    Self-service password change form. Requires the current password and
+    validates the new password against AUTH_PASSWORD_VALIDATORS.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["old_password"].widget.attrs.update(
+            {"placeholder": "Enter your current password", "autofocus": True}
+        )
+        self.fields["new_password1"].widget.attrs.update(
+            {"placeholder": "Create a strong new password"}
+        )
+        self.fields["new_password2"].widget.attrs.update(
+            {"placeholder": "Confirm your new password"}
+        )

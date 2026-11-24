@@ -60,7 +60,7 @@ class RoleBasedDashboardAccessTests(TestCase):
     def test_admin_login_redirects_to_admin_dashboard_and_renders_content(self):
         response = self.client.post(
             reverse("login"),
-            {"username": self.admin_user.username, "password": self.password},
+            {"email": self.admin_user.email, "password": self.password},
             follow=True,
         )
         self.assertRedirects(response, reverse("admin_dashboard"))
@@ -75,7 +75,7 @@ class RoleBasedDashboardAccessTests(TestCase):
     def test_encoder_login_redirects_to_encoder_dashboard_and_renders_content(self):
         response = self.client.post(
             reverse("login"),
-            {"username": self.encoder_user.username, "password": self.password},
+            {"email": self.encoder_user.email, "password": self.password},
             follow=True,
         )
         self.assertRedirects(response, reverse("encoder_dashboard"))

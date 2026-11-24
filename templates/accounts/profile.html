@@ -50,6 +50,9 @@
                         <a href="{% url 'profile_edit' %}" class="btn btn-info text-dark fw-semibold">
                             <i class="bi bi-pencil-square me-1"></i>Edit Profile
                         </a>
+                        <a href="{% url 'password_change' %}" class="btn btn-outline-info fw-semibold">
+                            <i class="bi bi-key me-1"></i>Change Password
+                        </a>
                         <a href="{% if user.role == 'ADMIN' %}{% url 'admin_dashboard' %}{% else %}{% url 'encoder_dashboard' %}{% endif %}"
                            class="btn btn-outline-light">
                             <i class="bi bi-arrow-left me-1"></i>Back to Workspace
@@ -186,11 +189,16 @@
             <div class="card-footer bg-white py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <div class="small text-muted">
                     <i class="bi bi-shield-lock me-1 text-primary"></i>
-                    Need to update your name, email, department, contact number, or avatar?
+                    Need to update your name, email, department, contact number, avatar, or password?
                 </div>
-                <a href="{% url 'profile_edit' %}" class="btn btn-primary btn-sm fw-semibold px-3">
-                    <i class="bi bi-pencil-square me-1"></i>Edit Profile Details
-                </a>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'password_change' %}" class="btn btn-outline-primary btn-sm fw-semibold px-3">
+                        <i class="bi bi-key me-1"></i>Change Password
+                    </a>
+                    <a href="{% url 'profile_edit' %}" class="btn btn-primary btn-sm fw-semibold px-3">
+                        <i class="bi bi-pencil-square me-1"></i>Edit Profile Details
+                    </a>
+                </div>
             </div>
         </div>
     </div>

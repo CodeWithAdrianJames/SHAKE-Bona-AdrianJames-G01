@@ -15,7 +15,7 @@
 ## System Boundaries
 
 - `shake/` — Core project configuration (`settings.py` with dual SQLite/PostgreSQL database resolution) and root URL routing (`urls.py`).
-- `accounts/` — Custom user model (`CustomUser`), authentication views, self-only profile management, and the shared `BootstrapFormMixin` (`accounts/forms.py`).
+- `accounts/` — Custom user model (`CustomUser`), case-insensitive email authentication backend (`accounts/backends.py` `EmailBackend`), authentication views, self-only profile management and password change (`/accounts/password/`), and the shared `BootstrapFormMixin` (`accounts/forms.py`).
 - `dashboard/` — Role guards (`RoleRequiredMixin` and `@role_required` in `dashboard/views.py`) and role-aware workspace dashboards (`/dashboard/encoder/`, `/dashboard/admin/`) aggregating live database KPIs, recent batches, processing jobs, and export logs.
 - `contracts/` — Primary domain application containing models, forms, views, URL routes, services, and the offline extraction engine:
   - `contracts/engine/` — Pure offline document processing modules (`ingestion.py`, `extraction.py`, `mapping.py`, `exporter.py`, `models.py`, `errors.py`) decoupled from HTTP request/response objects.
@@ -39,7 +39,9 @@
 
 ## Auth and Access Control Model
 
-- Every user authenticates via unique email (`CustomUser`) with role `ENCODER` (SDD `OPERATOR`) or `ADMIN`.
+- Every user authenticates via unique email (`CustomUser`) with role `ENCODER` (SDD `OPERATOR`) or `ADMIN`. The public login form (`CustomLoginForm`) accepts email only; `EmailBackend` matches it case-insensitively and falls back to username lookups only for the Django admin site.
+- Emails are stored trimmed and lowercased (`CustomUser.save()`), and the database enforces `UNIQUE (email)` and `CHECK (role IN ('ADMIN', 'ENCODER'))` via `accounts/migrations/0002_user_constraints.py`.
+- Public registration (`CustomUserCreationForm`) exposes no role selector and always assigns `ENCODER` server-side; `ADMIN` accounts are provisioned only through the Django admin or `createsuperuser`.
 - All authenticated routes enforce `LoginRequiredMixin`.
 - `ContractOwnershipMixin` enforces data isolation across all contract, rate, document, and export endpoints: `ENCODER` users can read or mutate **only** records linked to batches they uploaded; `ADMIN` users can inspect and manage all records across the system.
 - Administrative management views (`/contracts/carriers/*`, `/dashboard/admin/`) require `RoleRequiredMixin(allowed_roles=[CustomUser.Role.ADMIN])`.

@@ -127,6 +127,10 @@ else:
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
+# BR-01: users sign in with their unique email address (case-insensitive).
+# EmailBackend falls back to username lookups for the Django admin site.
+AUTHENTICATION_BACKENDS = ['accounts.backends.EmailBackend']
+
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'

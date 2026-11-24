@@ -1,13 +1,14 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.views import LoginView, LogoutView
+from django.contrib.auth.views import LoginView, LogoutView, PasswordChangeView
 from django.urls import reverse, reverse_lazy
 from django.views.generic import CreateView, DetailView, UpdateView
 
 from dashboard.views import get_role_dashboard_url
 
 from .forms import (
-    BootstrapAuthenticationForm,
+    CustomLoginForm,
+    CustomPasswordChangeForm,
     CustomUserCreationForm,
     UserProfileUpdateForm,
 )
@@ -48,12 +49,12 @@ SignUpView = RegisterView
 
 class CustomLoginView(LoginView):
     """
-    Login view authenticating SHAKE users, displaying clear error feedback
+    Login view authenticating SHAKE users by email address (BR-01), displaying clear error feedback
     when credentials are invalid, and redirecting authenticated users directly
     to their role-specific SHAKE dashboard (/dashboard/admin/ or /dashboard/encoder/).
     """
 
-    authentication_form = BootstrapAuthenticationForm
+    authentication_form = CustomLoginForm
     template_name = "registration/login.html"
     redirect_authenticated_user = True
 
@@ -143,3 +144,28 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
 
 ProfileEditView = ProfileUpdateView
 
+
+
+class ProfilePasswordChangeView(LoginRequiredMixin, PasswordChangeView):
+    """
+    Self-service password change (`/accounts/password/`).
+    Verifies the current password, applies AUTH_PASSWORD_VALIDATORS, and keeps
+    the user signed in by refreshing the session auth hash (handled by
+    PasswordChangeView).
+    """
+
+    form_class = CustomPasswordChangeForm
+    template_name = "accounts/password_change.html"
+    success_url = reverse_lazy("profile")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, "Your SHAKE password has been changed successfully.")
+        return response
+
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            "Password could not be changed. Please review and fix the errors below.",
+        )
+        return super().form_invalid(form)

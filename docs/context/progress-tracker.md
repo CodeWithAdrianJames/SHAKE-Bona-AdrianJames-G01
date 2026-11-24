@@ -30,6 +30,13 @@ Update this file whenever the current phase, active feature, or implementation s
   - Verified 45/45 automated tests passing on PostgreSQL (44 passed, 1 external-fixture skipped on SQLite).
   - Re-verified 45 tests on SQLite (44 passed, 1 skipped) in a freshly created `.venv` during the context sync.
   - Merged `feature/contract-ingestion-engine` and `feature/contract-crud-and-exports` into `develop`, released `develop` -> `main`, and committed `docs/SHAKE-Bona-AdrianJames-G1-PD2.pdf` to `main`.
+- **PD3 — F-01 Auth Hardening (`F-01`, `BR-01`, `BR-02`) on `feature/f01-auth-hardening`:**
+  - Removed the role selector from public registration; `CustomUserCreationForm.save()` always assigns `ENCODER` (crafted `role=ADMIN` POSTs are ignored).
+  - Replaced username login with case-insensitive email login (`CustomLoginForm` + `accounts/backends.py` `EmailBackend`, set as the sole `AUTHENTICATION_BACKENDS` entry with username fallback for the Django admin site).
+  - Added self-service password change (`ProfilePasswordChangeView`, `/accounts/password/`, `templates/accounts/password_change.html`) linked from `templates/accounts/profile.html`.
+  - Added `accounts/migrations/0002_user_constraints.py`: normalizes existing rows (trim/lowercase emails, replace blank/duplicate emails with `user-<pk>@users.shake.invalid` placeholders, reset invalid roles to `ENCODER`), then adds `UNIQUE (email)` and `CHECK (role IN ('ADMIN', 'ENCODER'))`. Runs non-atomically so the data fix commits before the schema change.
+  - Expanded `accounts/tests.py` (email login, case-insensitivity, username rejection, inactive users, encoder-only registration, DB-level duplicate email / invalid role rejection, migration normalization, password change) and switched `dashboard/tests.py` login posts to email.
+  - Verified 63 tests on SQLite (62 passed, 1 external-fixture skipped). PostgreSQL run not yet verified on this workstation: psycopg's `pq` DLL is blocked by a Windows Application Control policy.
 - **Spec-Driven Context Sync:**
   - Committed `AGENTS.md` and `docs/context/*.md` on `develop` and released `develop` -> `main` via Pull Request.
   - Audited context files against the codebase and corrected drift: context paths now point to `docs/context/`, `BatchUpload` uploader FK documented as `user` (not `uploaded_by`), `RoleRequiredMixin` / `@role_required` documented in `dashboard/views.py`, and `BootstrapFormMixin` documented in `accounts/forms.py`.
@@ -48,6 +55,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Open Questions
 
+- Existing deployments: after `accounts.0002_user_constraints` runs, any account that had a blank or duplicate email now has a `user-<pk>@users.shake.invalid` placeholder and must have its real email set by an admin before it can sign in by email. Confirm whether the Neon PostgreSQL database has such rows before migrating it.
 - For `F-11` (`/api/v1/ingest` and `/api/v1/contracts/{id}`), should authentication use a dedicated per-user `APIToken` model (`Authorization: Bearer <token>`) alongside Django session auth, or HTTP Basic / header token auth?
 - Which SDD `Could Have` feature (manual extraction boundary override vs. custom port synonym/currency rules) should be prioritized after `F-11`?
 - `ui-context.md` defines target design tokens (`--bg-base`, `--accent-primary` `#3f2870`, etc.) and `Varela Round` / `JetBrains Mono` fonts, but `templates/base.html` currently uses `--shake-*` variables with a system font stack. Should the templates be migrated to the documented tokens, or should `ui-context.md` be revised to match the shipped theme?
@@ -63,6 +71,6 @@ Update this file whenever the current phase, active feature, or implementation s
 ## Session Notes
 
 - Repository: `https://github.com/CodeWithAdrianJames/SHAKE-Bona-AdrianJames-G01.git`
-- Local test runner command (SQLite): `$env:DATABASE_URL=""; .\.venv\Scripts\python.exe manage.py test -v 2`
+- Local test runner command (SQLite): `$env:DATABASE_URL=" "; .\.venv\Scripts\python.exe manage.py test -v 2`
 - Local test runner command (PostgreSQL): `.\.venv\Scripts\python.exe manage.py test --keepdb -v 2`
 - Always follow GitFlow (`feature/*` -> `develop` -> `main` via PR; never commit directly to `main`; keep feature branches undeleted; omit AI agent names/trailers from commit messages).

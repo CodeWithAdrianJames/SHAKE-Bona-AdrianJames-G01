@@ -20,6 +20,13 @@ class CustomUser(AbstractUser):
         ADMIN = "ADMIN", "Operations Admin"
         ENCODER = "ENCODER", "Freight Analyst / Encoder"
 
+    email = models.EmailField(
+        "email address",
+        max_length=254,
+        unique=True,
+        error_messages={"unique": "This email address is already in use."},
+        help_text="Unique work email address used to sign in to SHAKE (BR-01).",
+    )
     role = models.CharField(
         max_length=20,
         choices=Role.choices,
@@ -51,6 +58,18 @@ class CustomUser(AbstractUser):
         verbose_name = "SHAKE User"
         verbose_name_plural = "SHAKE Users"
         ordering = ["-date_joined"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(role__in=["ADMIN", "ENCODER"]),
+                name="accounts_customuser_role_valid",
+            ),
+        ]
+
+    def save(self, *args, **kwargs):
+        # BR-01: store emails trimmed and lowercased so UNIQUE (email) is
+        # effectively case-insensitive and email login lookups stay unambiguous.
+        self.email = (self.email or "").strip().lower()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"
