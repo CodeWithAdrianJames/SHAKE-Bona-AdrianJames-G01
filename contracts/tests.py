@@ -21,6 +21,12 @@ from django.urls import reverse
 
 from accounts.models import CustomUser
 from contracts.engine.errors import IngestionError
+from contracts.engine.exporter import (
+    COLUMNS_CSV_EXPORT,
+    CSV_RECORD_ARBITRARY_CHARGE,
+    CSV_RECORD_FREIGHT_RATE,
+    write_csv_export,
+)
 from contracts.engine.extraction import extract
 from contracts.engine.ingestion import ingest_file
 from contracts.engine.mapping import map_payload
@@ -1441,9 +1447,35 @@ class ContractExportAndAuditTests(TestCase):
             charge_amount=Decimal("450.00"),
             transport_mode=ArbitraryCharge.TransportMode.RAIL,
         )
+        ArbitraryCharge.objects.create(
+            contract=self.contract,
+            line_item_sequence=2,
+            charge_type=ArbitraryCharge.ChargeType.DESTINATION,
+            location_code="CNSHE",
+            location_name="Shenyang",
+            via_gateway_port="DALIAN",
+            equipment_type=EquipmentType.GP40,
+            currency_code="USD",
+            charge_amount=Decimal("275.50"),
+            transport_mode=ArbitraryCharge.TransportMode.TRUCK,
+            source_page_num=2,
+        )
 
     def tearDown(self):
         shutil.rmtree(self.temp_media, ignore_errors=True)
+
+    def _export_csv(self, user=None):
+        self.client.force_login(user or self.encoder_a)
+        with override_settings(MEDIA_ROOT=self.temp_media):
+            resp = self.client.get(
+                reverse("contract_export", kwargs={"pk": self.contract.pk, "fmt": "csv"})
+            )
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp["Content-Type"].startswith("text/csv"))
+        self.assertIn('filename="EXP001N25_mapped.csv"', resp["Content-Disposition"])
+        reader = csv.DictReader(io.StringIO(resp.content.decode("utf-8"), newline=""))
+        self.assertEqual(reader.fieldnames, COLUMNS_CSV_EXPORT)
+        return resp, list(reader)
 
     def test_json_xlsx_csv_exports_create_valid_files_and_audit_records(self):
         self.client.force_login(self.encoder_a)
@@ -1482,8 +1514,8 @@ class ContractExportAndAuditTests(TestCase):
             self.assertEqual(csv_resp.status_code, 200)
             self.assertIn(".csv", csv_resp["Content-Disposition"])
             rows = list(csv.reader(io.StringIO(csv_resp.content.decode("utf-8"))))
-            self.assertGreaterEqual(len(rows), 2)
-            self.assertIn("Contract ID", rows[0])
+            self.assertEqual(rows[0], COLUMNS_CSV_EXPORT)
+            self.assertEqual(len(rows), 5)  # header + 2 rates + 2 arbitraries
             self.assertIn("EXP001N25", rows[1])
 
             # 4. Invalid format returns 404
@@ -1533,6 +1565,192 @@ class ContractExportAndAuditTests(TestCase):
                 self.assertEqual(resp.status_code, 200)
                 self.assertGreater(len(resp.content), 0)
         self.assertEqual(ExportRecord.objects.filter(user=self.admin_user).count(), 3)
+
+    def test_csv_export_includes_freight_rates_and_arbitrary_charges(self):
+        resp, rows = self._export_csv()
+
+        self.assertEqual(
+            [row["record_type"] for row in rows],
+            [
+                CSV_RECORD_FREIGHT_RATE,
+                CSV_RECORD_FREIGHT_RATE,
+                CSV_RECORD_ARBITRARY_CHARGE,
+                CSV_RECORD_ARBITRARY_CHARGE,
+            ],
+        )
+        for row in rows:
+            self.assertEqual(row["carrier_code"], "MSCU")
+            self.assertEqual(row["contract_number"], "EXP001N25")
+            self.assertEqual(row["trade_scope"], "NORTH AMERICA - ASIA (WB)")
+            self.assertEqual(row["effective_date"], "2025-07-01")
+            self.assertEqual(row["expiration_date"], "2025-12-31")
+            self.assertEqual(row["basis"], "PER_CONTAINER")
+
+        rate_20, rate_40, origin_arb, dest_arb = rows
+        rate_fields = (
+            "line_item_sequence",
+            "origin_port_code",
+            "origin_port_name",
+            "destination_port_code",
+            "destination_port_name",
+            "charge_type",
+            "equipment_type",
+            "currency_code",
+            "amount",
+            "direction",
+            "location_code",
+            "via_gateway_port",
+            "transport_mode",
+        )
+        self.assertEqual(
+            {key: rate_20[key] for key in rate_fields},
+            {
+                "line_item_sequence": "1",
+                "origin_port_code": "USCHS",
+                "origin_port_name": "Charleston",
+                "destination_port_code": "CNDLC",
+                "destination_port_name": "Dalian",
+                "charge_type": "BASE_OCEAN_FREIGHT",
+                "equipment_type": "20GP",
+                "currency_code": "USD",
+                "amount": "360.00",
+                "direction": "",
+                "location_code": "",
+                "via_gateway_port": "",
+                "transport_mode": "",
+            },
+        )
+        self.assertEqual(rate_40["equipment_type"], "40GP")
+        self.assertEqual(rate_40["amount"], "450.00")
+
+        arb_fields = (
+            "direction",
+            "location_code",
+            "location_name",
+            "via_gateway_port",
+            "transport_mode",
+            "charge_type",
+            "equipment_type",
+            "currency_code",
+            "amount",
+            "origin_port_code",
+            "destination_port_code",
+        )
+        self.assertEqual(
+            {key: origin_arb[key] for key in arb_fields},
+            {
+                "direction": "ORIGIN",
+                "location_code": "USATL",
+                "location_name": "Atlanta",
+                "via_gateway_port": "CHARLESTON, SC",
+                "transport_mode": "RAIL",
+                "charge_type": "ORIGIN_ARBITRARY",
+                "equipment_type": "20GP",
+                "currency_code": "USD",
+                "amount": "450.00",
+                "origin_port_code": "",
+                "destination_port_code": "",
+            },
+        )
+        self.assertEqual(
+            {key: dest_arb[key] for key in arb_fields},
+            {
+                "direction": "DESTINATION",
+                "location_code": "CNSHE",
+                "location_name": "Shenyang",
+                "via_gateway_port": "DALIAN",
+                "transport_mode": "TRUCK",
+                "charge_type": "DESTINATION_ARBITRARY",
+                "equipment_type": "40GP",
+                "currency_code": "USD",
+                "amount": "275.50",
+                "origin_port_code": "",
+                "destination_port_code": "",
+            },
+        )
+        self.assertEqual(dest_arb["source_page_start"], "2")
+        self.assertEqual(dest_arb["source_page_end"], "2")
+
+        # The audit entry points at the exact file that was downloaded.
+        record = ExportRecord.objects.get(contract=self.contract)
+        self.assertEqual(record.user, self.encoder_a)
+        self.assertEqual(record.export_format, ExportRecord.ExportFormat.CSV)
+        self.assertTrue(record.file_path.endswith("EXP001N25_mapped.csv"))
+        self.assertEqual(
+            (Path(self.temp_media) / record.file_path).read_bytes(), resp.content
+        )
+
+    def test_csv_export_without_arbitrary_charges(self):
+        self.contract.arbitrary_charges.all().delete()
+        _, rows = self._export_csv()
+        self.assertEqual(len(rows), 2)
+        self.assertTrue(all(r["record_type"] == CSV_RECORD_FREIGHT_RATE for r in rows))
+        self.assertEqual(
+            ExportRecord.objects.filter(
+                contract=self.contract, export_format=ExportRecord.ExportFormat.CSV
+            ).count(),
+            1,
+        )
+
+    def test_csv_export_without_freight_rates(self):
+        self.contract.freight_rates.all().delete()
+        _, rows = self._export_csv()
+        self.assertEqual(
+            [(r["record_type"], r["direction"]) for r in rows],
+            [
+                (CSV_RECORD_ARBITRARY_CHARGE, "ORIGIN"),
+                (CSV_RECORD_ARBITRARY_CHARGE, "DESTINATION"),
+            ],
+        )
+        self.assertEqual(ExportRecord.objects.filter(contract=self.contract).count(), 1)
+
+    def test_csv_export_without_rates_or_charges_emits_header_only(self):
+        self.contract.freight_rates.all().delete()
+        self.contract.arbitrary_charges.all().delete()
+        resp, rows = self._export_csv(user=self.admin_user)
+        self.assertEqual(rows, [])
+        self.assertEqual(
+            resp.content.decode("utf-8"), ",".join(COLUMNS_CSV_EXPORT) + "\r\n"
+        )
+        record = ExportRecord.objects.get(contract=self.contract)
+        self.assertEqual(record.user, self.admin_user)
+        self.assertEqual(record.export_format, ExportRecord.ExportFormat.CSV)
+
+
+class CsvExportWriterTests(SimpleTestCase):
+    """Unit tests for the pure engine CSV writer (F-09)."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_writes_rfc4180_rows_and_blanks_missing_columns(self):
+        path = write_csv_export(
+            [
+                {
+                    "record_type": CSV_RECORD_ARBITRARY_CHARGE,
+                    "via_gateway_port": 'CHARLESTON, SC "RAMP"',
+                    "amount": "450.00",
+                }
+            ],
+            Path(self.temp_dir) / "nested" / "out.csv",
+        )
+        raw = path.read_bytes().decode("utf-8")
+        self.assertIn('"CHARLESTON, SC ""RAMP"""', raw)
+        self.assertTrue(raw.endswith("\r\n"))
+        rows = list(csv.DictReader(io.StringIO(raw, newline="")))
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["via_gateway_port"], 'CHARLESTON, SC "RAMP"')
+        self.assertEqual(rows[0]["location_code"], "")
+
+    def test_unknown_column_is_rejected_not_dropped(self):
+        with self.assertRaises(ValueError):
+            write_csv_export(
+                [{"record_type": CSV_RECORD_FREIGHT_RATE, "surcharge": "1"}],
+                Path(self.temp_dir) / "out.csv",
+            )
 
 
 class CarrierProfileAdminCrudTests(TestCase):

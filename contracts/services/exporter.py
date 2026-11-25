@@ -8,7 +8,12 @@ from typing import Any
 
 from django.conf import settings
 
-from contracts.engine.exporter import export_result
+from contracts.engine.exporter import (
+    CSV_RECORD_ARBITRARY_CHARGE,
+    CSV_RECORD_FREIGHT_RATE,
+    export_result,
+    write_csv_export,
+)
 from contracts.engine.models import MappingResult
 from contracts.models import (
     ArbitraryCharge,
@@ -31,6 +36,14 @@ FORMAT_METADATA: dict[str, tuple[str, str]] = {
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ),
     "csv": (ExportRecord.ExportFormat.CSV, "text/csv; charset=utf-8"),
+}
+
+# Every persisted amount is quoted per unit of its equipment_type.
+CSV_AMOUNT_BASIS = "PER_CONTAINER"
+CSV_FREIGHT_CHARGE_TYPE = "BASE_OCEAN_FREIGHT"
+CSV_ARBITRARY_CHARGE_TYPES: dict[str, str] = {
+    ArbitraryCharge.ChargeType.ORIGIN: "ORIGIN_ARBITRARY",
+    ArbitraryCharge.ChargeType.DESTINATION: "DESTINATION_ARBITRARY",
 }
 
 
@@ -180,14 +193,79 @@ def build_mapping_result_from_contract(contract: ContractMetadata) -> MappingRes
     )
 
 
+def build_csv_records_from_contract(contract: ContractMetadata) -> list[dict[str, Any]]:
+    """
+    Flatten a contract into one CSV record per FreightRate row followed by one per
+    ArbitraryCharge row (origin and destination), each in line_item_sequence order.
+    """
+    base = {
+        "carrier_code": contract.carrier.carrier_code,
+        "carrier_name": contract.carrier.carrier_name,
+        "contract_number": contract.contract_number,
+        "trade_scope": contract.trade_scope,
+        "commodity_desc": contract.commodity_desc,
+        "effective_date": contract.effective_date.isoformat(),
+        "expiration_date": contract.expiration_date.isoformat(),
+    }
+
+    records: list[dict[str, Any]] = []
+    for rate in contract.freight_rates.order_by("line_item_sequence"):
+        records.append(
+            {
+                "record_type": CSV_RECORD_FREIGHT_RATE,
+                **base,
+                "line_item_sequence": rate.line_item_sequence,
+                "origin_port_code": rate.origin_port_code,
+                "origin_port_name": rate.origin_port_name,
+                "destination_port_code": rate.destination_port_code,
+                "destination_port_name": rate.destination_port_name,
+                "charge_type": CSV_FREIGHT_CHARGE_TYPE,
+                "basis": CSV_AMOUNT_BASIS,
+                "equipment_type": rate.equipment_type,
+                "currency_code": rate.currency_code,
+                "amount": str(rate.rate_amount),
+                "source_page_start": rate.source_page_start,
+                "source_page_end": rate.source_page_end,
+                "confidence_score": str(rate.confidence_score),
+            }
+        )
+
+    for charge in contract.arbitrary_charges.order_by("line_item_sequence"):
+        records.append(
+            {
+                "record_type": CSV_RECORD_ARBITRARY_CHARGE,
+                **base,
+                "line_item_sequence": charge.line_item_sequence,
+                "direction": charge.charge_type,
+                "location_code": charge.location_code,
+                "location_name": charge.location_name,
+                "via_gateway_port": charge.via_gateway_port,
+                "transport_mode": charge.transport_mode,
+                "charge_type": CSV_ARBITRARY_CHARGE_TYPES.get(
+                    charge.charge_type, charge.charge_type
+                ),
+                "basis": CSV_AMOUNT_BASIS,
+                "equipment_type": charge.equipment_type,
+                "currency_code": charge.currency_code,
+                "amount": str(charge.charge_amount),
+                "source_page_start": charge.source_page_num,
+                "source_page_end": charge.source_page_num,
+                "confidence_score": str(charge.confidence_score),
+            }
+        )
+
+    return records
+
+
 def export_contract_artifact(
     contract: ContractMetadata,
     user,
     fmt: str,
 ) -> ExportedArtifact:
     """
-    Generate a JSON, XLSX, or CSV artifact from PostgreSQL contract records via
-    contracts.engine.exporter.export_result() and log an ExportRecord row.
+    Generate a JSON or XLSX artifact via contracts.engine.exporter.export_result(),
+    or a unified freight-rate + arbitrary-charge CSV via write_csv_export(), from
+    the contract's database rows, and log an ExportRecord row.
     """
     fmt_key = (fmt or "").strip().lower()
     if fmt_key not in FORMAT_METADATA:
@@ -206,20 +284,11 @@ def export_contract_artifact(
         / f"contract_{contract.pk}_{uuid.uuid4().hex[:8]}"
     )
 
-    mapping_result = build_mapping_result_from_contract(contract)
-    export_result(mapping_result, export_dir, stem)
-
-    if fmt_key == "json":
-        target_file = export_dir / f"{stem}_mapped.json"
-    elif fmt_key == "xlsx":
-        target_file = export_dir / f"{stem}_mapped.xlsx"
+    target_file = export_dir / f"{stem}_mapped.{fmt_key}"
+    if fmt_key == "csv":
+        write_csv_export(build_csv_records_from_contract(contract), target_file)
     else:
-        candidates = (
-            export_dir / f"{stem}_Rates.csv",
-            export_dir / f"{stem}_Origin_Arbitraries.csv",
-            export_dir / f"{stem}_Destination_Arbitraries.csv",
-        )
-        target_file = next((p for p in candidates if p.exists()), candidates[0])
+        export_result(build_mapping_result_from_contract(contract), export_dir, stem)
 
     rel_path = target_file.relative_to(media_root).as_posix()[:255]
     record = ExportRecord.objects.create(
