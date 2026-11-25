@@ -6,6 +6,7 @@ automatic SQLite fallback for local development and optional PostgreSQL via DATA
 """
 
 import os
+import sys
 from pathlib import Path
 
 try:
@@ -188,3 +189,19 @@ MESSAGE_TAGS = {
 }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# ==============================================================================
+# Local Loopback REST API (F-11)
+# ==============================================================================
+# /api/v1/* only answers clients whose REMOTE_ADDR is a loopback address, even
+# when runserver is bound to 0.0.0.0. Proxy headers (X-Forwarded-For) are never
+# trusted. "testserver" is accepted only in DEBUG or under `manage.py test` so
+# Django's test client can exercise the API; it is never a real socket address.
+
+RUNNING_TESTS = len(sys.argv) > 1 and sys.argv[1] == 'test'
+
+SHAKE_API_LOOPBACK_ONLY = True
+SHAKE_API_LOOPBACK_ADDRESSES = ['127.0.0.1', '::1']
+if DEBUG or RUNNING_TESTS:
+    SHAKE_API_LOOPBACK_ADDRESSES.append('testserver')

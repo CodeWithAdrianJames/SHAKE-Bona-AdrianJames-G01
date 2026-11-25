@@ -5,12 +5,11 @@ Update this file whenever the current phase, active feature, or implementation s
 ## Current Phase
 
 - **Project Development 2 (Core Feature Vertical Slice):** Completed and merged into `main`.
-- **Project Development 3 (Loopback REST API `F-11` & SDD Polish):** Ready to begin — spec-driven context files are synced into the repository.
+- **Project Development 3 (Loopback REST API `F-11` & SDD Polish):** In progress — `F-01`, `F-04`, `F-09` merged into `develop`; `F-11` implemented on `feature/f11-local-loopback-api`.
 
 ## Current Goal
 
-- Open a PR for `feature/f09-csv-arbitrary-export` into `develop`.
-- Begin PD3 with `F-11` (Lightweight Local Loopback REST API) once its authentication open question is resolved.
+- Open a PR for `feature/f11-local-loopback-api` into `develop`.
 
 ## Completed
 
@@ -53,6 +52,15 @@ Update this file whenever the current phase, active feature, or implementation s
   - `contracts/tests.py`: the export fixture now has an origin and a destination arbitrary. Added CSV tests covering rates + arbitraries, no arbitraries, no rates, and neither (header only), each checking the `ExportRecord`, plus `CsvExportWriterTests` for quoting and rejecting unknown columns.
   - Updated `docs/feature-specs/10-multi-format-exporters.md`, `architecture-context.md`, and `README.md` with the unified CSV schema.
   - Verified 76 tests on SQLite (76 passed, 0 skipped). PostgreSQL not verified locally (psycopg `pq` DLL blocked).
+- **PD3 — F-11 Lightweight Local Loopback REST API (`F-11`, `BR-01`, `BR-02`, `BR-06`–`BR-09`) on `feature/f11-local-loopback-api`:**
+  - Added `accounts.APIToken` (`accounts/migrations/0003_apitoken.py`): per-user Bearer token with unique `secrets.token_hex(32)` key, label, `is_active`, `created_at`, `last_used_at`; `ON DELETE CASCADE`. Read-only admin listing.
+  - Added a **Local API Tokens** card to `/accounts/profile/`: `POST /accounts/profile/api-tokens/` generates a token (raw key shown once via a session flash, then only a masked prefix), `POST /accounts/profile/api-tokens/<pk>/revoke/` revokes own tokens (`404` for others').
+  - Added `contracts/api_views.py` + `contracts/api_urls.py` mounted at `/api/v1/`: `LoopbackAPIView` enforces the loopback guard (`SHAKE_API_LOOPBACK_ADDRESSES`, `403`), Bearer-or-session auth (`401` JSON), CSRF for session-authenticated writes, and JSON `405`s.
+  - `POST /api/v1/ingest`: one PDF in multipart `file`, run through `ingest_uploaded_files()` as `request.user`; `201` / `400` (`BR-07`, `BR-08`) / `409` (`BR-06`) / `422` (extraction failed). Added `BatchIngestionOutcome.rejected_errors` to tell duplicates from validation errors.
+  - `GET /api/v1/contracts/<pk>`: `build_contract_api_payload()` (metadata, normalized rates/arbitraries, and a `canonical` block from the new `build_canonical_payload()`, which `export_result()` now also uses). Ownership via the new `scope_contracts_to_user()` helper shared with `ContractOwnershipMixin`; archived contracts stay readable.
+  - Tests: `accounts/tests.py` (`APITokenModelTests`, `APITokenProfileManagementTests`) and `contracts/tests.py` (`LoopbackRestApiTests`, incl. a real PyMuPDF-path ingest of the multi-page vector contract), 45 new tests.
+  - Updated `docs/feature-specs/11-local-loopback-rest-api.md`, `architecture-context.md`, `code-standards.md`, and `README.md` (with `curl` examples).
+  - Verified 121 tests on SQLite (121 passed, 0 skipped). PostgreSQL not verified locally (psycopg `pq` DLL blocked).
 - **Spec-Driven Context Sync:**
   - Committed `AGENTS.md` and `docs/context/*.md` on `develop` and released `develop` -> `main` via Pull Request.
   - Audited context files against the codebase and corrected drift: context paths now point to `docs/context/`, `BatchUpload` uploader FK documented as `user` (not `uploaded_by`), `RoleRequiredMixin` / `@role_required` documented in `dashboard/views.py`, and `BootstrapFormMixin` documented in `accounts/forms.py`.
@@ -69,8 +77,6 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- **PD3 Feature Spec 03 — Lightweight Local Loopback REST API (`F-11`, SDD Should Have):**
-  - Implement authenticated localhost endpoints `/api/v1/ingest` (accepting PDF uploads through the offline pipeline) and `/api/v1/contracts/{id}` (returning canonical JSON contract payloads) with automated API tests.
 - **PD3 Optional Enhancements (SDD Could Have):**
   - Evaluate manual extraction boundary override UI for custom carrier layouts.
   - Evaluate user-configured currency converter presets and inland port synonym mappings.
@@ -78,7 +84,8 @@ Update this file whenever the current phase, active feature, or implementation s
 ## Open Questions
 
 - Existing deployments: after `accounts.0002_user_constraints` runs, any account that had a blank or duplicate email now has a `user-<pk>@users.shake.invalid` placeholder and must have its real email set by an admin before it can sign in by email. Confirm whether the Neon PostgreSQL database has such rows before migrating it.
-- For `F-11` (`/api/v1/ingest` and `/api/v1/contracts/{id}`), should authentication use a dedicated per-user `APIToken` model (`Authorization: Bearer <token>`) alongside Django session auth, or HTTP Basic / header token auth?
+- `F-11` stores API token keys in plaintext (as the spec defines `key VARCHAR(64) UNIQUE`). Should keys be stored hashed (showing only a stored prefix) before any multi-user deployment?
+- `POST /api/v1/ingest` accepts one PDF per request (`file`); the spec's optional multi-file `files` field was not implemented. Is batch ingestion over the API needed?
 - Which SDD `Could Have` feature (manual extraction boundary override vs. custom port synonym/currency rules) should be prioritized after `F-11`?
 - `ui-context.md` defines target design tokens (`--bg-base`, `--accent-primary` `#3f2870`, etc.) and `Varela Round` / `JetBrains Mono` fonts, but `templates/base.html` currently uses `--shake-*` variables with a system font stack. Should the templates be migrated to the documented tokens, or should `ui-context.md` be revised to match the shipped theme?
 - `ui-context.md` and `code-standards.md` require offline-safe templates without external CDN dependencies, but `templates/base.html` loads Bootstrap 5.3.3 and Bootstrap Icons from `cdn.jsdelivr.net`. Should these assets be vendored into a local `static/` directory?
@@ -90,6 +97,7 @@ Update this file whenever the current phase, active feature, or implementation s
 - **Dual SQLite / PostgreSQL Runtime (`shake/settings.py`):** Defaults to local `db.sqlite3` when `DATABASE_URL` is unset so evaluators and offline workstations can run immediately, while supporting PostgreSQL via `dj-database-url` when `.env` is configured.
 - **Offline Hybrid Extraction (`contracts/engine/extraction.py`):** Uses local OpenDataLoader Java AST table extraction when Java is available and falls back seamlessly to local PyMuPDF (`fitz`) vector block parsing with zero external cloud dependencies.
 - **Strict Ownership & Non-Destructive Retention (`ContractOwnershipMixin`, `BR-09`):** Enforces per-uploader scoping for `ENCODER` users and preserves extracted contract audit trails via `ARCHIVED` status rather than hard deletion.
+- **Loopback API Authentication (`F-11`):** Resolved the open question in favor of a per-user `APIToken` (`Authorization: Bearer <token>`) with Django session fallback; the loopback guard checks only the socket address (`REMOTE_ADDR`), never proxy headers.
 
 ## Session Notes
 

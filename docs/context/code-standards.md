@@ -30,10 +30,10 @@
 
 ## API Routes (Loopback REST API — F-11)
 
-- Expose local programmatic endpoints under `/api/v1/` (`ingest/`, `contracts/<int:pk>/`) intended strictly for localhost / private LAN use.
-- Validate authentication credentials and enforce `ContractOwnershipMixin` permissions before processing uploads or returning contract JSON payloads.
+- Expose local programmatic endpoints under `/api/v1/` (`ingest`, `contracts/<int:pk>`, no trailing slash) intended strictly for localhost loopback use; subclass `LoopbackAPIView` (`contracts/api_views.py`) so the loopback guard, authentication, CSRF rule, and JSON `405` apply uniformly.
+- Validate authentication credentials and enforce ownership through `scope_contracts_to_user()` (the helper behind `ContractOwnershipMixin`) before processing uploads or returning contract JSON payloads.
 - Validate uploaded PDFs through the exact same ingestion/deduplication pipeline (`BR-06`–`BR-08`) used by the web UI.
-- Return consistent, predictable JSON response structures with explicit HTTP status codes (`200`, `201`, `400`, `401`, `403`, `404`, `409`).
+- Return consistent, predictable JSON response structures with explicit HTTP status codes (`200`, `201`, `400`, `401`, `403`, `404`, `405`, `409`, `422`); errors always carry a `detail` field.
 
 ## Data and Storage
 

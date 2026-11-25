@@ -14,12 +14,13 @@
 
 ## System Boundaries
 
-- `shake/` — Core project configuration (`settings.py` with dual SQLite/PostgreSQL database resolution) and root URL routing (`urls.py`).
-- `accounts/` — Custom user model (`CustomUser`), case-insensitive email authentication backend (`accounts/backends.py` `EmailBackend`), authentication views, self-only profile management and password change (`/accounts/password/`), and the shared `BootstrapFormMixin` (`accounts/forms.py`).
+- `shake/` — Core project configuration (`settings.py` with dual SQLite/PostgreSQL database resolution and the `SHAKE_API_LOOPBACK_*` settings) and root URL routing (`urls.py`, mounting `contracts.api_urls` at `/api/v1/`).
+- `accounts/` — Custom user model (`CustomUser`), per-user loopback API Bearer tokens (`APIToken`), case-insensitive email authentication backend (`accounts/backends.py` `EmailBackend`), authentication views, self-only profile management, password change (`/accounts/password/`), API token generate/revoke (`/accounts/profile/api-tokens/`), and the shared `BootstrapFormMixin` (`accounts/forms.py`).
 - `dashboard/` — Role guards (`RoleRequiredMixin` and `@role_required` in `dashboard/views.py`) and role-aware workspace dashboards (`/dashboard/encoder/`, `/dashboard/admin/`) aggregating live database KPIs, recent batches, processing jobs, and export logs.
 - `contracts/` — Primary domain application containing models, forms, views, URL routes, services, and the offline extraction engine:
   - `contracts/engine/` — Pure offline document processing modules (`ingestion.py`, `extraction.py`, `mapping.py`, `exporter.py`, `models.py`, `errors.py`) decoupled from HTTP request/response objects.
-  - `contracts/services/` — Transactional ORM pipeline orchestration (`pipeline.py`) and export artifact + `ExportRecord` audit logging (`exporter.py`).
+  - `contracts/services/` — Transactional ORM pipeline orchestration (`pipeline.py`), export artifact + `ExportRecord` audit logging, and the API contract payload builder (`exporter.py`).
+  - `contracts/api_views.py`, `contracts/api_urls.py` — Local loopback REST API (`F-11`): loopback guard, Bearer/session authentication, `POST /api/v1/ingest`, `GET /api/v1/contracts/<pk>`.
 - `templates/` — Bootstrap 5 HTML templates (`base.html`, `accounts/`, `contracts/`, `dashboard/`, `includes/`).
 - `media/` — Runtime directory for local uploaded PDFs and exported files (git-ignored).
 
@@ -27,6 +28,7 @@
 
 - **Relational Database (9 Normalized Entities):**
   - `accounts_customuser` (SDD `app_users`): Registered operators (`ENCODER`) and administrators (`ADMIN`).
+  - `accounts_apitoken`: Per-user loopback API Bearer tokens (`name`, unique 64-hex `key` from `secrets.token_hex(32)`, `is_active`, `created_at`, `last_used_at`; `user` FK `ON DELETE CASCADE`). Revocation sets `is_active = False`. Added by `accounts/migrations/0003_apitoken.py`.
   - `carrier_profiles`: Master carrier definitions (`carrier_code`, `carrier_name`, `template_version`, `is_active`).
   - `batch_uploads`: Logical batch grouping (`batch_number`, `total_files`, `status`, `user` FK as uploader).
   - `document_files`: Physical PDF metadata (`original_file_name`, `file_hash_sha256`, `file_size_bytes`, `page_count`, `status`).
@@ -45,7 +47,18 @@
 - All authenticated routes enforce `LoginRequiredMixin`.
 - `ContractOwnershipMixin` enforces data isolation across all contract, rate, document, and export endpoints: `ENCODER` users can read or mutate **only** records linked to batches they uploaded; `ADMIN` users can inspect and manage all records across the system.
 - Administrative management views (`/contracts/carriers/*`, `/dashboard/admin/`) require `RoleRequiredMixin(allowed_roles=[CustomUser.Role.ADMIN])`.
-- Local Loopback REST API endpoints (`/api/v1/ingest`, `/api/v1/contracts/{id}`) bind strictly to localhost (`127.0.0.1`) and verify authentication credentials + ownership rules before executing ingestion or returning JSON data.
+- `ContractOwnershipMixin.get_queryset()` delegates to `scope_contracts_to_user(queryset, user)` (`contracts/views.py`), which the REST API reuses so web and API visibility cannot drift.
+
+## Local Loopback REST API (`F-11`)
+
+- Routes (`contracts/api_urls.py`, no trailing slash; trailing-slash aliases accepted): `POST /api/v1/ingest` (`api_contract_ingest`) and `GET /api/v1/contracts/<int:pk>` (`api_contract_detail`).
+- Every request passes `LoopbackAPIView.dispatch` (`contracts/api_views.py`) in this order:
+  1. **Loopback guard:** `REMOTE_ADDR` must be in `SHAKE_API_LOOPBACK_ADDRESSES` (`127.0.0.1`, `::1`; `testserver` only when `DEBUG` or under `manage.py test`), else `403`. This holds even when `runserver` is bound to `0.0.0.0`; `X-Forwarded-For` is ignored.
+  2. **Authentication:** `Authorization: Bearer <key>` for an active `APIToken` of an active user (updates `last_used_at`), else an authenticated session. A present header is authoritative (a bad token is `401` even with a valid session). Failure is `401` JSON with `WWW-Authenticate: Bearer`, never a login redirect.
+  3. **CSRF:** views are `csrf_exempt`; Bearer requests skip CSRF, session-authenticated unsafe requests are re-checked with Django's `CsrfViewMiddleware` logic (`403` JSON on failure).
+  4. Method dispatch; unsupported methods return `405` JSON with an `Allow` header.
+- `POST /api/v1/ingest` takes exactly one PDF in multipart field `file` and calls `ingest_uploaded_files(user=request.user, ...)`; `BatchIngestionOutcome.rejected_errors` maps `DuplicateDocumentError` to `409` (`BR-06`) and other validation errors to `400` (`BR-07`, `BR-08`). Extraction failures after validation return `422` and leave a `FAILED` document, as in the web UI. Success is `201` with `contract_id`, `batch_id`, `document_id`, `contract_number`, `status`, `rates_count`, `arbitraries_count`, and `detail_url`.
+- `GET /api/v1/contracts/<pk>` scopes with `scope_contracts_to_user` (`404` outside scope; archived contracts stay readable, `BR-09`) and returns `build_contract_api_payload()` (`contracts/services/exporter.py`), whose `canonical` block is `build_canonical_payload()` from `contracts/engine/exporter.py`, the same structure the `F-09` JSON export writes.
 
 ## Offline Extraction & Export Pipeline
 

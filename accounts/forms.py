@@ -6,7 +6,7 @@ from django.contrib.auth.forms import (
     UserCreationForm,
 )
 
-from .models import CustomUser
+from .models import APIToken, CustomUser
 
 
 class BootstrapFormMixin:
@@ -325,3 +325,18 @@ class CustomPasswordChangeForm(BootstrapFormMixin, PasswordChangeForm):
         self.fields["new_password2"].widget.attrs.update(
             {"placeholder": "Confirm your new password"}
         )
+
+
+class APITokenCreateForm(BootstrapFormMixin, forms.Form):
+    """Optional label for a new local loopback API token (F-11)."""
+
+    name = forms.CharField(
+        max_length=100,
+        required=False,
+        label="Token Label",
+        help_text="Optional. Helps you tell tokens apart, e.g. the script or machine using it.",
+        widget=forms.TextInput(attrs={"placeholder": APIToken.DEFAULT_NAME}),
+    )
+
+    def clean_name(self):
+        return (self.cleaned_data.get("name") or "").strip() or APIToken.DEFAULT_NAME

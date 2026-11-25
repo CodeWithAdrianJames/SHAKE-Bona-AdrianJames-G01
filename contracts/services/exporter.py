@@ -11,6 +11,7 @@ from django.conf import settings
 from contracts.engine.exporter import (
     CSV_RECORD_ARBITRARY_CHARGE,
     CSV_RECORD_FREIGHT_RATE,
+    build_canonical_payload,
     export_result,
     write_csv_export,
 )
@@ -255,6 +256,72 @@ def build_csv_records_from_contract(contract: ContractMetadata) -> list[dict[str
         )
 
     return records
+
+
+def build_contract_api_payload(contract: ContractMetadata) -> dict[str, Any]:
+    """
+    JSON body for GET /api/v1/contracts/<pk> (F-11): document identity, carrier,
+    contract metadata, the normalized FreightRate / ArbitraryCharge rows, and the
+    same canonical structure the JSON export writes (F-09). Amounts and scores
+    are strings so decimals survive JSON unchanged.
+    """
+    document = contract.document
+    return {
+        "contract_id": contract.pk,
+        "document_id": document.pk,
+        "batch_id": document.batch_id,
+        "document_status": document.status,
+        "original_file_name": document.original_file_name,
+        "file_hash_sha256": document.file_hash_sha256,
+        "page_count": document.page_count,
+        "carrier": {
+            "carrier_code": contract.carrier.carrier_code,
+            "carrier_name": contract.carrier.carrier_name,
+        },
+        "metadata": {
+            "contract_number": contract.contract_number,
+            "trade_scope": contract.trade_scope,
+            "commodity_desc": contract.commodity_desc,
+            "effective_date": contract.effective_date.isoformat(),
+            "expiration_date": contract.expiration_date.isoformat(),
+            "extracted_at": contract.extracted_at.isoformat(),
+        },
+        "freight_rates": [
+            {
+                "rate_id": rate.pk,
+                "line_item_sequence": rate.line_item_sequence,
+                "origin_port_code": rate.origin_port_code,
+                "origin_port_name": rate.origin_port_name,
+                "destination_port_code": rate.destination_port_code,
+                "destination_port_name": rate.destination_port_name,
+                "equipment_type": rate.equipment_type,
+                "currency_code": rate.currency_code,
+                "rate_amount": str(rate.rate_amount),
+                "source_page_start": rate.source_page_start,
+                "source_page_end": rate.source_page_end,
+                "confidence_score": str(rate.confidence_score),
+            }
+            for rate in contract.freight_rates.order_by("line_item_sequence")
+        ],
+        "arbitrary_charges": [
+            {
+                "charge_id": charge.pk,
+                "line_item_sequence": charge.line_item_sequence,
+                "charge_type": charge.charge_type,
+                "location_code": charge.location_code,
+                "location_name": charge.location_name,
+                "via_gateway_port": charge.via_gateway_port,
+                "transport_mode": charge.transport_mode,
+                "equipment_type": charge.equipment_type,
+                "currency_code": charge.currency_code,
+                "charge_amount": str(charge.charge_amount),
+                "source_page_num": charge.source_page_num,
+                "confidence_score": str(charge.confidence_score),
+            }
+            for charge in contract.arbitrary_charges.order_by("line_item_sequence")
+        ],
+        "canonical": build_canonical_payload(build_mapping_result_from_contract(contract)),
+    }
 
 
 def export_contract_artifact(

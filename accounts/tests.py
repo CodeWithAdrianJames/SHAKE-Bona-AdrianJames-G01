@@ -11,7 +11,7 @@ from django.urls import reverse
 from PIL import Image
 
 from .forms import BootstrapFormMixin, CustomUserCreationForm
-from .models import CustomUser
+from .models import APIToken, CustomUser
 
 
 class CustomUserModelTests(TestCase):
@@ -544,3 +544,152 @@ class UserProfileTests(TestCase):
         self.assertEqual(self.user.department, "Carrier Relations")
         self.assertEqual(self.user.contact_number, "+63 917 333 4444")
 
+
+
+class APITokenModelTests(TestCase):
+    """F-11 APIToken model: secure key generation, defaults, and constraints."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = CustomUser.objects.create_user(
+            username="token_owner", email="token.owner@shake.local", password=None
+        )
+
+    def test_key_is_64_char_hex_and_defaults_are_applied(self):
+        token = APIToken.objects.create(user=self.user)
+        self.assertRegex(token.key, r"^[0-9a-f]{64}$")
+        self.assertEqual(token.name, "Local CLI Token")
+        self.assertTrue(token.is_active)
+        self.assertIsNotNone(token.created_at)
+        self.assertIsNone(token.last_used_at)
+        self.assertEqual(token.masked_key, f"{token.key[:8]}…")
+        self.assertNotIn(token.key, str(token))
+
+    def test_each_token_gets_a_distinct_key(self):
+        keys = {APIToken.objects.create(user=self.user).key for _ in range(5)}
+        self.assertEqual(len(keys), 5)
+
+    def test_duplicate_key_rejected_by_database(self):
+        token = APIToken.objects.create(user=self.user)
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                APIToken.objects.create(user=self.user, key=token.key)
+
+    def test_tokens_are_deleted_with_their_user(self):
+        other = CustomUser.objects.create_user(
+            username="short_lived", email="short.lived@shake.local", password=None
+        )
+        APIToken.objects.create(user=other)
+        other.delete()
+        self.assertFalse(APIToken.objects.filter(user_id=other.pk).exists())
+
+
+class APITokenProfileManagementTests(TestCase):
+    """F-11 Local API Tokens card on /accounts/profile/: generate and revoke via POST."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = CustomUser.objects.create_user(
+            username="token_encoder", email="token.encoder@shake.local", password=None
+        )
+        cls.other_user = CustomUser.objects.create_user(
+            username="token_admin",
+            email="token.admin@shake.local",
+            password=None,
+            role=CustomUser.Role.ADMIN,
+        )
+
+    def setUp(self):
+        self.client.force_login(self.user)
+        self.profile_url = reverse("profile")
+        self.create_url = reverse("api_token_create")
+
+    def test_profile_shows_local_api_tokens_section(self):
+        response = self.client.get(self.profile_url)
+        self.assertContains(response, "Local API Tokens")
+        self.assertContains(response, f'action="{self.create_url}"')
+        self.assertContains(response, "No API tokens yet")
+
+    def test_generate_token_shows_raw_key_exactly_once(self):
+        response = self.client.post(self.create_url, {"name": "Nightly ingest script"})
+        self.assertRedirects(response, f"{self.profile_url}#api-tokens", fetch_redirect_response=False)
+
+        token = APIToken.objects.get(user=self.user)
+        self.assertEqual(token.name, "Nightly ingest script")
+        self.assertTrue(token.is_active)
+
+        first_view = self.client.get(self.profile_url)
+        self.assertContains(first_view, token.key)
+        self.assertContains(first_view, "Copy your new token now")
+        self.assertContains(first_view, token.masked_key)
+
+        second_view = self.client.get(self.profile_url)
+        self.assertNotContains(second_view, token.key)
+        self.assertContains(second_view, token.masked_key)
+
+    def test_blank_label_falls_back_to_default_name(self):
+        self.client.post(self.create_url, {"name": "   "})
+        self.assertEqual(APIToken.objects.get(user=self.user).name, APIToken.DEFAULT_NAME)
+
+    def test_overlong_label_is_rejected(self):
+        response = self.client.post(self.create_url, {"name": "x" * 101}, follow=True)
+        self.assertFalse(APIToken.objects.filter(user=self.user).exists())
+        self.assertContains(response, "API token could not be generated")
+
+    def test_profile_lists_only_own_tokens(self):
+        own = APIToken.objects.create(user=self.user, name="Mine")
+        foreign = APIToken.objects.create(user=self.other_user, name="Someone else's")
+        response = self.client.get(self.profile_url)
+        self.assertContains(response, own.masked_key)
+        self.assertNotContains(response, foreign.masked_key)
+        self.assertNotContains(response, "Someone else&#x27;s")
+
+    def test_token_endpoints_are_post_only(self):
+        token = APIToken.objects.create(user=self.user)
+        self.assertEqual(self.client.get(self.create_url).status_code, 405)
+        revoke_url = reverse("api_token_revoke", kwargs={"pk": token.pk})
+        self.assertEqual(self.client.get(revoke_url).status_code, 405)
+        token.refresh_from_db()
+        self.assertTrue(token.is_active)
+
+    def test_anonymous_user_cannot_generate_or_revoke(self):
+        token = APIToken.objects.create(user=self.user)
+        self.client.logout()
+        response = self.client.post(self.create_url, {"name": "anon"})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("login"), response["Location"])
+        response = self.client.post(reverse("api_token_revoke", kwargs={"pk": token.pk}))
+        self.assertIn(reverse("login"), response["Location"])
+        self.assertEqual(APIToken.objects.count(), 1)
+        token.refresh_from_db()
+        self.assertTrue(token.is_active)
+
+    def test_revoke_own_token(self):
+        token = APIToken.objects.create(user=self.user)
+        response = self.client.post(
+            reverse("api_token_revoke", kwargs={"pk": token.pk}), follow=True
+        )
+        token.refresh_from_db()
+        self.assertFalse(token.is_active)
+        self.assertContains(response, "revoked")
+        self.assertContains(response, "Revoked")
+
+    def test_cannot_revoke_another_users_token(self):
+        foreign = APIToken.objects.create(user=self.other_user)
+        response = self.client.post(reverse("api_token_revoke", kwargs={"pk": foreign.pk}))
+        self.assertEqual(response.status_code, 404)
+        foreign.refresh_from_db()
+        self.assertTrue(foreign.is_active)
+
+    def test_revoked_token_no_longer_authenticates_api(self):
+        token = APIToken.objects.create(user=self.user)
+        api_url = reverse("api_contract_detail", kwargs={"pk": 1})
+        auth = {"HTTP_AUTHORIZATION": f"Bearer {token.key}"}
+        self.client.logout()
+        # Active token authenticates (404: the user owns no contract with that ID).
+        self.assertEqual(self.client.get(api_url, **auth).status_code, 404)
+
+        self.client.force_login(self.user)
+        self.client.post(reverse("api_token_revoke", kwargs={"pk": token.pk}))
+        self.client.logout()
+        self.assertEqual(self.client.get(api_url, **auth).status_code, 401)

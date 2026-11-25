@@ -28,6 +28,17 @@ from contracts.services.pipeline import ingest_uploaded_files
 from dashboard.views import RoleRequiredMixin
 
 
+def scope_contracts_to_user(queryset, user):
+    """
+    Restrict a ContractMetadata queryset to what `user` may see: ENCODER users
+    only their own batches' contracts, ADMIN users everything. Shared by the web
+    views (ContractOwnershipMixin) and the loopback REST API (F-11).
+    """
+    if getattr(user, "role", None) == CustomUser.Role.ADMIN:
+        return queryset
+    return queryset.filter(document__batch__user=user)
+
+
 class ContractOwnershipMixin(LoginRequiredMixin):
     """
     Scope contract querysets to the logged-in ENCODER's own batches,
@@ -43,10 +54,7 @@ class ContractOwnershipMixin(LoginRequiredMixin):
         )
 
     def get_queryset(self):
-        qs = self.get_base_queryset()
-        if getattr(self.request.user, "role", None) == CustomUser.Role.ADMIN:
-            return qs
-        return qs.filter(document__batch__user=self.request.user)
+        return scope_contracts_to_user(self.get_base_queryset(), self.request.user)
 
     def get_scoped_contract(self, pk: int) -> ContractMetadata:
         return get_object_or_404(ContractOwnershipMixin.get_queryset(self), pk=pk)
