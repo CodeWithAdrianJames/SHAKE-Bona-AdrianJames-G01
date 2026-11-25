@@ -26,8 +26,13 @@ Transform extracted and operator-verified relational contract entities (`Contrac
 - `export_contract_artifact(contract, user, fmt)` supports three formats:
   - **`json`:** Structured canonical JSON payload containing contract metadata, carrier info, base freight rates array, arbitrary charges array, and export timestamp.
   - **`xlsx`:** Formatted multi-sheet Excel workbook (`openpyxl`) with distinct worksheets (`Contract Summary`, `Freight Rates`, `Arbitrary Charges`), styled headers, and typed numeric rate cells.
-  - **`csv`:** Standard RFC-4180 comma-separated tabular export of normalized contract rate rows.
-- Safely emits valid empty rate/arbitrary sheets or CSV headers when a contract has zero rate or arbitrary rows.
+  - **`csv`:** Single RFC-4180 file (`<contract_number>_mapped.csv`, `text/csv; charset=utf-8`, CRLF line endings) built by `build_csv_records_from_contract()` and written by `contracts.engine.exporter.write_csv_export()`. It has one line per persisted `FreightRate` row followed by one per `ArbitraryCharge` row (origin and destination), each in `line_item_sequence` order, so no extracted surcharge is dropped. A `record_type` column (`FREIGHT_RATE` / `ARBITRARY_CHARGE`) tells the two apart, and all rows share the header `COLUMNS_CSV_EXPORT`:
+    - Contract context (every row): `carrier_code`, `carrier_name`, `contract_number`, `trade_scope`, `commodity_desc`, `effective_date`, `expiration_date`, `line_item_sequence`.
+    - Freight rate lane (blank on arbitrary rows): `origin_port_code`, `origin_port_name`, `destination_port_code`, `destination_port_name`.
+    - Arbitrary leg (blank on freight rate rows): `direction` (`ORIGIN` / `DESTINATION`), `location_code`, `location_name`, `via_gateway_port`, `transport_mode`.
+    - Shared amount fields: `charge_type` (`BASE_OCEAN_FREIGHT`, `ORIGIN_ARBITRARY`, `DESTINATION_ARBITRARY`), `basis` (`PER_CONTAINER`; every amount is quoted per unit of `equipment_type`), `equipment_type`, `currency_code`, `amount`, `source_page_start`, `source_page_end` (an arbitrary's `source_page_num` fills both), `confidence_score`.
+    - The writer rejects keys outside the header (`ValueError`) rather than silently dropping them.
+- Safely emits valid empty rate/arbitrary sheets or CSV headers when a contract has zero rate or arbitrary rows. A CSV export of a contract with neither contains just the header line.
 - Saves the generated file locally under `media/exports/` and creates an `ExportRecord` row.
 
 ### Export View & Download Endpoint (`contracts/views.py`, `contracts/urls.py`)
@@ -61,3 +66,4 @@ Transform extracted and operator-verified relational contract entities (`Contrac
 2. Each export creates a persistent `ExportRecord` row linked to the requesting user and exported contract.
 3. Contracts with zero rate rows export cleanly in `json`, `xlsx`, and `csv` formats.
 4. Archived contracts (`status='ARCHIVED'`) remain exportable by authorized users.
+5. The `csv` download contains every `FreightRate` row and every origin/destination `ArbitraryCharge` row of the contract, distinguished by `record_type`.

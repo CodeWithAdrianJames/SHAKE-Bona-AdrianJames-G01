@@ -9,7 +9,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Open a PR for `feature/f04-cross-page-stitching` into `develop`.
+- Open a PR for `feature/f09-csv-arbitrary-export` into `develop`.
 - Begin PD3 with `F-11` (Lightweight Local Loopback REST API) once its authentication open question is resolved.
 
 ## Completed
@@ -46,6 +46,13 @@ Update this file whenever the current phase, active feature, or implementation s
   - `contracts/tests.py`: removed the lab-PC fixture test (`SAMPLE_DIGITAL_DIR`); added `CrossPageStitchingExtractionTests` (6 AST-level cases) and `MultiPageVectorPdfPipelineTests`, which generates a 3-page vector contract in memory with PyMuPDF (rate table split across pp. 1–2 with a repeated header and a vertically split line item, origin arbitraries on p. 2, destination arbitraries on p. 3) and runs ingest → `extract()` → `map_payload()` → persist through both the PyMuPDF path and the OpenDataLoader path (the latter skips only when `java` is not on `PATH`).
   - Committed the previously untracked `docs/feature-specs/01`–`11` with this feature.
   - Verified 70 tests on SQLite (70 passed, 0 skipped, Java 21 present). PostgreSQL not verified locally (psycopg `pq` DLL blocked).
+- **PD3 — F-09 CSV Arbitrary Export Fix (`F-09`, `F-10`) on `feature/f09-csv-arbitrary-export`:**
+  - Bug fixed: the CSV download returned only the first non-empty per-bucket file (`<stem>_Rates.csv`), so every origin and destination `ArbitraryCharge` was dropped whenever a contract had freight rates.
+  - `contracts/engine/exporter.py`: added `COLUMNS_CSV_EXPORT`, the `FREIGHT_RATE` / `ARBITRARY_CHARGE` record-type constants, and `write_csv_export()`, a stdlib RFC-4180 writer (CRLF, header always written, unknown keys rejected). `export_result()` now writes only the JSON and XLSX artifacts; it no longer writes per-sheet CSVs.
+  - `contracts/services/exporter.py`: added `build_csv_records_from_contract()`, one record per `FreightRate` row then one per `ArbitraryCharge` row, carrying lane, direction, location, gateway, transport mode, `charge_type`, `basis` (`PER_CONTAINER`), equipment, currency, amount, page span, and confidence. `fmt=csv` now downloads `<contract_number>_mapped.csv` as `text/csv; charset=utf-8`; the `ExportRecord` audit row is unchanged.
+  - `contracts/tests.py`: the export fixture now has an origin and a destination arbitrary. Added CSV tests covering rates + arbitraries, no arbitraries, no rates, and neither (header only), each checking the `ExportRecord`, plus `CsvExportWriterTests` for quoting and rejecting unknown columns.
+  - Updated `docs/feature-specs/10-multi-format-exporters.md`, `architecture-context.md`, and `README.md` with the unified CSV schema.
+  - Verified 76 tests on SQLite (76 passed, 0 skipped). PostgreSQL not verified locally (psycopg `pq` DLL blocked).
 - **Spec-Driven Context Sync:**
   - Committed `AGENTS.md` and `docs/context/*.md` on `develop` and released `develop` -> `main` via Pull Request.
   - Audited context files against the codebase and corrected drift: context paths now point to `docs/context/`, `BatchUpload` uploader FK documented as `user` (not `uploaded_by`), `RoleRequiredMixin` / `@role_required` documented in `dashboard/views.py`, and `BootstrapFormMixin` documented in `accounts/forms.py`.

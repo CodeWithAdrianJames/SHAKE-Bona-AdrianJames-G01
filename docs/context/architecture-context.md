@@ -73,7 +73,7 @@
 ### Canonical Export & Audit (`contracts/engine/exporter.py`, `contracts/services/exporter.py`)
 
 - Input: `ContractMetadata` instance and requested format (`json`, `xlsx`, `csv`).
-- Execution: Reconstructs canonical `MappingResult` from database rows, renders the output file, and writes an `ExportRecord` audit row (`F-09`, `F-10`).
+- Execution: For `json`/`xlsx`, reconstructs a canonical `MappingResult` from database rows and renders it with `export_result()`. For `csv`, flattens every `FreightRate` and `ArbitraryCharge` row into one unified file through `write_csv_export()`, with a `record_type` discriminator (`FREIGHT_RATE` / `ARBITRARY_CHARGE`) and the shared `COLUMNS_CSV_EXPORT` header. Every format then writes an `ExportRecord` audit row (`F-09`, `F-10`).
 - Output: Downloadable file response and persisted audit entry.
 
 ## Invariants

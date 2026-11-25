@@ -60,7 +60,7 @@ Eight domain tables enforce business rules `BR-03` through `BR-13` via explicit 
 - **Ownership Isolation**: `ContractOwnershipMixin` restricts `ENCODER` users to their own uploaded batches/contracts (`404` on others' records), while `ADMIN` users can inspect and manage all contracts.
 - **Metadata & Rate Management**: Edit contract metadata (`/contracts/<pk>/edit/`), add new base freight rate rows (`/contracts/<pk>/rates/add/` with auto-assigned `line_item_sequence = max + 1`), edit rates (`/contracts/<pk>/rates/<rate_id>/edit/`), and `POST`-delete individual rate rows.
 - **Non-Destructive Archiving (`BR-09`)**: `DocumentFileDeleteView` allows `POST` hard deletion only for `PENDING`/`FAILED` documents without `ContractMetadata` and blocks deletion of `EXTRACTED` documents; `ContractArchiveView` transitions extracted contracts to `DocumentFile.status = 'ARCHIVED'`.
-- **Canonical Multi-Format Exporter (`F-09`, `F-10`)**: `/contracts/<pk>/export/<fmt>/` (`json`, `xlsx`, `csv`) reconstructs `MappingResult` from PostgreSQL records, generates standardized files via `contracts.engine.exporter.export_result()`, logs an `ExportRecord`, and streams the file attachment.
+- **Canonical Multi-Format Exporter (`F-09`, `F-10`)**: `/contracts/<pk>/export/<fmt>/` (`json`, `xlsx`, `csv`) reconstructs `MappingResult` from PostgreSQL records, generates standardized files via `contracts.engine.exporter.export_result()` (`csv` uses `write_csv_export()` to emit freight rates and origin/destination arbitrary charges in one file, keyed by a `record_type` column), logs an `ExportRecord`, and streams the file attachment.
 - **Admin Carrier Profile CRUD (`F-02`)**: `/contracts/carriers/*` views restricted strictly to `CustomUser.Role.ADMIN` via `RoleRequiredMixin`.
 
 ---
