@@ -81,6 +81,17 @@ def write_csv_export(
     return path
 
 
+def build_canonical_payload(result: MappingResult) -> dict:
+    """Return the canonical JSON structure written by the JSON export (F-09)."""
+    return {
+        "carrier": result.carrier,
+        "contract_id": result.contract_id,
+        "Rates": result.rates,
+        "Origin_Arbitraries": result.origin_arb,
+        "Destination_Arbitraries": result.dest_arb,
+    }
+
+
 def export_result(result: MappingResult, output_dir: Path | str, stem: str) -> None:
     """Write the canonical JSON payload and the multi-sheet XLSX workbook."""
     out_dir = Path(output_dir)
@@ -94,13 +105,7 @@ def export_result(result: MappingResult, output_dir: Path | str, stem: str) -> N
         "Destination_Arbitraries": (result.dest_arb, COLUMNS_DEST_ARB),
     }
 
-    payload = {
-        "carrier": result.carrier,
-        "contract_id": result.contract_id,
-        "Rates": result.rates,
-        "Origin_Arbitraries": result.origin_arb,
-        "Destination_Arbitraries": result.dest_arb,
-    }
+    payload = build_canonical_payload(result)
     (out_dir / f"{stem}_mapped.json").write_text(
         json.dumps(payload, indent=2), encoding="utf-8"
     )

@@ -107,6 +107,9 @@ class BatchIngestionOutcome:
     succeeded: list[ContractMetadata] = field(default_factory=list)
     failed_documents: list[tuple[str, str]] = field(default_factory=list)
     rejected_files: list[tuple[str, str]] = field(default_factory=list)
+    # The exceptions behind rejected_files, in the same order, so callers such as
+    # the REST API can tell a BR-06 duplicate from a BR-07/BR-08 validation error.
+    rejected_errors: list[ShakeError] = field(default_factory=list)
 
 
 def ensure_default_carriers() -> None:
@@ -669,6 +672,7 @@ def ingest_uploaded_files(
             validated_payloads.append(payload)
         except ShakeError as exc:
             outcome.rejected_files.append((name, str(exc)))
+            outcome.rejected_errors.append(exc)
 
     if not validated_payloads:
         return outcome

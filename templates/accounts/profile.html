@@ -201,6 +201,105 @@
                 </div>
             </div>
         </div>
+
+        <!-- Local API Tokens (F-11) -->
+        <div class="card shadow-sm rounded-3 mb-4" id="api-tokens">
+            <div class="card-body p-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom pb-3 mb-3">
+                    <div>
+                        <h2 class="h5 fw-bold mb-0">
+                            <i class="bi bi-terminal me-2 text-primary"></i>Local API Tokens
+                        </h2>
+                        <p class="text-muted small mb-0">
+                            Bearer tokens for scripts on this workstation calling
+                            <code>/api/v1/ingest</code> and <code>/api/v1/contracts/&lt;id&gt;</code>.
+                            The API only answers loopback (<code>127.0.0.1</code> / <code>::1</code>) connections.
+                        </p>
+                    </div>
+                    <span class="badge bg-light text-secondary border">
+                        <i class="bi bi-pc-display me-1"></i>Localhost Only
+                    </span>
+                </div>
+
+                {% if new_api_token %}
+                    <div class="alert alert-warning" role="alert">
+                        <div class="fw-semibold mb-1">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>Copy your new token now
+                        </div>
+                        <div class="small mb-2">It is shown only once. Store it somewhere safe; revoke it if it leaks.</div>
+                        <input type="text" class="form-control font-monospace" value="{{ new_api_token }}"
+                               readonly aria-label="New API token" onfocus="this.select();"
+                               data-testid="new-api-token">
+                    </div>
+                {% endif %}
+
+                <form method="post" action="{% url 'api_token_create' %}" class="row g-2 align-items-end mb-4">
+                    {% csrf_token %}
+                    <div class="col-12 col-md">
+                        <label for="{{ api_token_form.name.id_for_label }}" class="form-label fw-semibold small text-secondary mb-1">
+                            {{ api_token_form.name.label }}
+                        </label>
+                        {{ api_token_form.name }}
+                        <div class="form-text small text-muted">{{ api_token_form.name.help_text }}</div>
+                    </div>
+                    <div class="col-12 col-md-auto mb-md-4">
+                        <button type="submit" class="btn btn-primary fw-semibold">
+                            <i class="bi bi-plus-circle me-1"></i>Generate Token
+                        </button>
+                    </div>
+                </form>
+
+                {% if api_tokens %}
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">Label</th>
+                                    <th scope="col">Token</th>
+                                    <th scope="col">Created</th>
+                                    <th scope="col">Last Used</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col" class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for token in api_tokens %}
+                                    <tr>
+                                        <td class="fw-semibold">{{ token.name }}</td>
+                                        <td class="font-monospace small">{{ token.masked_key }}</td>
+                                        <td class="small text-muted">{{ token.created_at|date:"M j, Y H:i" }}</td>
+                                        <td class="small text-muted">{{ token.last_used_at|date:"M j, Y H:i"|default:"Never" }}</td>
+                                        <td>
+                                            {% if token.is_active %}
+                                                <span class="badge bg-success-subtle text-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary-subtle text-secondary">Revoked</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">
+                                            {% if token.is_active %}
+                                                <form method="post" action="{% url 'api_token_revoke' token.pk %}" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                        <i class="bi bi-x-circle me-1"></i>Revoke
+                                                    </button>
+                                                </form>
+                                            {% else %}
+                                                <span class="text-muted small">—</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-info-circle me-1"></i>No API tokens yet. Generate one to call the local API from a script.
+                    </p>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

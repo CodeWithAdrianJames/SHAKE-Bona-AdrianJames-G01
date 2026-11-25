@@ -63,6 +63,37 @@ Eight domain tables enforce business rules `BR-03` through `BR-13` via explicit 
 - **Canonical Multi-Format Exporter (`F-09`, `F-10`)**: `/contracts/<pk>/export/<fmt>/` (`json`, `xlsx`, `csv`) reconstructs `MappingResult` from PostgreSQL records, generates standardized files via `contracts.engine.exporter.export_result()` (`csv` uses `write_csv_export()` to emit freight rates and origin/destination arbitrary charges in one file, keyed by a `record_type` column), logs an `ExportRecord`, and streams the file attachment.
 - **Admin Carrier Profile CRUD (`F-02`)**: `/contracts/carriers/*` views restricted strictly to `CustomUser.Role.ADMIN` via `RoleRequiredMixin`.
 
+### 4. Local Loopback REST API (`F-11`, `contracts/api_views.py`)
+- **Endpoints**: `POST /api/v1/ingest` (multipart PDF upload through the same offline pipeline as `/contracts/upload/`) and `GET /api/v1/contracts/<pk>` (contract JSON with metadata, normalized rates/arbitraries, and the canonical `F-09` export structure under `canonical`). Paths have no trailing slash; the trailing-slash form is accepted too.
+- **Loopback only**: requests whose socket address (`REMOTE_ADDR`) is not `127.0.0.1` or `::1` get `403`, even with a valid token and even when `runserver` is bound to `0.0.0.0`. `X-Forwarded-For` is ignored.
+- **Authentication**: `Authorization: Bearer <token>` using a per-user `APIToken` generated under **Local API Tokens** on `/accounts/profile/` (the raw token is shown once; revoke it there at any time). A signed-in browser session also works; session `POST`s must carry a CSRF token. Missing, malformed, or revoked credentials get `401` JSON.
+- **Ownership**: `ENCODER` tokens see only contracts from their own uploads (including archived ones, `BR-09`); `ADMIN` tokens see all. Anything else is `404`.
+- **Status codes**: `201` created, `400` invalid upload (missing `file`, non-PDF, empty, corrupt, scanned/image-only — `BR-07`, `BR-08`), `401`, `403`, `404`, `405`, `409` duplicate SHA-256 (`BR-06`), `422` valid PDF whose extraction failed (a `FAILED` document is recorded). All bodies are JSON with a `detail` field on errors.
+
+#### `curl` examples
+
+Generate a token on `/accounts/profile/`, then from the same machine (PowerShell: use `curl.exe`):
+
+```bash
+export SHAKE_TOKEN=<paste-your-64-char-token>
+
+# Ingest one contract PDF (201 on success)
+curl -X POST http://127.0.0.1:8000/api/v1/ingest \
+  -H "Authorization: Bearer $SHAKE_TOKEN" \
+  -F "file=@./maersk_tp_2026.pdf;type=application/pdf"
+# {"contract_id": 15, "batch_id": 12, "batch_number": "BATCH-...", "document_id": 18,
+#  "contract_number": "MAEU-TP-88412", "carrier_code": "MAEU", "status": "EXTRACTED",
+#  "rates_count": 24, "arbitraries_count": 6, "detail_url": "/api/v1/contracts/15", ...}
+
+# Uploading the same file again -> 409 {"detail": "Duplicate PDF blocked (BR-06): ...", "rule": "BR-06"}
+
+# Fetch the contract JSON (200)
+curl http://127.0.0.1:8000/api/v1/contracts/15 \
+  -H "Authorization: Bearer $SHAKE_TOKEN"
+
+# No token -> 401; another encoder's contract -> 404; called from another host -> 403
+```
+
 ---
 
 ## Application Route Map
@@ -77,6 +108,8 @@ Eight domain tables enforce business rules `BR-03` through `BR-13` via explicit 
 | `/accounts/logout/` | `logout` | Authenticated (`POST`) | CSRF-protected session termination |
 | `/accounts/profile/` | `profile` | Authenticated (Self-only) | Logged-in user's profile detail page |
 | `/accounts/profile/edit/` | `profile_edit` | Authenticated (Self-only) | Logged-in user's profile & avatar update form |
+| `/accounts/profile/api-tokens/` | `api_token_create` | Authenticated (Self-only, `POST`) | Generate a local loopback API Bearer token (`F-11`) |
+| `/accounts/profile/api-tokens/<pk>/revoke/` | `api_token_revoke` | Authenticated (own tokens, `POST`) | Revoke a local API token (`F-11`) |
 | `/contracts/` | `contract_list` | `ENCODER` (own) / `ADMIN` (all) | Searchable, filterable contract & batch list |
 | `/contracts/upload/` | `contract_upload` | `ENCODER`, `ADMIN` | Single or batch digital contract PDF upload |
 | `/contracts/<pk>/` | `contract_detail` | `ENCODER` (own) / `ADMIN` (all) | Contract inspection grid, rates, arbitraries, jobs & export log |
@@ -91,6 +124,8 @@ Eight domain tables enforce business rules `BR-03` through `BR-13` via explicit 
 | `/contracts/carriers/create/` | `carrier_create` | `Role.ADMIN` only | Create `CarrierProfile` (`BR-03`) |
 | `/contracts/carriers/<pk>/edit/` | `carrier_edit` | `Role.ADMIN` only | Update `CarrierProfile` |
 | `/contracts/carriers/<pk>/toggle/` | `carrier_toggle` | `Role.ADMIN` only (`POST`) | Activate or deactivate `CarrierProfile` |
+| `/api/v1/ingest` | `api_contract_ingest` | Loopback + Bearer token / session (`POST`) | Ingest one contract PDF; JSON `201`/`400`/`409`/`422` (`F-11`) |
+| `/api/v1/contracts/<pk>` | `api_contract_detail` | Loopback + Bearer token / session; `ENCODER` (own) / `ADMIN` (all) | Contract JSON incl. canonical `F-09` structure (`F-11`) |
 
 ---
 

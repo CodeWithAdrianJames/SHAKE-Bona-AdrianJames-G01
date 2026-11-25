@@ -19,12 +19,13 @@ from django.db.models import RestrictedError
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
-from accounts.models import CustomUser
+from accounts.models import APIToken, CustomUser
 from contracts.engine.errors import IngestionError
 from contracts.engine.exporter import (
     COLUMNS_CSV_EXPORT,
     CSV_RECORD_ARBITRARY_CHARGE,
     CSV_RECORD_FREIGHT_RATE,
+    build_canonical_payload,
     write_csv_export,
 )
 from contracts.engine.extraction import extract
@@ -42,6 +43,7 @@ from contracts.models import (
     FreightRate,
     ProcessingJob,
 )
+from contracts.services.exporter import build_mapping_result_from_contract
 from contracts.services.pipeline import (
     _build_pymupdf_fallback_document,
     ensure_default_carriers,
@@ -1862,3 +1864,535 @@ class CarrierProfileAdminCrudTests(TestCase):
         self.client.post(toggle_url, follow=True)
         created.refresh_from_db()
         self.assertTrue(created.is_active)
+
+
+class LoopbackRestApiTests(TestCase):
+    """
+    F-11 local loopback REST API: loopback guard (403), Bearer/session auth (401),
+    POST /api/v1/ingest (201/400/409/422), GET /api/v1/contracts/<pk>
+    (200/404 with ENCODER ownership isolation), and JSON 405s.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        ensure_default_carriers()
+        # API tests never log in with a password; unusable passwords keep fixtures fast.
+        cls.admin_user = CustomUser.objects.create_user(
+            username="api_admin",
+            email="api.admin@shake.local",
+            password=None,
+            role=CustomUser.Role.ADMIN,
+        )
+        cls.encoder_a = CustomUser.objects.create_user(
+            username="api_encoder_a",
+            email="api.enc.a@shake.local",
+            password=None,
+            role=CustomUser.Role.ENCODER,
+        )
+        cls.encoder_b = CustomUser.objects.create_user(
+            username="api_encoder_b",
+            email="api.enc.b@shake.local",
+            password=None,
+            role=CustomUser.Role.ENCODER,
+        )
+        cls.token_admin = APIToken.objects.create(user=cls.admin_user)
+        cls.token_a = APIToken.objects.create(user=cls.encoder_a)
+        cls.token_b = APIToken.objects.create(user=cls.encoder_b)
+
+        carrier = CarrierProfile.objects.get(carrier_code="MAEU")
+        cls.contract_a = cls._create_contract(
+            cls.encoder_a, carrier, "MAEU-TP-88412", "a" * 64, "BATCH-20261125-901"
+        )
+        FreightRate.objects.create(
+            contract=cls.contract_a,
+            line_item_sequence=1,
+            origin_port_code="CNSHA",
+            origin_port_name="Shanghai",
+            destination_port_code="USLAX",
+            destination_port_name="Los Angeles",
+            equipment_type=EquipmentType.HC40,
+            rate_amount=Decimal("2400.00"),
+            source_page_start=1,
+            source_page_end=2,
+        )
+        ArbitraryCharge.objects.create(
+            contract=cls.contract_a,
+            line_item_sequence=1,
+            charge_type=ArbitraryCharge.ChargeType.ORIGIN,
+            location_code="USATL",
+            location_name="Atlanta",
+            via_gateway_port="CHARLESTON, SC",
+            equipment_type=EquipmentType.GP20,
+            charge_amount=Decimal("450.00"),
+            transport_mode=ArbitraryCharge.TransportMode.RAIL,
+            source_page_num=3,
+        )
+        cls.contract_b = cls._create_contract(
+            cls.encoder_b, carrier, "MAEU-TP-99001", "b" * 64, "BATCH-20261125-902"
+        )
+
+    def setUp(self):
+        self.temp_media = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_media, ignore_errors=True)
+
+    @staticmethod
+    def _create_contract(user, carrier, number, sha, batch_number):
+        batch = BatchUpload.objects.create(
+            user=user,
+            batch_number=batch_number,
+            total_files=1,
+            status=BatchUpload.Status.COMPLETED,
+        )
+        document = DocumentFile.objects.create(
+            batch=batch,
+            uploaded_file=f"contracts/pdfs/2026/11/{number}.pdf",
+            original_file_name=f"{number}.pdf",
+            file_hash_sha256=sha,
+            file_size_bytes=2048,
+            page_count=3,
+            status=DocumentFile.Status.EXTRACTED,
+        )
+        return ContractMetadata.objects.create(
+            document=document,
+            carrier=carrier,
+            contract_number=number,
+            trade_scope="TRANS-PACIFIC",
+            commodity_desc="Electronics",
+            effective_date=date(2026, 1, 1),
+            expiration_date=date(2026, 12, 31),
+        )
+
+    @staticmethod
+    def _bearer(token):
+        return {"HTTP_AUTHORIZATION": f"Bearer {token.key}"}
+
+    @staticmethod
+    def _detail_url(pk):
+        return reverse("api_contract_detail", kwargs={"pk": pk})
+
+    def _post_pdf(self, token, name, content, **extra):
+        upload = SimpleUploadedFile(name, content, content_type="application/pdf")
+        with override_settings(MEDIA_ROOT=self.temp_media):
+            return self.client.post(
+                reverse("api_contract_ingest"), {"file": upload}, **self._bearer(token), **extra
+            )
+
+    def _post_pdf_via_fallback(self, token, name, content):
+        """Run the real pipeline with OpenDataLoader forced onto the PyMuPDF fallback."""
+        with patch(
+            "contracts.services.pipeline.ingest_file",
+            side_effect=IngestionError("Simulated Java missing"),
+        ):
+            return self._post_pdf(token, name, content)
+
+    # --- Routing -----------------------------------------------------------
+
+    def test_routes_have_no_trailing_slash_and_accept_slash_alias(self):
+        self.assertEqual(reverse("api_contract_ingest"), "/api/v1/ingest")
+        self.assertEqual(self._detail_url(5), "/api/v1/contracts/5")
+        response = self.client.get(
+            f"/api/v1/contracts/{self.contract_a.pk}/", **self._bearer(self.token_a)
+        )
+        self.assertEqual(response.status_code, 200)
+
+    # --- Loopback guard ----------------------------------------------------
+
+    def test_non_loopback_client_rejected_with_403_even_with_valid_token(self):
+        response = self.client.get(
+            self._detail_url(self.contract_a.pk),
+            REMOTE_ADDR="203.0.113.10",
+            **self._bearer(self.token_a),
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(
+            response.json(),
+            {"detail": "API access is restricted to localhost loopback connections."},
+        )
+
+    def test_non_loopback_ingest_rejected_before_any_processing(self):
+        response = self._post_pdf(
+            self.token_a, "remote.pdf", _create_digital_pdf_bytes(), REMOTE_ADDR="192.168.1.50"
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(BatchUpload.objects.count(), 2)
+        self.token_a.refresh_from_db()
+        self.assertIsNone(self.token_a.last_used_at)
+
+    def test_spoofed_forwarded_for_header_does_not_bypass_guard(self):
+        response = self.client.get(
+            self._detail_url(self.contract_a.pk),
+            REMOTE_ADDR="203.0.113.10",
+            HTTP_X_FORWARDED_FOR="127.0.0.1",
+            **self._bearer(self.token_a),
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_ipv4_and_ipv6_loopback_clients_allowed(self):
+        for address in ("127.0.0.1", "::1"):
+            with self.subTest(address=address):
+                response = self.client.get(
+                    self._detail_url(self.contract_a.pk),
+                    REMOTE_ADDR=address,
+                    **self._bearer(self.token_a),
+                )
+                self.assertEqual(response.status_code, 200)
+
+    def test_testserver_address_only_allowed_when_configured(self):
+        kwargs = {"REMOTE_ADDR": "testserver", **self._bearer(self.token_a)}
+        url = self._detail_url(self.contract_a.pk)
+        self.assertEqual(self.client.get(url, **kwargs).status_code, 200)
+        with override_settings(SHAKE_API_LOOPBACK_ADDRESSES=["127.0.0.1", "::1"]):
+            self.assertEqual(self.client.get(url, **kwargs).status_code, 403)
+
+    # --- Authentication ----------------------------------------------------
+
+    def test_missing_credentials_return_401_json_not_login_redirect(self):
+        for method, url in (
+            ("get", self._detail_url(self.contract_a.pk)),
+            ("post", reverse("api_contract_ingest")),
+        ):
+            with self.subTest(method=method):
+                response = getattr(self.client, method)(url)
+                self.assertEqual(response.status_code, 401)
+                self.assertEqual(response["Content-Type"], "application/json")
+                self.assertEqual(
+                    response.json(),
+                    {"detail": "Authentication credentials were not provided or are invalid."},
+                )
+                self.assertIn("Bearer", response["WWW-Authenticate"])
+
+    def test_malformed_or_unknown_authorization_headers_return_401(self):
+        url = self._detail_url(self.contract_a.pk)
+        for header in (
+            "Bearer",
+            "Bearer ",
+            f"Token {self.token_a.key}",
+            f"Basic {self.token_a.key}",
+            f"Bearer {self.token_a.key} extra",
+            "Bearer " + "0" * 64,
+        ):
+            with self.subTest(header=header):
+                response = self.client.get(url, HTTP_AUTHORIZATION=header)
+                self.assertEqual(response.status_code, 401)
+
+    def test_bearer_scheme_is_case_insensitive(self):
+        response = self.client.get(
+            self._detail_url(self.contract_a.pk),
+            HTTP_AUTHORIZATION=f"bearer {self.token_a.key}",
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_revoked_token_returns_401(self):
+        self.token_a.is_active = False
+        self.token_a.save(update_fields=["is_active"])
+        response = self.client.get(
+            self._detail_url(self.contract_a.pk), **self._bearer(self.token_a)
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_token_of_inactive_user_returns_401(self):
+        self.encoder_a.is_active = False
+        self.encoder_a.save(update_fields=["is_active"])
+        response = self.client.get(
+            self._detail_url(self.contract_a.pk), **self._bearer(self.token_a)
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_successful_token_use_updates_last_used_at(self):
+        self.assertIsNone(self.token_a.last_used_at)
+        self.client.get(self._detail_url(self.contract_a.pk), **self._bearer(self.token_a))
+        self.token_a.refresh_from_db()
+        self.assertIsNotNone(self.token_a.last_used_at)
+
+    def test_session_fallback_allows_same_origin_browser_get(self):
+        self.client.force_login(self.encoder_a)
+        response = self.client.get(self._detail_url(self.contract_a.pk))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["contract_id"], self.contract_a.pk)
+
+    def test_invalid_token_is_not_rescued_by_valid_session(self):
+        self.client.force_login(self.encoder_a)
+        response = self.client.get(
+            self._detail_url(self.contract_a.pk), HTTP_AUTHORIZATION="Bearer " + "f" * 64
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_session_authenticated_ingest_requires_csrf_token(self):
+        csrf_client = self.client_class(enforce_csrf_checks=True)
+        csrf_client.force_login(self.encoder_a)
+        upload = SimpleUploadedFile(
+            "session.pdf", _create_digital_pdf_bytes(), content_type="application/pdf"
+        )
+        with override_settings(MEDIA_ROOT=self.temp_media):
+            response = csrf_client.post(reverse("api_contract_ingest"), {"file": upload})
+        self.assertEqual(response.status_code, 403)
+        self.assertIn("CSRF verification failed", response.json()["detail"])
+        self.assertEqual(BatchUpload.objects.count(), 2)
+
+    def test_bearer_ingest_is_exempt_from_csrf(self):
+        csrf_client = self.client_class(enforce_csrf_checks=True)
+        with override_settings(MEDIA_ROOT=self.temp_media):
+            response = csrf_client.post(
+                reverse("api_contract_ingest"),
+                {"file": SimpleUploadedFile("t.txt", b"text", content_type="text/plain")},
+                **self._bearer(self.token_a),
+            )
+        # Reaches validation (400), proving CSRF did not block the Bearer request.
+        self.assertEqual(response.status_code, 400)
+
+    # --- POST /api/v1/ingest ----------------------------------------------
+
+    def test_ingest_valid_pdf_returns_201_and_persists_all_records(self):
+        response = self._post_pdf_via_fallback(
+            self.token_a, MULTIPAGE_CONTRACT_NAME, _create_multipage_rate_contract_pdf_bytes()
+        )
+
+        self.assertEqual(response.status_code, 201, response.content)
+        body = response.json()
+        contract = ContractMetadata.objects.get(pk=body["contract_id"])
+        document = contract.document
+
+        self.assertEqual(body["batch_id"], document.batch_id)
+        self.assertEqual(body["batch_number"], document.batch.batch_number)
+        self.assertEqual(body["document_id"], document.pk)
+        self.assertEqual(body["contract_number"], "SAV0412N25")
+        self.assertEqual(body["carrier_code"], contract.carrier.carrier_code)
+        self.assertEqual(body["status"], DocumentFile.Status.EXTRACTED)
+        self.assertEqual(body["original_file_name"], MULTIPAGE_CONTRACT_NAME)
+        self.assertEqual(body["file_hash_sha256"], document.file_hash_sha256)
+        self.assertEqual(body["rates_count"], contract.freight_rates.count())
+        self.assertGreater(body["rates_count"], 0)
+        self.assertEqual(body["arbitraries_count"], contract.arbitrary_charges.count())
+        self.assertGreater(body["arbitraries_count"], 0)
+        self.assertEqual(body["detail_url"], self._detail_url(contract.pk))
+
+        # BatchUpload.user is the token's owner; job and batch completed.
+        self.assertEqual(document.batch.user, self.encoder_a)
+        self.assertEqual(document.batch.status, BatchUpload.Status.COMPLETED)
+        self.assertEqual(document.jobs.get().status, ProcessingJob.Status.COMPLETED)
+
+        # Immediately visible in the web UI for the owner, hidden from other encoders.
+        self.client.force_login(self.encoder_a)
+        self.assertContains(
+            self.client.get(reverse("contract_detail", kwargs={"pk": contract.pk})),
+            "SAV0412N25",
+        )
+        self.client.force_login(self.encoder_b)
+        self.assertEqual(
+            self.client.get(reverse("contract_detail", kwargs={"pk": contract.pk})).status_code,
+            404,
+        )
+
+        # And retrievable through the API by its detail_url.
+        detail = self.client.get(body["detail_url"], **self._bearer(self.token_a))
+        self.assertEqual(detail.status_code, 200)
+        self.assertEqual(detail.json()["metadata"]["contract_number"], "SAV0412N25")
+        self.assertEqual(len(detail.json()["freight_rates"]), body["rates_count"])
+        self.assertEqual(len(detail.json()["arbitrary_charges"]), body["arbitraries_count"])
+
+    def test_ingest_duplicate_pdf_returns_409_without_new_records(self):
+        pdf_bytes = _create_digital_pdf_bytes()
+        first = self._post_pdf_via_fallback(self.token_a, "first.pdf", pdf_bytes)
+        self.assertEqual(first.status_code, 201)
+        counts = (
+            BatchUpload.objects.count(),
+            DocumentFile.objects.count(),
+            ProcessingJob.objects.count(),
+            ContractMetadata.objects.count(),
+        )
+
+        # Duplicate is blocked by hash even when another user uploads it under a new name.
+        second = self._post_pdf_via_fallback(self.token_b, "renamed_copy.pdf", pdf_bytes)
+
+        self.assertEqual(second.status_code, 409)
+        self.assertIn("Duplicate PDF blocked (BR-06)", second.json()["detail"])
+        self.assertEqual(second.json()["rule"], "BR-06")
+        self.assertEqual(
+            counts,
+            (
+                BatchUpload.objects.count(),
+                DocumentFile.objects.count(),
+                ProcessingJob.objects.count(),
+                ContractMetadata.objects.count(),
+            ),
+        )
+
+    def test_ingest_invalid_files_return_400_without_records(self):
+        cases = {
+            "non_pdf": ("notes.txt", b"plain text contract"),
+            "empty": ("empty.pdf", b""),
+            "scanned": ("scanned.pdf", _create_scanned_like_pdf_bytes()),
+            "corrupt": ("corrupt.pdf", b"%PDF-1.7\nthis is not a real pdf body\n%%EOF"),
+        }
+        for label, (name, content) in cases.items():
+            with self.subTest(case=label):
+                response = self._post_pdf(self.token_a, name, content)
+                self.assertEqual(response.status_code, 400, response.content)
+                self.assertTrue(response.json()["detail"])
+        self.assertEqual(BatchUpload.objects.count(), 2)
+        self.assertEqual(DocumentFile.objects.count(), 2)
+
+    def test_ingest_missing_file_field_returns_400(self):
+        with override_settings(MEDIA_ROOT=self.temp_media):
+            response = self.client.post(
+                reverse("api_contract_ingest"),
+                {"other": "value"},
+                **self._bearer(self.token_a),
+            )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("'file'", response.json()["detail"])
+
+    def test_ingest_multiple_files_in_file_field_returns_400(self):
+        uploads = [
+            SimpleUploadedFile("one.pdf", _create_digital_pdf_bytes(), content_type="application/pdf"),
+            SimpleUploadedFile("two.pdf", _create_scanned_like_pdf_bytes(), content_type="application/pdf"),
+        ]
+        response = self.client.post(
+            reverse("api_contract_ingest"), {"file": uploads}, **self._bearer(self.token_a)
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(BatchUpload.objects.count(), 2)
+
+    def test_ingest_non_multipart_body_returns_400(self):
+        response = self.client.post(
+            reverse("api_contract_ingest"),
+            data=json.dumps({"file": "contract.pdf"}),
+            content_type="application/json",
+            **self._bearer(self.token_a),
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("multipart/form-data", response.json()["detail"])
+
+    def test_ingest_extraction_failure_returns_422_with_failed_document(self):
+        with patch(
+            "contracts.services.pipeline._run_engine_on_bytes",
+            side_effect=RuntimeError("mapper exploded"),
+        ):
+            response = self._post_pdf(self.token_a, "broken.pdf", _create_digital_pdf_bytes())
+        self.assertEqual(response.status_code, 422)
+        body = response.json()
+        self.assertIn("mapper exploded", body["detail"])
+        failed_doc = DocumentFile.objects.get(original_file_name="broken.pdf")
+        self.assertEqual(failed_doc.status, DocumentFile.Status.FAILED)
+        self.assertEqual(body["batch_id"], failed_doc.batch_id)
+        self.assertFalse(ContractMetadata.objects.filter(document=failed_doc).exists())
+
+    def test_get_on_ingest_returns_405_json(self):
+        response = self.client.get(reverse("api_contract_ingest"), **self._bearer(self.token_a))
+        self.assertEqual(response.status_code, 405)
+        self.assertIn("not allowed", response.json()["detail"])
+        self.assertIn("POST", response["Allow"])
+
+    # --- GET /api/v1/contracts/<pk> ----------------------------------------
+
+    def test_get_contract_returns_canonical_json(self):
+        response = self.client.get(
+            self._detail_url(self.contract_a.pk), **self._bearer(self.token_a)
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+
+        document = self.contract_a.document
+        self.assertEqual(body["contract_id"], self.contract_a.pk)
+        self.assertEqual(body["document_id"], document.pk)
+        self.assertEqual(body["batch_id"], document.batch_id)
+        self.assertEqual(body["document_status"], "EXTRACTED")
+        self.assertEqual(body["file_hash_sha256"], "a" * 64)
+        self.assertEqual(body["carrier"], {"carrier_code": "MAEU", "carrier_name": "Maersk"})
+        self.assertEqual(
+            body["metadata"],
+            {
+                "contract_number": "MAEU-TP-88412",
+                "trade_scope": "TRANS-PACIFIC",
+                "commodity_desc": "Electronics",
+                "effective_date": "2026-01-01",
+                "expiration_date": "2026-12-31",
+                "extracted_at": self.contract_a.extracted_at.isoformat(),
+            },
+        )
+
+        self.assertEqual(len(body["freight_rates"]), 1)
+        rate = body["freight_rates"][0]
+        self.assertEqual(rate["origin_port_code"], "CNSHA")
+        self.assertEqual(rate["destination_port_code"], "USLAX")
+        self.assertEqual(rate["equipment_type"], "40HC")
+        self.assertEqual(rate["rate_amount"], "2400.00")
+        self.assertEqual((rate["source_page_start"], rate["source_page_end"]), (1, 2))
+
+        self.assertEqual(len(body["arbitrary_charges"]), 1)
+        charge = body["arbitrary_charges"][0]
+        self.assertEqual(charge["charge_type"], "ORIGIN")
+        self.assertEqual(charge["location_code"], "USATL")
+        self.assertEqual(charge["transport_mode"], "RAIL")
+        self.assertEqual(charge["charge_amount"], "450.00")
+
+        # The canonical block has the F-09 JSON export structure.
+        self.assertEqual(
+            set(body["canonical"]),
+            {"carrier", "contract_id", "Rates", "Origin_Arbitraries", "Destination_Arbitraries"},
+        )
+        self.assertEqual(
+            body["canonical"],
+            build_canonical_payload(build_mapping_result_from_contract(self.contract_a)),
+        )
+        self.assertEqual(body["canonical"]["contract_id"], "MAEU-TP-88412")
+        self.assertEqual(body["canonical"]["Rates"][0]["BaseRate 40H"], "2400.00")
+        self.assertEqual(body["canonical"]["Origin_Arbitraries"][0]["BaseRate 20"], "450.00")
+
+    def test_get_contract_canonical_block_matches_json_export_file(self):
+        self.client.force_login(self.encoder_a)
+        with override_settings(MEDIA_ROOT=self.temp_media):
+            export = self.client.get(
+                reverse("contract_export", kwargs={"pk": self.contract_a.pk, "fmt": "json"})
+            )
+        self.assertEqual(export.status_code, 200)
+        exported = json.loads(
+            b"".join(export.streaming_content) if export.streaming else export.content
+        )
+        api_body = self.client.get(
+            self._detail_url(self.contract_a.pk), **self._bearer(self.token_a)
+        ).json()
+        self.assertEqual(api_body["canonical"], exported)
+
+    def test_encoder_cannot_read_another_users_contract(self):
+        response = self.client.get(
+            self._detail_url(self.contract_b.pk), **self._bearer(self.token_a)
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {"detail": "Contract not found."})
+
+    def test_missing_contract_returns_404(self):
+        response = self.client.get(self._detail_url(999999), **self._bearer(self.token_a))
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {"detail": "Contract not found."})
+
+    def test_admin_can_read_every_contract(self):
+        for contract in (self.contract_a, self.contract_b):
+            with self.subTest(contract=contract.contract_number):
+                response = self.client.get(
+                    self._detail_url(contract.pk), **self._bearer(self.token_admin)
+                )
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json()["contract_id"], contract.pk)
+
+    def test_archived_contract_remains_readable_by_owner(self):
+        document = self.contract_a.document
+        document.status = DocumentFile.Status.ARCHIVED
+        document.save(update_fields=["status"])
+        response = self.client.get(
+            self._detail_url(self.contract_a.pk), **self._bearer(self.token_a)
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["document_status"], "ARCHIVED")
+
+    def test_write_methods_on_contract_detail_return_405_json(self):
+        for method in ("delete", "put", "patch", "post"):
+            with self.subTest(method=method):
+                response = getattr(self.client, method)(
+                    self._detail_url(self.contract_a.pk), **self._bearer(self.token_a)
+                )
+                self.assertEqual(response.status_code, 405)
+                self.assertIn("not allowed", response.json()["detail"])
+        self.assertTrue(ContractMetadata.objects.filter(pk=self.contract_a.pk).exists())
