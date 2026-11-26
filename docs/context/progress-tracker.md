@@ -5,11 +5,11 @@ Update this file whenever the current phase, active feature, or implementation s
 ## Current Phase
 
 - **Project Development 2 (Core Feature Vertical Slice):** Completed and merged into `main`.
-- **Project Development 3 (Loopback REST API `F-11` & SDD Polish):** In progress — `F-01`, `F-04`, `F-09` merged into `develop`; `F-11` implemented on `feature/f11-local-loopback-api`.
+- **Project Development 3 (Loopback REST API `F-11` & SDD Polish):** In progress — `F-01`, `F-04`, `F-09`, `F-11` merged into `develop`; PD3 validation/error-page/security hardening pass on `hardening/validation-errors-and-security`.
 
 ## Current Goal
 
-- Open a PR for `feature/f11-local-loopback-api` into `develop`.
+- Open a PR for `hardening/validation-errors-and-security` into `develop`.
 
 ## Completed
 
@@ -61,6 +61,14 @@ Update this file whenever the current phase, active feature, or implementation s
   - Tests: `accounts/tests.py` (`APITokenModelTests`, `APITokenProfileManagementTests`) and `contracts/tests.py` (`LoopbackRestApiTests`, incl. a real PyMuPDF-path ingest of the multi-page vector contract), 45 new tests.
   - Updated `docs/feature-specs/11-local-loopback-rest-api.md`, `architecture-context.md`, `code-standards.md`, and `README.md` (with `curl` examples).
   - Verified 121 tests on SQLite (121 passed, 0 skipped). PostgreSQL not verified locally (psycopg `pq` DLL blocked).
+- **PD3 — Hardening Pass (PD3 Req 2–4) on `hardening/validation-errors-and-security`:**
+  - **Error pages & secrets (Req 2, 3):** Added standalone `templates/404.html` and `templates/500.html` (inline CSS, no `base.html`/CDN; `500.html` renders with an empty context and zero queries; no stack traces or exception text; links to `/dashboard/` and `/accounts/login/`). `shake/settings.py`: `DEBUG` now defaults to `False` (`env_bool()`), the hardcoded fallback `SECRET_KEY` was removed (startup raises `ImproperlyConfigured` without it unless `DEBUG=True` or running tests, which use a random per-process key), and cookie/header settings are explicit. `.env` stays git-ignored; `README.md` and `.env.example` now say to create `.env` first.
+  - **Server-side validation (Req 2):** BR-10 and BR-13 moved into `ContractMetadata.clean()` / `FreightRate.clean()` (run by every ModelForm and the admin; forms no longer report them twice). Added field validators matching the DB `CHECK`s (`rate_amount >= 0.01`, `charge_amount >= 0.00`, `confidence_score` 0–1, page numbers `>= 1`, `source_page_end >= source_page_start`) via the no-SQL migration `contracts/migrations/0003_hardening_field_validators.py`. Added a 5 MB server-side cap on profile photos. Unknown export formats return a clean `404`; disk failures during export redirect with an error message.
+  - **Access control (Req 3):** Audited every view: all core views require login, carrier and admin routes require `ADMIN`, and every parent `Contract` lookup and child `FreightRate` lookup is ownership-scoped (`get_object_or_404`). Encoders get `404` for another user's contract, rate, archive, export, and document IDs, including a foreign rate ID under their own contract. All delete/update actions are POST-only with CSRF (GET returns `405`). There is no raw SQL, and `|safe` is applied only to developer-defined `help_text`. Uploaded PDFs and exports are no longer served from `/media/` in DEBUG (only `media/profile_photos/`). Destructive forms (rate delete, failed-document delete, archive, token revoke) now show a `data-confirm` prompt.
+  - **Data integrity & queries (Req 4):** `ExportRecord.contract` changed to `ON DELETE RESTRICT` (immutable audit trail). `FreightRateCreateView` computes the next `line_item_sequence` and inserts inside `transaction.atomic()` with `select_for_update()` on the contract, and turns a residual `IntegrityError` into a form error. `DocumentFileDeleteView` deletes atomically and removes the file in `on_commit`. Fixed an extra export-records query on the contract detail page (it now reuses the prefetch). The silent `except Exception: pass` blocks in `DocumentFileDeleteView` and `contracts/services/pipeline.py` now log, and ingestion `IntegrityError` text is no longer shown to users.
+  - **Tests:** Added `contracts/test_hardening.py` (35 tests): 404/500 rendering and non-leakage, settings defaults, anonymous redirects on every core view, an IDOR matrix (parent and child), GET→`405` on every mutation, CSRF enforcement, a static template audit (CSRF on every POST form, `|safe` only on `help_text`), validation edge cases (`0`, `-5`, `abc`, `NaN`, `1e999`, overflow, same-day validity, case-insensitive ports, single error message), flash messages, model validators, `RESTRICT` on export audit, on-commit file cleanup, and constant query counts for contract detail and list.
+  - Verified: `manage.py check` clean, `makemigrations --check` no changes, `check --deploy --fail-level ERROR` passes (HTTPS-only warnings W004/W008/W012/W016, expected on `http://127.0.0.1`), and 156 tests on SQLite (156 passed, 0 skipped). Smoke-tested `runserver` with `DEBUG=False`: the custom 404 renders and `/media/contracts/pdfs/*` returns `404`. PostgreSQL not verified locally (psycopg `pq` DLL blocked, PD2 `ISS-01`).
+  - PD2 outstanding issues (`docs/SHAKE-Bona-AdrianJames-G1-PD2.pdf` §4): `ISS-01` (Windows Smart App Control blocks psycopg DLLs) is a workstation policy, not a code defect; the workaround is SQLite (`$env:DATABASE_URL=" "`), WSL, or the CI PostgreSQL job. `ISS-02` (OpenDataLoader needs a local JRE) is mitigated by the automatic PyMuPDF fallback (`F-04`, covered by `MultiPageVectorPdfPipelineTests`). Neither can be closed in application code.
 - **Spec-Driven Context Sync:**
   - Committed `AGENTS.md` and `docs/context/*.md` on `develop` and released `develop` -> `main` via Pull Request.
   - Audited context files against the codebase and corrected drift: context paths now point to `docs/context/`, `BatchUpload` uploader FK documented as `user` (not `uploaded_by`), `RoleRequiredMixin` / `@role_required` documented in `dashboard/views.py`, and `BootstrapFormMixin` documented in `accounts/forms.py`.
@@ -82,6 +90,11 @@ Update this file whenever the current phase, active feature, or implementation s
   - Evaluate user-configured currency converter presets and inland port synonym mappings.
 
 ## Open Questions
+
+- PD3 hardening: there are no web views that edit or delete `ArbitraryCharge` rows (they are read-only via detail, export, and the API, all ownership-scoped). Adding arbitrary-charge CRUD would be a new feature; it was deliberately not added in the hardening pass. Is it required?
+- Exports are downloaded with `GET /contracts/<pk>/export/<fmt>/`, which writes an `ExportRecord` audit row (a side effect on `GET`). It is kept as a download link so the UI is unchanged; should exports move to a `POST` form?
+- With `DEBUG=False`, Django no longer serves `media/profile_photos/`, so avatars only appear when `DEBUG=True` or behind a web server. Is a production static/media server in scope?
+- Delete confirmations are JavaScript prompts (`data-confirm`). Server-side POST/CSRF/ownership checks do not depend on them. Are dedicated confirmation pages required instead?
 
 - Existing deployments: after `accounts.0002_user_constraints` runs, any account that had a blank or duplicate email now has a `user-<pk>@users.shake.invalid` placeholder and must have its real email set by an admin before it can sign in by email. Confirm whether the Neon PostgreSQL database has such rows before migrating it.
 - `F-11` stores API token keys in plaintext (as the spec defines `key VARCHAR(64) UNIQUE`). Should keys be stored hashed (showing only a stored prefix) before any multi-user deployment?

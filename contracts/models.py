@@ -1,8 +1,30 @@
 from decimal import Decimal
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import F, Q
+
+# Field-level validators mirror the database CHECK constraints so ModelForms,
+# the Django admin, and full_clean() reject bad values with a clear message
+# before the database raises an IntegrityError (PD3 hardening).
+POSITIVE_AMOUNT_VALIDATORS = [
+    MinValueValidator(
+        Decimal("0.01"),
+        message="Base freight rate amount must be greater than 0.00 (BR-12).",
+    ),
+]
+NON_NEGATIVE_AMOUNT_VALIDATORS = [
+    MinValueValidator(Decimal("0.00"), message="Charge amount cannot be negative."),
+]
+CONFIDENCE_SCORE_VALIDATORS = [
+    MinValueValidator(Decimal("0.000"), message="Confidence score must be between 0.000 and 1.000."),
+    MaxValueValidator(Decimal("1.000"), message="Confidence score must be between 0.000 and 1.000."),
+]
+PAGE_NUMBER_VALIDATORS = [
+    MinValueValidator(1, message="Page numbers start at 1."),
+]
 
 
 class EquipmentType(models.TextChoices):
@@ -246,6 +268,21 @@ class ContractMetadata(models.Model):
             ),
         ]
 
+    def clean(self):
+        super().clean()
+        if (
+            self.effective_date
+            and self.expiration_date
+            and self.expiration_date < self.effective_date
+        ):
+            raise ValidationError(
+                {
+                    "expiration_date": (
+                        "Expiration date must be on or after the effective date (BR-10)."
+                    )
+                }
+            )
+
     def __str__(self) -> str:
         return f"{self.contract_number} ({self.carrier.carrier_code})"
 
@@ -269,13 +306,22 @@ class FreightRate(models.Model):
         choices=EquipmentType.choices,
     )
     currency_code = models.CharField(max_length=3, default="USD")
-    rate_amount = models.DecimalField(max_digits=12, decimal_places=2)
-    source_page_start = models.PositiveIntegerField(default=1)
-    source_page_end = models.PositiveIntegerField(default=1)
+    rate_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=POSITIVE_AMOUNT_VALIDATORS,
+    )
+    source_page_start = models.PositiveIntegerField(
+        default=1, validators=PAGE_NUMBER_VALIDATORS
+    )
+    source_page_end = models.PositiveIntegerField(
+        default=1, validators=PAGE_NUMBER_VALIDATORS
+    )
     confidence_score = models.DecimalField(
         max_digits=4,
         decimal_places=3,
         default=Decimal("0.950"),
+        validators=CONFIDENCE_SCORE_VALIDATORS,
     )
 
     class Meta:
@@ -311,6 +357,26 @@ class FreightRate(models.Model):
                 name="chk_freight_rate_ports_distinct",
             ),
         ]
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        origin = (self.origin_port_code or "").strip().upper()
+        destination = (self.destination_port_code or "").strip().upper()
+        if origin and destination and origin == destination:
+            errors["destination_port_code"] = (
+                "Destination port code must differ from origin port code (BR-13)."
+            )
+        if (
+            self.source_page_start
+            and self.source_page_end
+            and self.source_page_end < self.source_page_start
+        ):
+            errors["source_page_end"] = (
+                "Source end page must be on or after the source start page."
+            )
+        if errors:
+            raise ValidationError(errors)
 
     def __str__(self) -> str:
         return (
@@ -353,17 +419,24 @@ class ArbitraryCharge(models.Model):
         choices=EquipmentType.choices,
     )
     currency_code = models.CharField(max_length=3, default="USD")
-    charge_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    charge_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=NON_NEGATIVE_AMOUNT_VALIDATORS,
+    )
     transport_mode = models.CharField(
         max_length=20,
         choices=TransportMode.choices,
         default=TransportMode.INTERMODAL,
     )
-    source_page_num = models.PositiveIntegerField(default=1)
+    source_page_num = models.PositiveIntegerField(
+        default=1, validators=PAGE_NUMBER_VALIDATORS
+    )
     confidence_score = models.DecimalField(
         max_digits=4,
         decimal_places=3,
         default=Decimal("0.950"),
+        validators=CONFIDENCE_SCORE_VALIDATORS,
     )
 
     class Meta:
@@ -433,9 +506,11 @@ class ExportRecord(models.Model):
         on_delete=models.RESTRICT,
         related_name="export_records",
     )
+    # RESTRICT (PD3 hardening): the export audit trail is immutable, so a
+    # contract with export history can never be hard-deleted (pairs with BR-09).
     contract = models.ForeignKey(
         ContractMetadata,
-        on_delete=models.CASCADE,
+        on_delete=models.RESTRICT,
         related_name="export_records",
     )
     export_format = models.CharField(

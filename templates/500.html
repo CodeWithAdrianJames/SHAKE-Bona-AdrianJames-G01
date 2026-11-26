@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>500 Server Error — SHAKE</title>
+    {% comment %}
+        Fully standalone error page. Django's server_error handler renders it
+        with an empty context: it must not extend base.html, reverse URLs, read
+        user / messages / request, or touch the database, so it still renders
+        when the error is a database or template failure. Links are hardcoded
+        paths. No exception details or stack traces are shown.
+    {% endcomment %}
+    <style>
+        :root {
+            --shake-navy: #0f172a;
+            --shake-slate: #1e293b;
+            --shake-accent: #0369a1;
+            --shake-danger: #dc2626;
+            --shake-muted: #64748b;
+            --shake-border: #e2e8f0;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #f8fafc;
+            color: var(--shake-navy);
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        header {
+            background: linear-gradient(135deg, var(--shake-navy) 0%, var(--shake-slate) 100%);
+            padding: 0.75rem 1.5rem;
+        }
+        .brand {
+            display: inline-block;
+            background-color: var(--shake-accent);
+            color: #ffffff;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.375rem;
+            font-size: 0.9rem;
+            text-decoration: none;
+        }
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+        .card {
+            width: 100%;
+            max-width: 32rem;
+            background: #ffffff;
+            border: 1px solid var(--shake-border);
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+            padding: 2.5rem 2rem;
+            text-align: center;
+        }
+        .code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--shake-danger);
+            margin: 0 0 0.5rem;
+        }
+        h1 { font-size: 1.25rem; margin: 0 0 0.75rem; }
+        p { color: var(--shake-muted); margin: 0 0 1.75rem; line-height: 1.5; }
+        .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
+        .btn {
+            display: inline-block;
+            padding: 0.5rem 1.1rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            border: 1px solid var(--shake-accent);
+        }
+        .btn-primary { background: var(--shake-accent); color: #ffffff; }
+        .btn-outline { background: #ffffff; color: var(--shake-accent); }
+        footer {
+            border-top: 1px solid var(--shake-border);
+            background: #ffffff;
+            color: var(--shake-muted);
+            font-size: 0.85rem;
+            padding: 0.9rem 1.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a class="brand" href="/dashboard/">SHAKE</a>
+    </header>
+    <main>
+        <div class="card" role="alert">
+            <p class="code">500</p>
+            <h1>Something went wrong on our side</h1>
+            <p>
+                SHAKE could not complete your request. Your data has not been
+                shared outside this workstation. Please try again, and contact
+                your administrator if the problem continues.
+            </p>
+            <div class="actions">
+                <a class="btn btn-primary" href="/dashboard/">Go to Dashboard</a>
+                <a class="btn btn-outline" href="/accounts/login/">Log in</a>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <strong>SHAKE</strong> &mdash; Structured Handling and Automated Knowledge Extraction
+    </footer>
+</body>
+</html>

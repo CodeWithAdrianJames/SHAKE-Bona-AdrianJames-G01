@@ -729,9 +729,16 @@ def ingest_uploaded_files(
                     # Roll back partial ContractMetadata/rates via savepoint if needed,
                     # then record FAILED status cleanly outside the inner atomic block.
                     raise RuntimeError(str(inner_exc)) from inner_exc
-        except IntegrityError as exc:
+        except IntegrityError:
+            # Log the database detail; show the user a message without schema internals.
+            logger.exception(
+                "Integrity error while persisting %s", payload.original_name
+            )
             outcome.failed_documents.append(
-                (payload.original_name, f"Database integrity error: {exc}")
+                (
+                    payload.original_name,
+                    "The extracted data violated a database rule and was not saved.",
+                )
             )
         except Exception as exc:
             # Record clean FAILED DocumentFile + ProcessingJob diagnostic without orphaned ContractMetadata
@@ -756,7 +763,9 @@ def ingest_uploaded_files(
                         completed_at=timezone.now(),
                     )
             except Exception:
-                pass
+                logger.exception(
+                    "Could not record FAILED diagnostics for %s", payload.original_name
+                )
             outcome.failed_documents.append((payload.original_name, str(exc)))
 
     batch.status = (
