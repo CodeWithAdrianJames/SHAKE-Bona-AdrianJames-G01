@@ -160,16 +160,10 @@ class ContractMetadataForm(BootstrapFormMixin, forms.ModelForm):
             raise forms.ValidationError("Commodity description is required.")
         return value
 
-    def clean(self):
-        cleaned_data = super().clean()
-        effective_date = cleaned_data.get("effective_date")
-        expiration_date = cleaned_data.get("expiration_date")
-        if effective_date and expiration_date and expiration_date < effective_date:
-            self.add_error(
-                "expiration_date",
-                "Expiration date must be on or after the effective date (BR-10).",
-            )
-        return cleaned_data
+    # BR-10 (expiration_date >= effective_date) is enforced server-side by
+    # ContractMetadata.clean(), which ModelForm validation always runs, so the
+    # rule holds for this form, the Django admin, and any full_clean() caller.
+    # It is not repeated here to avoid reporting the same error twice.
 
 
 class FreightRateForm(BootstrapFormMixin, forms.ModelForm):
@@ -252,16 +246,9 @@ class FreightRateForm(BootstrapFormMixin, forms.ModelForm):
             )
         return amount
 
-    def clean(self):
-        cleaned_data = super().clean()
-        origin = cleaned_data.get("origin_port_code")
-        destination = cleaned_data.get("destination_port_code")
-        if origin and destination and origin == destination:
-            self.add_error(
-                "destination_port_code",
-                "Destination port code must differ from origin port code (BR-13).",
-            )
-        return cleaned_data
+    # BR-13 (origin_port_code != destination_port_code) is enforced server-side
+    # by FreightRate.clean(), which ModelForm validation always runs. Positive
+    # rate amounts (BR-12) are also guarded by the model field validator.
 
 
 class CarrierProfileForm(BootstrapFormMixin, forms.ModelForm):

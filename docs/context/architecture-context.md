@@ -21,8 +21,8 @@
   - `contracts/engine/` — Pure offline document processing modules (`ingestion.py`, `extraction.py`, `mapping.py`, `exporter.py`, `models.py`, `errors.py`) decoupled from HTTP request/response objects.
   - `contracts/services/` — Transactional ORM pipeline orchestration (`pipeline.py`), export artifact + `ExportRecord` audit logging, and the API contract payload builder (`exporter.py`).
   - `contracts/api_views.py`, `contracts/api_urls.py` — Local loopback REST API (`F-11`): loopback guard, Bearer/session authentication, `POST /api/v1/ingest`, `GET /api/v1/contracts/<pk>`.
-- `templates/` — Bootstrap 5 HTML templates (`base.html`, `accounts/`, `contracts/`, `dashboard/`, `includes/`).
-- `media/` — Runtime directory for local uploaded PDFs and exported files (git-ignored).
+- `templates/` — Bootstrap 5 HTML templates (`base.html`, `accounts/`, `contracts/`, `dashboard/`, `includes/`) plus the error pages `403.html`, `404.html`, and `500.html`.
+- `media/` — Runtime directory for local uploaded PDFs and exported files (git-ignored). Only `media/profile_photos/` is ever served as static files (and only when `DEBUG=True`); uploaded contract PDFs and export files are never URL-addressable.
 
 ## Storage Model
 
@@ -36,7 +36,7 @@
   - `contract_metadata`: Context-aware parent contract record (`contract_number`, `trade_scope`, `commodity_desc`, `effective_date`, `expiration_date`, 1:1 with `DocumentFile`, M:1 with `CarrierProfile`).
   - `freight_rates`: Line-item base ocean freight rates (`origin_port_code`, `destination_port_code`, `equipment_type`, `currency_code`, `rate_amount`, `source_page_start`, `source_page_end`, `confidence_score`).
   - `arbitrary_charges`: Origin/destination inland surcharges (`charge_type`, `location_code`, `via_gateway_port`, `equipment_type`, `currency_code`, `charge_amount`, `transport_mode`).
-  - `export_records`: Immutable export audit history (`user_id`, `contract_id`, `export_format`, `file_path`, `exported_at`).
+  - `export_records`: Immutable export audit history (`user_id`, `contract_id`, `export_format`, `file_path`, `exported_at`). `contract` FK is `ON DELETE RESTRICT` (`contracts/migrations/0003_hardening_field_validators.py`), so a contract with export history cannot be hard-deleted.
 - **Local Artifact Storage:** Uploaded PDFs and generated export files reside on the local filesystem under `media/`, with relative paths stored in `DocumentFile.uploaded_file` and `ExportRecord.file_path`.
 
 ## Auth and Access Control Model
@@ -48,6 +48,43 @@
 - `ContractOwnershipMixin` enforces data isolation across all contract, rate, document, and export endpoints: `ENCODER` users can read or mutate **only** records linked to batches they uploaded; `ADMIN` users can inspect and manage all records across the system.
 - Administrative management views (`/contracts/carriers/*`, `/dashboard/admin/`) require `RoleRequiredMixin(allowed_roles=[CustomUser.Role.ADMIN])`.
 - `ContractOwnershipMixin.get_queryset()` delegates to `scope_contracts_to_user(queryset, user)` (`contracts/views.py`), which the REST API reuses so web and API visibility cannot drift.
+
+## PD3 Hardening (Validation, Error Pages & Security)
+
+### Configuration & Secrets (`shake/settings.py`)
+
+- `DEBUG = env_bool('DEBUG', default=False)`: unset or blank `DEBUG` means `False`. It is enabled only by `DEBUG=True` in `.env` or the environment.
+- `SECRET_KEY` is read only from `SECRET_KEY` / `DJANGO_SECRET_KEY`; no key is hardcoded in source. When it is missing, DEBUG and `manage.py test` runs use a random per-process key, and every other run raises `ImproperlyConfigured`.
+- `.env` and `.env.*` are git-ignored (`!.env.example` is the committed template).
+- Explicit cookie/header settings: `SESSION_COOKIE_HTTPONLY`, `SameSite=Lax` session and CSRF cookies, `SECURE_CONTENT_TYPE_NOSNIFF`, `SECURE_REFERRER_POLICY = 'same-origin'`, `X_FRAME_OPTIONS = 'DENY'`. `SESSION_COOKIE_SECURE` / `CSRF_COOKIE_SECURE` are opt-in via `.env` because SHAKE runs on `http://127.0.0.1`.
+
+### Error Pages
+
+- `templates/404.html`: standalone page (inline CSS, no `base.html`, no CDN assets) rendered by Django's default `page_not_found` handler whenever `DEBUG=False`. Every `get_object_or_404` miss, including out-of-scope IDs, lands here. It never echoes the requested path or the exception text. Links: `/dashboard/`, `/contracts/` (signed in) or `/accounts/login/` (anonymous).
+- `templates/500.html`: fully standalone. Django's `server_error` handler renders it with an empty context, so it uses no context processors, no `user`/`messages`/`request`, no URL reversing, and runs zero database queries. Hardcoded links to `/dashboard/` and `/accounts/login/`; no exception details.
+
+### Server-Side Validation
+
+- Business rules live on the models so ModelForms, the Django admin, and `full_clean()` share them: `ContractMetadata.clean()` (`BR-10`, `expiration_date >= effective_date`) and `FreightRate.clean()` (`BR-13` distinct ports, compared case-insensitively; `source_page_end >= source_page_start`). The forms no longer repeat these checks, so each error is reported once.
+- Field validators mirror the database `CHECK` constraints: `rate_amount >= 0.01` (`BR-12`), `charge_amount >= 0.00`, `confidence_score` in `[0.000, 1.000]`, page numbers `>= 1`. The validator-only migration `0003` emits no SQL.
+- Form layer: required fields, strip/uppercase normalization, `[A-Z]{3}` currency codes, `EquipmentType` choices, `DecimalField` `max_digits`/`decimal_places` (rejects `NaN`, `Infinity`, and overflow), and a 5 MB server-side cap on profile photos (`UserProfileUpdateForm.clean_profile_photo`). HTML `required`/`min` attributes are hints only.
+- Every mutation returns `django.contrib.messages` feedback: success after the redirect, error on invalid forms, and an error redirect if an export cannot be written to disk (`OSError`).
+
+### Access Control & Request Safety
+
+- Every core view is `LoginRequiredMixin` (via `ContractOwnershipMixin` / `RoleRequiredMixin`); `/contracts/carriers/*` and `/dashboard/admin/` require `ADMIN`.
+- IDOR: parent contracts resolve through `get_scoped_contract()` (`get_object_or_404` on the user-scoped queryset), and child `FreightRate` rows resolve with `contract=<scoped contract>`, so a foreign contract ID or a foreign rate ID under the user's own contract returns `404`. This applies to detail, edit, rate add/edit/delete, archive, export, and document delete. No web UI edits or deletes `ArbitraryCharge` rows; they are read-only through detail, export, and the API, all of which use the same scope.
+- State-changing views are POST-only (`http_method_names = ["post", "options"]`) with CSRF: `rate_delete`, `document_delete`, `contract_archive`, `carrier_toggle`, `api_token_create`, `api_token_revoke`, and `logout`. GET returns `405`.
+- Destructive forms (rate delete, failed-document delete, archive, API token revoke) carry a `data-confirm` message. One delegated `submit` listener in `base.html` shows a confirmation prompt; the server-side POST, CSRF, and ownership checks still apply when JavaScript is disabled.
+- No raw SQL (`.raw()`, `.extra()`, `cursor.execute`) anywhere in the apps. `|safe` is used only on developer-defined `help_text` (Django's password rules list), never on user-supplied strings. `contracts/test_hardening.py` scans templates statically for both rules.
+- Unexpected failures are logged with `logger.exception` instead of being swallowed. Users see a plain message without database internals (for example, an ingestion `IntegrityError`).
+
+### Transactions & Queries
+
+- `FreightRateCreateView` reads `MAX(line_item_sequence)` and inserts in one `transaction.atomic()` block while holding `select_for_update()` on the parent contract (a no-op on SQLite). A residual `IntegrityError` becomes a form error, not a `500`.
+- `DocumentFileDeleteView` deletes the row and its `ProcessingJob`s atomically, then removes the PDF from disk in `transaction.on_commit`.
+- `ContractDetailView` serves rates, arbitraries, jobs, and export records (with users) from `prefetch_related`; `ContractListView` uses `select_related` + annotations. Tests assert both pages keep a constant query count as rows grow.
+- All POST handlers redirect on success (Post/Redirect/Get).
 
 ## Local Loopback REST API (`F-11`)
 
@@ -95,6 +132,7 @@
 2. **Identity & Role Integrity (`BR-01`, `BR-02`):** Unique email addresses and strict role enforcement (`ADMIN`, `ENCODER`) across web views and API endpoints.
 3. **Unique Carrier Definitions (`BR-03`):** `carrier_code` and `carrier_name` must remain unique at both form validation and database constraint levels.
 4. **Batch & Document Integrity (`BR-04`–`BR-08`):** Batch file counts `>= 1`, positive `file_size_bytes` and `page_count`, strict lifecycle status states, and SHA-256 duplicate rejection.
-5. **Non-Destructive Archiving (`BR-09`):** `ContractMetadata.document` uses `ON DELETE RESTRICT`. Documents that have produced `ContractMetadata` must never be hard-deleted; they transition to `DocumentFile.Status.ARCHIVED`.
+5. **Non-Destructive Archiving (`BR-09`):** `ContractMetadata.document` and `ExportRecord.contract` use `ON DELETE RESTRICT`. Documents that have produced `ContractMetadata` must never be hard-deleted; they transition to `DocumentFile.Status.ARCHIVED`.
 6. **Contract & Rate Validity (`BR-10`–`BR-13`):** `expiration_date >= effective_date`, mandatory `CarrierProfile` FK (`ON DELETE RESTRICT`), `rate_amount > 0`, distinct origin/destination UN/LOCODE ports, and valid ISO equipment codes (`20GP`, `40GP`, `40HC`, `45HC`, `20RF`, `40RF`, `SPECIAL`).
-7. **Immutable Applied Migrations:** Already-applied migrations (`accounts/migrations/0001_initial.py`, `contracts/migrations/0001_initial.py`, `contracts/migrations/0002_seed_default_carriers.py`) must never be altered or deleted.
+7. **Secure Defaults:** `DEBUG` is `False` unless explicitly enabled, `SECRET_KEY` never lives in source, and error pages never expose stack traces or exception text.
+8. **Immutable Applied Migrations:** Already-applied migrations (`accounts/migrations/0001_initial.py`, `contracts/migrations/0001_initial.py`, `contracts/migrations/0002_seed_default_carriers.py`) must never be altered or deleted.

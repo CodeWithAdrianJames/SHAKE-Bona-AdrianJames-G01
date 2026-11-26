@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import logging
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Max, Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -26,6 +29,8 @@ from contracts.models import (
 from contracts.services.exporter import export_contract_artifact
 from contracts.services.pipeline import ingest_uploaded_files
 from dashboard.views import RoleRequiredMixin
+
+logger = logging.getLogger(__name__)
 
 
 def scope_contracts_to_user(queryset, user):
@@ -107,7 +112,7 @@ class ContractUploadView(LoginRequiredMixin, FormView):
             messages.success(
                 self.request,
                 f"Batch {outcome.batch.batch_number} completed: "
-                f"{len(outcome.succeeded)} contract PDF(s) extracted into PostgreSQL.",
+                f"{len(outcome.succeeded)} contract PDF(s) extracted and saved.",
             )
             return redirect(reverse("contract_list"))
 
@@ -216,7 +221,8 @@ class ContractDetailView(ContractOwnershipMixin, DetailView):
         freight_rates = list(contract.freight_rates.all())
         arbitrary_charges = list(contract.arbitrary_charges.all())
         processing_jobs = list(contract.document.jobs.all())
-        export_records = list(contract.export_records.select_related("user").all())
+        # Reuse the prefetched "export_records__user" rows (no extra query).
+        export_records = list(contract.export_records.all())
         context.update(
             {
                 "freight_rates": freight_rates,
@@ -271,15 +277,34 @@ class FreightRateCreateView(ContractOwnershipMixin, CreateView):
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
-        max_seq = (
-            self.contract.freight_rates.aggregate(max_seq=Max("line_item_sequence"))[
-                "max_seq"
-            ]
-            or 0
-        )
-        form.instance.contract = self.contract
-        form.instance.line_item_sequence = max_seq + 1
-        response = super().form_valid(form)
+        # Read MAX(line_item_sequence) and insert in one transaction while
+        # holding a row lock on the parent contract (PostgreSQL), so two
+        # concurrent adds cannot both claim the same sequence number.
+        try:
+            with transaction.atomic():
+                ContractMetadata.objects.select_for_update().filter(
+                    pk=self.contract.pk
+                ).first()
+                max_seq = (
+                    self.contract.freight_rates.aggregate(
+                        max_seq=Max("line_item_sequence")
+                    )["max_seq"]
+                    or 0
+                )
+                form.instance.contract = self.contract
+                form.instance.line_item_sequence = max_seq + 1
+                response = super().form_valid(form)
+        except IntegrityError:
+            logger.exception(
+                "FreightRate insert failed for contract %s", self.contract.pk
+            )
+            form.instance.pk = None
+            form.add_error(
+                None,
+                "The rate row could not be saved because the contract changed while "
+                "you were editing. Please submit the form again.",
+            )
+            return self.form_invalid(form)
         messages.success(
             self.request,
             f"Added rate row #{self.object.line_item_sequence} "
@@ -388,14 +413,24 @@ class DocumentFileDeleteView(ContractOwnershipMixin, View):
             return redirect(reverse("contract_list"))
 
         filename = doc.original_file_name
-        if doc.uploaded_file:
-            try:
-                doc.uploaded_file.delete(save=False)
-            except Exception:
-                pass
-        doc.delete()
+        stored_file = doc.uploaded_file if doc.uploaded_file else None
+        with transaction.atomic():
+            # Deletes the DocumentFile and its ProcessingJob rows together.
+            doc.delete()
+            if stored_file is not None:
+                # Remove the PDF from disk only after the rows are committed,
+                # so a failed delete never leaves a row pointing at a lost file.
+                transaction.on_commit(lambda: _delete_stored_file(stored_file))
         messages.success(request, f"Deleted unextracted document '{filename}'.")
         return redirect(reverse("contract_list"))
+
+
+def _delete_stored_file(stored_file) -> None:
+    """Delete an uploaded file from storage, logging (not hiding) any failure."""
+    try:
+        stored_file.storage.delete(stored_file.name)
+    except OSError:
+        logger.exception("Could not remove stored file %s", stored_file.name)
 
 
 class ContractArchiveView(ContractOwnershipMixin, View):
@@ -441,7 +476,15 @@ class ContractExportView(ContractOwnershipMixin, View):
                 fmt=fmt,
             )
         except ValueError as exc:
-            raise Http404(str(exc)) from exc
+            raise Http404("Unsupported export format.") from exc
+        except OSError:
+            logger.exception("Export of contract %s as %s failed", contract.pk, fmt)
+            messages.error(
+                request,
+                f"The {fmt.upper()} export for '{contract.contract_number}' could not be "
+                "written to disk. Please try again or contact your administrator.",
+            )
+            return redirect(reverse("contract_detail", kwargs={"pk": contract.pk}))
 
         response = HttpResponse(artifact.content_bytes, content_type=artifact.content_type)
         response["Content-Disposition"] = f'attachment; filename="{artifact.filename}"'

@@ -13,20 +13,26 @@
 - Protect all authenticated web views with `LoginRequiredMixin`.
 - Enforce resource ownership on every contract, rate, document, and export view via `ContractOwnershipMixin` (`ENCODER` scoped to own `BatchUpload.user`; `ADMIN` unrestricted) to prevent Insecure Direct Object Reference (IDOR).
 - Enforce administrative routes (`/contracts/carriers/*`, `/dashboard/admin/`) with `RoleRequiredMixin(allowed_roles=[CustomUser.Role.ADMIN])`.
-- Keep state-mutating actions without dedicated confirmation pages (`rate_delete`, `document_delete`, `contract_archive`, `carrier_toggle`) strictly `POST`-only (`http_method_names = ["post"]` or `@require_POST`) with CSRF protection.
+- Keep state-mutating actions (`rate_delete`, `document_delete`, `contract_archive`, `carrier_toggle`, `api_token_create`, `api_token_revoke`, `logout`) strictly `POST`-only (`http_method_names = ["post"]` or `@require_POST`) with CSRF protection.
+- Give every destructive form a `data-confirm="..."` message (handled by the shared listener in `templates/base.html`); the prompt is a UX guard, never a replacement for server-side checks.
+- Resolve every object lookup with `get_object_or_404` on a user-scoped queryset; resolve child rows (`FreightRate`, `ArbitraryCharge`) through their scoped parent contract.
+- Wrap multi-step writes (read-then-insert, delete-plus-file-cleanup) in `transaction.atomic()`; defer filesystem side effects to `transaction.on_commit`.
+- Log unexpected exceptions with `logger.exception`; never `except Exception: pass`, and never show raw exception or database text to users.
+- Never build SQL from user input (no `.raw()`, `.extra()`, or `cursor.execute` with request data) and never apply `|safe` to user-supplied values.
 
 ## Forms and Validation
 
 - Every Django `Form` and `ModelForm` must inherit `BootstrapFormMixin` so fields automatically render Bootstrap 5 styling and `is-invalid` error feedback.
 - Normalize string codes (`carrier_code`, `origin_port_code`, `destination_port_code`, `currency_code`, `equipment_type`) to stripped uppercase inside form `clean_*` methods.
 - Never let public or self-service forms set privileged fields (`role`, `is_staff`, `is_superuser`, `is_active`); assign `role` server-side (`ENCODER` for public registration).
-- Enforce critical business rules (`BR-01`–`BR-13`) at both the Django form layer (clear user-facing validation errors) and database constraint layer (`UniqueConstraint`, `CheckConstraint`, `ForeignKey(on_delete=...)`).
+- Enforce critical business rules (`BR-01`–`BR-13`) at both the Django validation layer (field validators and `Model.clean()`, which ModelForms always run, plus form `clean_*` normalization) and the database constraint layer (`UniqueConstraint`, `CheckConstraint`, `ForeignKey(on_delete=...)`). Put cross-field rules in `Model.clean()` instead of repeating them in the form.
 
 ## Templates and Styling
 
 - Render forms through `templates/includes/form_fields.html` so label, help text, checkbox, and validation error markup stay uniform.
 - Format contract numbers, UN/LOCODE port codes, SHA-256 hashes, and monetary amounts using `font-monospace` (and `text-end` for numeric columns).
 - Keep templates self-contained and offline-safe without external runtime dependencies that fail without internet access.
+- `templates/404.html` and `templates/500.html` must stay standalone (inline CSS, no `{% extends %}`). `500.html` must not reverse URLs or read `user`/`request`/`messages`, because Django renders it with an empty context.
 
 ## API Routes (Loopback REST API — F-11)
 

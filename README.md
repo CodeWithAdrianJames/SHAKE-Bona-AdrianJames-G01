@@ -151,10 +151,12 @@ Run SHAKE locally with zero external database setup (`db.sqlite3` is created aut
      source .venv/bin/activate
      ```
 
-3. **Install dependencies**
+3. **Install dependencies and create `.env`**
    ```bash
    pip install -r requirements.txt
+   cp .env.example .env
    ```
+   `DEBUG` defaults to `False` when it is not set, and with `DEBUG=False` SHAKE refuses to start unless `SECRET_KEY` is set. For local development keep `DEBUG=True` from `.env.example` and replace `SECRET_KEY` with your own value (`python -c "from django.core.management.utils import get_random_secret_key as k; print(k())"`). `.env` is git-ignored; never commit it.
 
 4. **Apply database migrations (creates `db.sqlite3` and seeds default carriers)**
    ```bash

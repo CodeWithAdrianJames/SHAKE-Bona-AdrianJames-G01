@@ -93,7 +93,8 @@
         </div>
         <div>
             {% if contract.document.status != 'ARCHIVED' %}
-                <form method="post" action="{% url 'contract_archive' contract.pk %}" class="d-inline m-0">
+                <form method="post" action="{% url 'contract_archive' contract.pk %}" class="d-inline m-0"
+                      data-confirm="Archive contract {{ contract.contract_number }}? Archived contracts stay readable but cannot be un-archived from the UI (BR-09).">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-sm btn-outline-dark">
                         <i class="bi bi-archive me-1"></i>Archive Contract
@@ -172,7 +173,8 @@
                         <a href="{% url 'rate_edit' contract.pk rate.pk %}" class="btn btn-sm btn-outline-secondary" title="Edit rate row">
                             <i class="bi bi-pencil"></i>
                         </a>
-                        <form method="post" action="{% url 'rate_delete' contract.pk rate.pk %}" class="d-inline m-0">
+                        <form method="post" action="{% url 'rate_delete' contract.pk rate.pk %}" class="d-inline m-0"
+                              data-confirm="Permanently delete rate row #{{ rate.line_item_sequence }} ({{ rate.origin_port_code }} -> {{ rate.destination_port_code }} {{ rate.equipment_type }})? This cannot be undone.">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete rate row">
                                 <i class="bi bi-trash"></i>

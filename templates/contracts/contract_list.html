@@ -139,7 +139,8 @@
                                 </ul>
                             </div>
                             {% if contract.document.status != 'ARCHIVED' %}
-                                <form method="post" action="{% url 'contract_archive' contract.pk %}" class="d-inline m-0">
+                                <form method="post" action="{% url 'contract_archive' contract.pk %}" class="d-inline m-0"
+                                      data-confirm="Archive contract {{ contract.contract_number }}? Archived contracts stay readable but cannot be un-archived from the UI (BR-09).">
                                     {% csrf_token %}
                                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
                                     <button type="submit" class="btn btn-sm btn-outline-dark" title="Archive contract (BR-09)">
@@ -214,7 +215,8 @@
                         {% endwith %}
                     </td>
                     <td class="pe-4 text-end">
-                        <form method="post" action="{% url 'document_delete' doc.pk %}" class="d-inline m-0">
+                        <form method="post" action="{% url 'document_delete' doc.pk %}" class="d-inline m-0"
+                              data-confirm="Permanently delete the failed document '{{ doc.original_file_name }}'? This cannot be undone.">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete failed document">
                                 <i class="bi bi-trash me-1"></i>Delete

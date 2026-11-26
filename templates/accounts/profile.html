@@ -278,7 +278,8 @@
                                         </td>
                                         <td class="text-end">
                                             {% if token.is_active %}
-                                                <form method="post" action="{% url 'api_token_revoke' token.pk %}" class="d-inline">
+                                                <form method="post" action="{% url 'api_token_revoke' token.pk %}" class="d-inline"
+                                                      data-confirm="Revoke API token '{{ token.name }}'? Scripts using it will stop working immediately.">
                                                     {% csrf_token %}
                                                     <button type="submit" class="btn btn-outline-danger btn-sm">
                                                         <i class="bi bi-x-circle me-1"></i>Revoke
