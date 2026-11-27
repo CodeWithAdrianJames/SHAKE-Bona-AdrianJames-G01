@@ -3,156 +3,177 @@
 {% block title %}SHAKE — Contract {{ contract.contract_number }}{% endblock %}
 
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a href="{% url 'contract_list' %}">Contracts</a></li>
-            <li class="breadcrumb-item active" aria-current="page">{{ contract.contract_number }}</li>
-        </ol>
-    </nav>
-    <div class="d-flex gap-2">
-        <a href="{% url 'contract_list' %}" class="btn btn-outline-secondary btn-sm">
-            <i class="ti ti-arrow-left me-1"></i>Back to Contracts
-        </a>
-        <a href="{% url 'contract_upload' %}" class="btn btn-primary btn-sm">
-            <i class="ti ti-file-upload me-1"></i>Upload Another PDF
-        </a>
+<!-- Zone 1: header + export / action toolbar -->
+<div class="shake-page-head">
+    <div class="shake-page-head-main">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'contract_list' %}">Contracts</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ contract.contract_number }}</li>
+            </ol>
+        </nav>
+        <h1>
+            <span class="font-mono-data">{{ contract.contract_number }}</span>
+            <span class="shake-chip shake-chip-carrier" title="{{ contract.carrier.carrier_name }}">{{ contract.carrier.carrier_code }}</span>
+            {% with doc_status=contract.document.status %}
+                {% include "includes/status_badge.html" with status=doc_status %}
+            {% endwith %}
+        </h1>
+        <p class="shake-page-head-sub">{{ contract.carrier.carrier_name }} &middot; {{ contract.trade_scope }}</p>
     </div>
-</div>
-
-<!-- Structured metadata summary -->
-<div class="card mb-4">
-    <div class="card-body p-4">
-        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
-            <div class="d-flex align-items-start gap-3">
-                <span class="shake-chip shake-chip-carrier shake-chip-lg">{{ contract.carrier.carrier_code }}</span>
-                <div>
-                    <span class="shake-label d-block mb-1">Contract &middot; {{ contract.carrier.carrier_name }}</span>
-                    <h1 class="mb-0"><span class="font-mono-data">{{ contract.contract_number }}</span></h1>
-                </div>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-                <span class="shake-chip shake-chip-port" title="Batch number">{{ contract.document.batch.batch_number }}</span>
-                {% with doc_status=contract.document.status %}
-                    {% include "includes/status_badge.html" with status=doc_status %}
-                {% endwith %}
-            </div>
-        </div>
-
-        <div class="row g-3">
-            <div class="col-12 col-md-6 col-xl-3">
-                <span class="shake-meta-key">Carrier</span>
-                <div class="shake-meta-value">{{ contract.carrier.carrier_name }}</div>
-            </div>
-            <div class="col-6 col-md-3 col-xl-2">
-                <span class="shake-meta-key">Effective</span>
-                <div class="shake-meta-value shake-num">{{ contract.effective_date|date:"Y-m-d" }}</div>
-            </div>
-            <div class="col-6 col-md-3 col-xl-2">
-                <span class="shake-meta-key">Expiration</span>
-                <div class="shake-meta-value shake-num">{{ contract.expiration_date|date:"Y-m-d" }}</div>
-            </div>
-            <div class="col-12 col-md-6 col-xl-5">
-                <span class="shake-meta-key">Trade scope</span>
-                <div class="shake-meta-value">{{ contract.trade_scope }}</div>
-            </div>
-            <div class="col-12 col-md-6">
-                <span class="shake-meta-key">Source PDF</span>
-                <div class="shake-meta-value">
-                    <i class="ti ti-file-type-pdf me-1 text-secondary"></i>{{ contract.document.original_file_name }}
-                    <span class="text-secondary small">({{ contract.document.page_count }} pg)</span>
-                </div>
-            </div>
-            <div class="col-12">
-                <span class="shake-meta-key">SHA-256</span>
-                <div class="font-mono-data shake-hash">{{ contract.document.file_hash_sha256 }}</div>
-            </div>
-            <div class="col-12">
-                <span class="shake-meta-key">Commodity description</span>
-                <div class="shake-well small">{{ contract.commodity_desc }}</div>
-            </div>
-        </div>
-    </div>
-    <div class="card-footer py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <div class="shake-export-toolbar">
-            <span class="shake-label">Export</span>
-            <a href="{% url 'contract_export' contract.pk 'xlsx' %}" class="btn btn-sm btn-primary shake-export-btn" aria-label="Export Excel (.xlsx)">
-                <i class="ti ti-file-spreadsheet me-1"></i>XLSX
+    <div class="shake-page-head-actions shake-toolbar">
+        <div class="btn-group" role="group" aria-label="Export contract">
+            <a href="{% url 'contract_export' contract.pk 'xlsx' %}" class="btn btn-primary" aria-label="Export Excel (.xlsx)">
+                <i class="ti ti-file-spreadsheet me-1"></i>Export XLSX
             </a>
-            <a href="{% url 'contract_export' contract.pk 'csv' %}" class="btn btn-sm btn-outline-primary shake-export-btn" aria-label="Export CSV">
+            <a href="{% url 'contract_export' contract.pk 'csv' %}" class="btn btn-outline-primary" aria-label="Export CSV">
                 <i class="ti ti-file-type-csv me-1"></i>CSV
             </a>
-            <a href="{% url 'contract_export' contract.pk 'json' %}" class="btn btn-sm btn-outline-primary shake-export-btn" aria-label="Export JSON">
+            <a href="{% url 'contract_export' contract.pk 'json' %}" class="btn btn-outline-primary" aria-label="Export JSON">
                 <i class="ti ti-braces me-1"></i>JSON
             </a>
         </div>
-        <div class="d-flex flex-wrap align-items-center gap-2">
-            <a href="{% url 'contract_edit' contract.pk %}" class="btn btn-sm btn-outline-secondary">
-                <i class="ti ti-edit me-1"></i>Edit Metadata
-            </a>
-            {% if contract.document.status != 'ARCHIVED' %}
-                <form method="post" action="{% url 'contract_archive' contract.pk %}" class="d-inline m-0"
-                      data-confirm="Archive contract {{ contract.contract_number }}? Archived contracts stay readable but cannot be un-archived from the UI (BR-09).">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline-review">
-                        <i class="ti ti-archive me-1"></i>Archive Contract
-                    </button>
-                </form>
-            {% else %}
-                <span class="shake-pill shake-pill-review">Non-Destructive Archive Active (BR-09)</span>
-            {% endif %}
-        </div>
+        <span class="shake-toolbar-sep d-none d-md-block" aria-hidden="true"></span>
+        <a href="{% url 'contract_edit' contract.pk %}" class="btn btn-outline-secondary">
+            <i class="ti ti-edit me-1"></i>Edit Metadata
+        </a>
+        {% if contract.document.status != 'ARCHIVED' %}
+            <form method="post" action="{% url 'contract_archive' contract.pk %}" class="d-inline m-0"
+                  data-confirm="Archive contract {{ contract.contract_number }}? Archived contracts stay readable but cannot be un-archived from the UI (BR-09).">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-review">
+                    <i class="ti ti-archive me-1"></i>Archive
+                </button>
+            </form>
+        {% else %}
+            <span class="shake-pill shake-pill-review">Non-Destructive Archive Active (BR-09)</span>
+        {% endif %}
     </div>
 </div>
 
-<!-- Base freight rates -->
-<div class="card mb-4">
-    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <div>
-            <h2 class="mb-0">Base Ocean Freight Rates</h2>
-            <p class="shake-card-sub">Normalized ISO container equipment rate rows &middot; Verified &ge; 0.900 confidence</p>
+<!-- Zone 2: 4-cell contract metadata strip -->
+<section class="card shake-meta-strip" aria-label="Contract metadata">
+    <div class="shake-meta-cell">
+        <span class="shake-meta-key"><i class="ti ti-building-warehouse" aria-hidden="true"></i>Carrier &amp; Code</span>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="shake-chip shake-chip-carrier">{{ contract.carrier.carrier_code }}</span>
+            <span class="shake-meta-primary">{{ contract.carrier.carrier_name }}</span>
         </div>
-        <div class="d-flex align-items-center gap-2">
-            <span class="badge badge-count shake-num">{{ rate_count }} Rate Row{{ rate_count|pluralize }}</span>
-            <a href="{% url 'rate_create' contract.pk %}" class="btn btn-sm btn-primary">
-                <i class="ti ti-plus me-1"></i>Add Rate Row
-            </a>
+        <div class="shake-meta-secondary">Batch <span class="font-mono-data small">{{ contract.document.batch.batch_number }}</span></div>
+    </div>
+    <div class="shake-meta-cell">
+        <span class="shake-meta-key"><i class="ti ti-calendar-event" aria-hidden="true"></i>Validity Window</span>
+        <div class="shake-meta-primary shake-meta-range">
+            <span>{{ contract.effective_date|date:"Y-m-d" }}</span>
+            <i class="ti ti-arrow-right" aria-label="to"></i>
+            <span>{{ contract.expiration_date|date:"Y-m-d" }}</span>
+        </div>
+        <div class="shake-meta-secondary">Effective &rarr; Expiration (BR-10)</div>
+    </div>
+    <div class="shake-meta-cell">
+        <span class="shake-meta-key"><i class="ti ti-list-details" aria-hidden="true"></i>Extracted Line Items</span>
+        <div class="shake-meta-counts">
+            <div>
+                <div class="shake-kpi-figure">{{ rate_count }}</div>
+                <div class="shake-meta-secondary mt-0">Freight rate{{ rate_count|pluralize }}</div>
+            </div>
+            <div>
+                <div class="shake-kpi-figure">{{ arb_count }}</div>
+                <div class="shake-meta-secondary mt-0">Arbitrary charge{{ arb_count|pluralize }}</div>
+            </div>
         </div>
     </div>
+    <div class="shake-meta-cell">
+        <span class="shake-meta-key"><i class="ti ti-file-type-pdf" aria-hidden="true"></i>Source File &amp; SHA-256</span>
+        <div class="shake-meta-primary shake-meta-file" title="{{ contract.document.original_file_name }}">{{ contract.document.original_file_name }}</div>
+        <div class="shake-meta-secondary shake-num">{{ contract.document.page_count }} page{{ contract.document.page_count|pluralize }} &middot; {{ contract.document.file_size_bytes|filesizeformat }}</div>
+        <div class="shake-hash-row">
+            <span class="shake-hash-short" title="{{ contract.document.file_hash_sha256 }}">{{ contract.document.file_hash_sha256|slice:":12" }}&hellip;{{ contract.document.file_hash_sha256|slice:"-6:" }}</span>
+            <button type="button" class="shake-copy" data-shake-copy="{{ contract.document.file_hash_sha256 }}" aria-label="Copy full SHA-256 hash">
+                <i class="ti ti-copy" aria-hidden="true"></i><span data-shake-copy-label>Copy</span>
+            </button>
+        </div>
+    </div>
+    <div class="shake-meta-cell shake-meta-cell-wide">
+        <span class="shake-meta-key"><i class="ti ti-route" aria-hidden="true"></i>Trade Scope &amp; Commodity</span>
+        <div class="shake-meta-secondary mt-0"><span class="shake-field-value">{{ contract.trade_scope }}</span> &middot; {{ contract.commodity_desc }}</div>
+    </div>
+</section>
+
+<!-- Zone 3: primary freight-rate ledger -->
+<section class="card shake-ledger-card mb-4" data-shake-ledger aria-labelledby="rates-heading">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+            <h2 class="mb-0" id="rates-heading">Base Ocean Freight Rates</h2>
+            <p class="shake-card-sub">Port-to-port base rates &middot; Verified &ge; 0.900 confidence</p>
+        </div>
+        <a href="{% url 'rate_create' contract.pk %}" class="btn btn-sm btn-primary">
+            <i class="ti ti-plus me-1"></i>Add Rate Row
+        </a>
+    </div>
     {% if freight_rates %}
+    <div class="shake-table-toolbar" role="search" aria-label="Filter freight rates">
+        <span class="shake-count" aria-live="polite">Showing <strong data-shake-visible-count>{{ rate_count }}</strong> of {{ rate_count }} rate{{ rate_count|pluralize }}</span>
+        <div class="shake-search shake-js-only">
+            <i class="ti ti-search" aria-hidden="true"></i>
+            <input type="search" class="form-control form-control-sm" placeholder="Search port, code, or amount" aria-label="Search rates by port or keyword" data-shake-filter-search data-shake-search-shortcut autocomplete="off">
+            <span class="shake-kbd" aria-hidden="true">/</span>
+        </div>
+        <div class="shake-seg shake-js-only" role="group" aria-label="Filter by equipment">
+            <button type="button" class="shake-seg-btn is-active" data-shake-pill="equipment" data-value="ALL" aria-pressed="true">All</button>
+            <button type="button" class="shake-seg-btn" data-shake-pill="equipment" data-value="20GP" aria-pressed="false">20GP</button>
+            <button type="button" class="shake-seg-btn" data-shake-pill="equipment" data-value="40GP" aria-pressed="false">40GP</button>
+            <button type="button" class="shake-seg-btn" data-shake-pill="equipment" data-value="40HC" aria-pressed="false">40HC</button>
+            <button type="button" class="shake-seg-btn" data-shake-pill="equipment" data-value="45HC" aria-pressed="false">45HC</button>
+        </div>
+        <select class="form-select form-select-sm shake-js-only" aria-label="Filter by confidence" data-shake-filter-select="confidence">
+            <option value="ALL">All confidence</option>
+            <option value="verified">Verified only</option>
+            <option value="review">Needs review only</option>
+        </select>
+        <button type="button" class="btn btn-sm btn-quiet shake-js-only" data-shake-filter-reset hidden>
+            <i class="ti ti-x me-1"></i>Clear filters
+        </button>
+    </div>
     <div class="table-responsive shake-table-scroll">
         <table class="table table-vcenter card-table table-hover shake-rate-table shake-table-sticky">
             <thead>
                 <tr>
-                    <th scope="col" class="text-end">#</th>
-                    <th scope="col">Origin (POL)</th>
-                    <th scope="col">Destination (POD)</th>
+                    <th scope="col">Lane (Origin &rarr; Destination)</th>
                     <th scope="col">Equipment</th>
-                    <th scope="col" class="text-end">Rate</th>
-                    <th scope="col" class="text-center">Pages</th>
+                    <th scope="col" class="text-end">Rate &amp; Currency</th>
+                    <th scope="col">Source &middot; Notes</th>
                     <th scope="col">Confidence</th>
                     <th scope="col" class="text-end">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for rate in freight_rates %}
-                <tr>
-                    <td class="text-end shake-row-num shake-num">{{ rate.line_item_sequence }}</td>
+                <tr data-filter-row
+                    data-equipment="{{ rate.equipment_type }}"
+                    data-confidence="{% if rate.confidence_score >= 0.9 %}verified{% else %}review{% endif %}"
+                    data-search="{{ rate.origin_port_code|lower }} {{ rate.origin_port_name|lower }} {{ rate.destination_port_code|lower }} {{ rate.destination_port_name|lower }} {{ rate.equipment_type|lower }} {{ rate.currency_code|lower }} {{ rate.rate_amount }}">
                     <td>
-                        <span class="shake-chip shake-chip-port">{{ rate.origin_port_code }}</span>
-                        <span class="small ms-1 text-secondary">{{ rate.origin_port_name }}</span>
-                    </td>
-                    <td>
-                        <span class="shake-chip shake-chip-port">{{ rate.destination_port_code }}</span>
-                        <span class="small ms-1 text-secondary">{{ rate.destination_port_name }}</span>
+                        <div class="shake-lane">
+                            <span class="shake-lane-codes">
+                                <span class="shake-chip shake-chip-port">{{ rate.origin_port_code }}</span>
+                                <i class="ti ti-arrow-right" aria-label="to"></i>
+                                <span class="shake-chip shake-chip-port">{{ rate.destination_port_code }}</span>
+                            </span>
+                            <button type="button" class="shake-copy shake-copy-icon-only" data-shake-copy="{{ rate.origin_port_code }} → {{ rate.destination_port_code }}" aria-label="Copy route {{ rate.origin_port_code }} to {{ rate.destination_port_code }}" title="Copy route">
+                                <i class="ti ti-copy" aria-hidden="true"></i><span class="shake-visually-hidden" data-shake-copy-label>Copy route</span>
+                            </button>
+                        </div>
+                        <span class="shake-lane-names">{{ rate.origin_port_name }} &rarr; {{ rate.destination_port_name }}</span>
                     </td>
                     <td><span class="shake-chip shake-chip-equipment">{{ rate.equipment_type }}</span></td>
-                    <td class="text-end shake-amount"><span class="shake-currency">{{ rate.currency_code }}</span>{{ rate.rate_amount }}</td>
-                    <td class="text-center small text-secondary shake-num">
+                    <td class="text-end shake-amount"><span class="shake-currency">{{ rate.currency_code }}</span>{{ rate.rate_amount|floatformat:"2g" }}</td>
+                    <td class="shake-secondary shake-num">
+                        Row #{{ rate.line_item_sequence }} &middot;
                         {% if rate.source_page_start == rate.source_page_end %}
                             p. {{ rate.source_page_start }}
                         {% else %}
-                            p. {{ rate.source_page_start }}–{{ rate.source_page_end }}
+                            p. {{ rate.source_page_start }}–{{ rate.source_page_end }} <span class="text-nowrap">&middot; stitched across pages</span>
                         {% endif %}
                     </td>
                     <td>
@@ -176,21 +197,28 @@
                     </td>
                 </tr>
                 {% endfor %}
+                <tr class="shake-no-match" data-shake-no-match hidden>
+                    <td colspan="6">
+                        {% include "partials/empty_state.html" with title="No rates match these filters" message="Try another port, keyword, equipment type, or confidence level." %}
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>
     {% else %}
         {% url 'rate_create' contract.pk as rate_create_url %}
-        {% include "partials/empty_state.html" with title="No base freight rates" message="No base freight rate rows were extracted from this document." action_url=rate_create_url action_label="Add Rate Row" %}
+        {% include "partials/empty_state.html" with title="No base freight rates" message="No base freight rate rows were extracted from this document." action_url=rate_create_url action_label="Add Rate Row" action_icon="ti-plus" %}
     {% endif %}
-</div>
+</section>
 
-<!-- Arbitrary charges -->
-<div class="card mb-4">
+<!-- Zone 4: surcharges and audit, kept apart from base rates -->
+<div class="shake-section-label"><span class="shake-label">Surcharges &amp; audit trail</span></div>
+
+<section class="card mb-4" aria-labelledby="arb-heading">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
-            <h2 class="mb-0">Origin &amp; Destination Arbitrary Charges</h2>
-            <p class="shake-card-sub">Inland gateway surcharges and transport mode fees</p>
+            <h2 class="mb-0" id="arb-heading">Origin &amp; Destination Arbitrary Charges</h2>
+            <p class="shake-card-sub">Inland gateway surcharges and transport mode fees, billed on top of base rates</p>
         </div>
         <span class="badge badge-neutral shake-num">{{ arb_count }} Charge Row{{ arb_count|pluralize }}</span>
     </div>
@@ -199,20 +227,18 @@
         <table class="table table-vcenter card-table table-hover shake-rate-table shake-table-sticky">
             <thead>
                 <tr>
-                    <th scope="col" class="text-end">#</th>
                     <th scope="col">Leg</th>
                     <th scope="col">Location</th>
                     <th scope="col">Via gateway</th>
                     <th scope="col">Equipment</th>
                     <th scope="col">Mode</th>
                     <th scope="col" class="text-end">Amount</th>
-                    <th scope="col" class="text-center">Page</th>
+                    <th scope="col">Source</th>
                 </tr>
             </thead>
             <tbody>
                 {% for charge in arbitrary_charges %}
                 <tr>
-                    <td class="text-end shake-row-num shake-num">{{ charge.line_item_sequence }}</td>
                     <td>
                         {% if charge.charge_type == 'ORIGIN' %}
                             <span class="shake-pill shake-pill-info">ORIGIN</span>
@@ -227,8 +253,8 @@
                     <td>{% if charge.via_gateway_port %}<span class="shake-chip shake-chip-port">{{ charge.via_gateway_port }}</span>{% else %}<span class="text-secondary">—</span>{% endif %}</td>
                     <td><span class="shake-chip shake-chip-equipment">{{ charge.equipment_type }}</span></td>
                     <td class="small">{{ charge.transport_mode }}</td>
-                    <td class="text-end shake-amount"><span class="shake-currency">{{ charge.currency_code }}</span>{{ charge.charge_amount }}</td>
-                    <td class="text-center small text-secondary shake-num">p. {{ charge.source_page_num }}</td>
+                    <td class="text-end shake-amount"><span class="shake-currency">{{ charge.currency_code }}</span>{{ charge.charge_amount|floatformat:"2g" }}</td>
+                    <td class="shake-secondary shake-num">Row #{{ charge.line_item_sequence }} &middot; p. {{ charge.source_page_num }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -237,14 +263,14 @@
     {% else %}
         {% include "partials/empty_state.html" with title="No arbitrary charges" message="No origin or destination arbitrary charges were extracted from this document." %}
     {% endif %}
-</div>
+</section>
 
 <div class="row g-4">
     <!-- Processing job history -->
     <div class="col-12 col-xxl-6">
-        <div class="card h-100">
+        <section class="card h-100" aria-labelledby="jobs-heading">
             <div class="card-header">
-                <h2 class="mb-0">Processing Job History</h2>
+                <h2 class="mb-0" id="jobs-heading">Processing Job History</h2>
             </div>
             <div class="table-responsive">
                 <table class="table table-vcenter card-table">
@@ -275,14 +301,14 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+        </section>
     </div>
 
     <!-- Export audit log -->
     <div class="col-12 col-xxl-6">
-        <div class="card h-100">
+        <section class="card h-100" aria-labelledby="exports-heading">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h2 class="mb-0">Export Audit Log</h2>
+                <h2 class="mb-0" id="exports-heading">Export Audit Log</h2>
                 <span class="badge badge-neutral shake-num">{{ export_records|length }} Export{{ export_records|length|pluralize }}</span>
             </div>
             <div class="table-responsive">
@@ -309,7 +335,7 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+        </section>
     </div>
 </div>
 {% endblock %}

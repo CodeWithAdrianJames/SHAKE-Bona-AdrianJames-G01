@@ -3,12 +3,17 @@
 {% block title %}SHAKE — Workspace{% endblock %}
 
 {% block content %}
-<div class="shake-page-header">
-    <span class="badge {% if user.role == 'ADMIN' %}badge-role-admin{% else %}badge-role-encoder{% endif %} mb-2">{{ user.get_role_display }}</span>
-    <h1 class="mb-0">Welcome, {{ user.full_name_or_username }}!</h1>
-    <p>
-        Authenticated SHAKE session active &mdash; role-specific dashboards and strict URL access control will be connected in Stage 3.
-    </p>
+<div class="shake-page-head">
+    <div class="shake-page-head-main">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">Workspace</li>
+                <li class="breadcrumb-item active" aria-current="page">Home</li>
+            </ol>
+        </nav>
+        <h1>Welcome, {{ user.full_name_or_username }}! <span class="badge {% if user.role == 'ADMIN' %}badge-role-admin{% else %}badge-role-encoder{% endif %}">{{ user.get_role_display }}</span></h1>
+        <p class="shake-page-head-sub">Authenticated SHAKE session active &mdash; role-specific dashboards and strict URL access control will be connected in Stage 3.</p>
+    </div>
 </div>
 
 <div class="row g-3">

@@ -3,71 +3,73 @@
 {% block title %}SHAKE — {% if is_admin_view %}All Contracts{% else %}My Contracts{% endif %}{% endblock %}
 
 {% block content %}
-<div class="shake-page-header d-flex flex-wrap justify-content-between align-items-end gap-3">
-    <div>
-        <span class="shake-label">Contracts</span>
-        <h1 class="mb-0">{% if is_admin_view %}All Contracts{% else %}My Contracts{% endif %}</h1>
-        <p>
+<!-- Page header -->
+<div class="shake-page-head">
+    <div class="shake-page-head-main">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">Workspace</li>
+                <li class="breadcrumb-item active" aria-current="page">Contracts</li>
+            </ol>
+        </nav>
+        <h1>{% if is_admin_view %}All Contracts{% else %}My Contracts{% endif %}</h1>
+        <p class="shake-page-head-sub">
             {% if is_admin_view %}
-                System-wide extracted ocean freight contracts across all Freight Analysts / Encoders
+                System-wide extracted ocean freight contracts across all Freight Analysts / Encoders.
             {% else %}
-                Extracted ocean freight service contracts uploaded in your workspace
+                Extracted ocean freight service contracts uploaded in your workspace.
             {% endif %}
         </p>
     </div>
-    <a href="{% url 'contract_upload' %}" class="btn btn-primary">
-        <i class="ti ti-file-upload me-1"></i>Upload PDF
-    </a>
-</div>
-
-<!-- Search & status filter bar -->
-<div class="card mb-4">
-    <div class="card-body py-3">
-        <form method="get" class="row g-2 align-items-center" role="search" aria-label="Filter contracts">
-            <div class="col-12 col-md-6">
-                <div class="input-group">
-                    <span class="input-group-text"><i class="ti ti-search"></i></span>
-                    <input type="text"
-                           name="q"
-                           value="{{ search_query }}"
-                           class="form-control"
-                           aria-label="Search contracts"
-                           placeholder="Search contract #, carrier code, trade scope, batch #, or filename...">
-                </div>
-            </div>
-            <div class="col-12 col-sm-6 col-md-3">
-                <select name="status" class="form-select" aria-label="Filter by document status">
-                    <option value="ALL" {% if status_filter == 'ALL' %}selected{% endif %}>All Statuses</option>
-                    <option value="EXTRACTED" {% if status_filter == 'EXTRACTED' %}selected{% endif %}>Extracted</option>
-                    <option value="ARCHIVED" {% if status_filter == 'ARCHIVED' %}selected{% endif %}>Archived</option>
-                    <option value="FAILED" {% if status_filter == 'FAILED' %}selected{% endif %}>Failed</option>
-                </select>
-            </div>
-            <div class="col-12 col-sm-6 col-md-3 d-flex gap-2">
-                <button type="submit" class="btn btn-outline-primary flex-grow-1">
-                    <i class="ti ti-filter me-1"></i>Filter
-                </button>
-                {% if search_query or status_filter != 'ALL' %}
-                    <a href="{% url 'contract_list' %}" class="btn btn-outline-secondary">Reset</a>
-                {% endif %}
-            </div>
-        </form>
+    <div class="shake-page-head-actions">
+        <a href="{% url 'contract_upload' %}" class="btn btn-primary">
+            <i class="ti ti-file-upload me-1"></i>Upload PDF
+        </a>
     </div>
 </div>
 
-<!-- Extracted contracts -->
-<div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h2 class="mb-0">Extracted Contract Records</h2>
-        <span class="badge badge-neutral shake-num">{{ contracts|length }} Contract{{ contracts|length|pluralize }} shown</span>
+<!-- Contract registry with integrated search & filters -->
+<section class="card mb-4" aria-labelledby="contracts-heading">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+            <h2 class="mb-0" id="contracts-heading">Extracted Contract Records</h2>
+            <p class="shake-card-sub">
+                Showing <span class="shake-num">{{ contracts|length }}</span> of <span class="shake-num">{% if page_obj %}{{ page_obj.paginator.count }}{% else %}{{ contracts|length }}{% endif %}</span> contract{% if page_obj %}{{ page_obj.paginator.count|pluralize }}{% else %}{{ contracts|length|pluralize }}{% endif %}{% if search_query or status_filter != 'ALL' %} matching your filters{% endif %}
+            </p>
+        </div>
     </div>
+    <form method="get" class="shake-table-toolbar" role="search" aria-label="Filter contracts">
+        <div class="shake-search">
+            <i class="ti ti-search" aria-hidden="true"></i>
+            <input type="search"
+                   name="q"
+                   value="{{ search_query }}"
+                   class="form-control"
+                   aria-label="Search contracts"
+                   placeholder="Contract #, carrier, scope, batch, file"
+                   data-shake-search-shortcut
+                   autocomplete="off">
+            <span class="shake-kbd" aria-hidden="true">/</span>
+        </div>
+        <select name="status" class="form-select" aria-label="Filter by document status">
+            <option value="ALL" {% if status_filter == 'ALL' %}selected{% endif %}>All Statuses</option>
+            <option value="EXTRACTED" {% if status_filter == 'EXTRACTED' %}selected{% endif %}>Extracted</option>
+            <option value="ARCHIVED" {% if status_filter == 'ARCHIVED' %}selected{% endif %}>Archived</option>
+            <option value="FAILED" {% if status_filter == 'FAILED' %}selected{% endif %}>Failed</option>
+        </select>
+        <button type="submit" class="btn btn-outline-primary">
+            <i class="ti ti-filter me-1"></i>Filter
+        </button>
+        {% if search_query or status_filter != 'ALL' %}
+            <a href="{% url 'contract_list' %}" class="btn btn-quiet"><i class="ti ti-x me-1"></i>Reset</a>
+        {% endif %}
+    </form>
     {% if contracts %}
     <div class="table-responsive">
         <table class="table table-vcenter card-table table-hover">
             <thead>
                 <tr>
                     <th scope="col">Contract #</th>
-                    <th scope="col">Batch #</th>
                     <th scope="col">Carrier</th>
                     <th scope="col">Trade scope</th>
                     <th scope="col">Validity</th>
@@ -82,14 +84,12 @@
                 <tr>
                     <td>
                         <a href="{% url 'contract_detail' contract.pk %}" class="font-mono-data text-decoration-none">{{ contract.contract_number }}</a>
-                        <div class="text-secondary small text-truncate shake-truncate" title="{{ contract.document.original_file_name }}">
-                            <i class="ti ti-file-type-pdf me-1"></i>{{ contract.document.original_file_name }}
+                        <div class="shake-secondary text-truncate shake-truncate-sm" title="{{ contract.document.original_file_name }}">
+                            {{ contract.document.original_file_name }} &middot; <span class="font-mono-data small">{{ contract.document.batch.batch_number }}</span>
                         </div>
                     </td>
-                    <td><span class="font-mono-data small">{{ contract.document.batch.batch_number }}</span></td>
                     <td>
-                        <span class="shake-chip shake-chip-carrier">{{ contract.carrier.carrier_code }}</span>
-                        <div class="small text-secondary">{{ contract.carrier.carrier_name }}</div>
+                        <span class="shake-chip shake-chip-carrier" title="{{ contract.carrier.carrier_name }}">{{ contract.carrier.carrier_code }}</span>
                     </td>
                     <td class="small">{{ contract.trade_scope }}</td>
                     <td class="small text-nowrap shake-num">
@@ -113,8 +113,8 @@
                                 <i class="ti ti-pencil"></i>
                             </a>
                             <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="ti ti-download me-1"></i>Export
+                                <button type="button" class="btn btn-outline-secondary btn-icon dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Export {{ contract.contract_number }}" title="Export">
+                                    <i class="ti ti-download"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end">
                                     <li><a class="dropdown-item" href="{% url 'contract_export' contract.pk 'xlsx' %}"><i class="ti ti-file-spreadsheet me-2"></i>Excel (.xlsx)</a></li>
@@ -145,33 +145,32 @@
         {% url 'contract_upload' as upload_url %}
         {% include "partials/empty_state.html" with title="No contracts yet" message="No extracted contracts found. Upload a contract PDF to begin." action_url=upload_url action_label="Upload PDF" %}
     {% endif %}
-</div>
-
-{% if is_paginated %}
-<nav aria-label="Contracts pagination" class="mb-4">
-    <ul class="pagination justify-content-center">
-        {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}&status={{ status_filter }}">Previous</a>
-            </li>
-        {% endif %}
-        <li class="page-item disabled">
-            <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-        </li>
-        {% if page_obj.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query }}&status={{ status_filter }}">Next</a>
-            </li>
-        {% endif %}
-    </ul>
-</nav>
-{% endif %}
+    {% if is_paginated %}
+    <div class="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span class="shake-count">Page <strong>{{ page_obj.number }}</strong> of {{ page_obj.paginator.num_pages }}</span>
+        <nav aria-label="Contracts pagination">
+            <ul class="pagination m-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_query|urlencode }}&status={{ status_filter|urlencode }}"><i class="ti ti-chevron-left me-1"></i>Previous</a>
+                    </li>
+                {% endif %}
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query|urlencode }}&status={{ status_filter|urlencode }}">Next<i class="ti ti-chevron-right ms-1"></i></a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</section>
 
 {% if failed_documents %}
-<div class="card">
+<section class="card" aria-labelledby="failed-heading">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
-            <h2 class="mb-0">Recent Failed Ingestion Documents</h2>
+            <h2 class="mb-0" id="failed-heading">Recent Failed Ingestion Documents</h2>
             <p class="shake-card-sub">PDFs that produced no contract; they can be deleted safely</p>
         </div>
         <span class="shake-pill shake-pill-rejected">Parse error</span>
@@ -193,7 +192,7 @@
                     <td><span class="font-mono-data small">{{ doc.batch.batch_number }}</span></td>
                     <td>{{ doc.original_file_name }}</td>
                     <td>{% include "includes/status_badge.html" with status=doc.status %}</td>
-                    <td class="small text-secondary">
+                    <td class="shake-secondary">
                         {% with last_job=doc.jobs.all.0 %}
                             {{ last_job.error_message|default:"Pipeline execution failed."|truncatechars:140 }}
                         {% endwith %}
@@ -212,6 +211,6 @@
             </tbody>
         </table>
     </div>
-</div>
+</section>
 {% endif %}
 {% endblock %}

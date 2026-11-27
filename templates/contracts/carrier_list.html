@@ -3,28 +3,54 @@
 {% block title %}SHAKE — Carrier Profiles{% endblock %}
 
 {% block content %}
-<div class="shake-page-header d-flex flex-wrap justify-content-between align-items-end gap-3">
-    <div>
-        <span class="shake-label">Administration &middot; Carriers</span>
-        <h1 class="mb-0">Shipping Carrier Profiles</h1>
-        <p>Admin-managed ocean carrier registry and deterministic template versions (BR-03)</p>
+<!-- Page header -->
+<div class="shake-page-head">
+    <div class="shake-page-head-main">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">Administration</li>
+                <li class="breadcrumb-item active" aria-current="page">Carriers</li>
+            </ol>
+        </nav>
+        <h1>Shipping Carrier Profiles</h1>
+        <p class="shake-page-head-sub">Admin-managed carrier registry and parser template versions; codes and names stay unique (BR-03).</p>
     </div>
-    <a href="{% url 'carrier_create' %}" class="btn btn-primary">
-        <i class="ti ti-circle-plus me-1"></i>Add Carrier Profile
-    </a>
+    <div class="shake-page-head-actions">
+        <a href="{% url 'carrier_create' %}" class="btn btn-primary">
+            <i class="ti ti-circle-plus me-1"></i>Add Carrier Profile
+        </a>
+    </div>
 </div>
 
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h2 class="mb-0">Registered Carrier Profiles</h2>
-        <span class="badge badge-neutral shake-num">{{ carriers|length }} Profile{{ carriers|length|pluralize }}</span>
+<section class="card" data-shake-ledger aria-labelledby="carriers-heading">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+            <h2 class="mb-0" id="carriers-heading">Registered Carrier Profiles</h2>
+            <p class="shake-card-sub">Showing <strong class="shake-num" data-shake-visible-count>{{ carriers|length }}</strong> of <span class="shake-num">{{ carriers|length }}</span> profile{{ carriers|length|pluralize }}</p>
+        </div>
     </div>
     {% if carriers %}
+    <div class="shake-table-toolbar shake-js-only" role="search" aria-label="Filter carriers">
+        <div class="shake-search">
+            <i class="ti ti-search" aria-hidden="true"></i>
+            <input type="search" class="form-control" placeholder="Carrier code, name, or template" aria-label="Search carriers"
+                   data-shake-filter-search data-shake-search-shortcut autocomplete="off">
+            <span class="shake-kbd" aria-hidden="true">/</span>
+        </div>
+        <select class="form-select" aria-label="Filter by status" data-shake-filter-select="status">
+            <option value="ALL">All statuses</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+        </select>
+        <button type="button" class="btn btn-quiet" data-shake-filter-reset hidden>
+            <i class="ti ti-x me-1"></i>Clear filters
+        </button>
+    </div>
     <div class="table-responsive">
         <table class="table table-vcenter card-table table-hover">
             <thead>
                 <tr>
-                    <th scope="col">SCAC code</th>
+                    <th scope="col">Carrier code</th>
                     <th scope="col">Carrier name</th>
                     <th scope="col">Template</th>
                     <th scope="col" class="text-end">Contracts</th>
@@ -34,7 +60,9 @@
             </thead>
             <tbody>
                 {% for carrier in carriers %}
-                <tr>
+                <tr data-filter-row
+                    data-status="{% if carrier.is_active %}active{% else %}inactive{% endif %}"
+                    data-search="{{ carrier.carrier_code|lower }} {{ carrier.carrier_name|lower }} {{ carrier.template_version|lower }}">
                     <td><span class="shake-chip shake-chip-carrier">{{ carrier.carrier_code }}</span></td>
                     <td class="fw-semibold">{{ carrier.carrier_name }}</td>
                     <td><code>{{ carrier.template_version }}</code></td>
@@ -65,6 +93,11 @@
                     </td>
                 </tr>
                 {% endfor %}
+                <tr class="shake-no-match" data-shake-no-match hidden>
+                    <td colspan="6">
+                        {% include "partials/empty_state.html" with title="No carriers match these filters" message="Try another code or name, or clear the filters." %}
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -72,5 +105,5 @@
         {% url 'carrier_create' as carrier_create_url %}
         {% include "partials/empty_state.html" with title="No carrier profiles registered yet." message="Add a carrier so extracted contracts can be bound to it." action_url=carrier_create_url action_label="Add Carrier Profile" action_icon="ti-circle-plus" %}
     {% endif %}
-</div>
+</section>
 {% endblock %}
