@@ -5,10 +5,10 @@
 {% block content %}
 <div class="row justify-content-center py-5">
     <div class="col-12 col-md-8 col-lg-6">
-        <div class="card shadow-sm border-danger-subtle text-center p-4">
+        <div class="card border-danger-subtle text-center p-4">
             <div class="card-body">
                 <div class="display-4 text-danger mb-3">
-                    <i class="bi bi-shield-exclamation"></i>
+                    <i class="ti ti-shield-x"></i>
                 </div>
                 <span class="badge bg-danger-subtle text-danger border border-danger-subtle mb-2">
                     HTTP 403 &mdash; Role Access Denied
@@ -18,7 +18,7 @@
                     {{ error_message|default:"Unauthorized access: you do not have permission to view that dashboard." }}
                 </p>
                 <a href="{{ fallback_dashboard_url|default:'/' }}" class="btn btn-primary fw-semibold px-4">
-                    <i class="bi bi-arrow-left-circle me-1"></i>Return to Your Role Dashboard
+                    <i class="ti ti-circle-arrow-left me-1"></i>Return to Your Role Dashboard
                 </a>
             </div>
         </div>

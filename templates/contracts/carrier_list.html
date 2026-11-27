@@ -6,25 +6,25 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
     <div>
         <h1 class="h3 fw-bold mb-1">
-            <i class="bi bi-diagram-3 me-2 text-primary"></i>Shipping Carrier Profiles
+            <i class="ti ti-ship me-2 text-primary"></i>Shipping Carrier Profiles
         </h1>
         <p class="text-muted small mb-0">
             Admin-managed ocean carrier registry and deterministic AST template versions (BR-03)
         </p>
     </div>
     <a href="{% url 'carrier_create' %}" class="btn btn-primary fw-semibold">
-        <i class="bi bi-plus-circle-fill me-1"></i>Add Carrier Profile
+        <i class="ti ti-circle-plus me-1"></i>Add Carrier Profile
     </a>
 </div>
 
-<div class="card shadow-sm">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
         <h2 class="h6 fw-bold mb-0">Registered Carrier Profiles</h2>
-        <span class="badge bg-light text-dark border">{{ carriers|length }} Profile{{ carriers|length|pluralize }}</span>
+        <span class="badge badge-neutral">{{ carriers|length }} Profile{{ carriers|length|pluralize }}</span>
     </div>
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
+        <table class="table table-vcenter card-table table-hover mb-0">
+            <thead>
                 <tr>
                     <th class="ps-4">SCAC Code</th>
                     <th>Carrier Name</th>
@@ -38,10 +38,10 @@
                 {% for carrier in carriers %}
                 <tr>
                     <td class="ps-4">
-                        <span class="badge bg-dark font-monospace">{{ carrier.carrier_code }}</span>
+                        <span class="badge badge-carrier font-mono-code">{{ carrier.carrier_code }}</span>
                     </td>
                     <td class="fw-semibold">{{ carrier.carrier_name }}</td>
-                    <td><code class="text-dark">{{ carrier.template_version }}</code></td>
+                    <td><code>{{ carrier.template_version }}</code></td>
                     <td class="text-center">
                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
                             {{ carrier.contract_count }}
@@ -49,24 +49,24 @@
                     </td>
                     <td>
                         {% if carrier.is_active %}
-                            <span class="badge bg-success">Active</span>
+                            <span class="badge bg-success-lt">Active</span>
                         {% else %}
-                            <span class="badge bg-secondary">Inactive</span>
+                            <span class="badge bg-secondary-lt">Inactive</span>
                         {% endif %}
                     </td>
                     <td class="pe-4 text-end text-nowrap">
                         <a href="{% url 'carrier_edit' carrier.pk %}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-pencil me-1"></i>Edit
+                            <i class="ti ti-pencil me-1"></i>Edit
                         </a>
                         <form method="post" action="{% url 'carrier_toggle' carrier.pk %}" class="d-inline m-0">
                             {% csrf_token %}
                             {% if carrier.is_active %}
-                                <button type="submit" class="btn btn-sm btn-outline-warning text-dark">
-                                    <i class="bi bi-pause-circle me-1"></i>Deactivate
+                                <button type="submit" class="btn btn-sm btn-outline-warning">
+                                    <i class="ti ti-player-pause me-1"></i>Deactivate
                                 </button>
                             {% else %}
                                 <button type="submit" class="btn btn-sm btn-outline-success">
-                                    <i class="bi bi-play-circle me-1"></i>Activate
+                                    <i class="ti ti-player-play me-1"></i>Activate
                                 </button>
                             {% endif %}
                         </form>

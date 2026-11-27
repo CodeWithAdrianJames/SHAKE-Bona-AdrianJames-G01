@@ -1,18 +1,20 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}SHAKE — Create Account{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center py-2">
-    <div class="col-12 col-lg-8 col-xl-7">
-        <div class="card shadow-sm overflow-hidden">
-            <div class="card-header bg-dark text-white p-4 border-0">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                    <span class="badge bg-info text-dark fw-bold">SHAKE</span>
-                    <span class="small text-light opacity-75">Account Onboarding</span>
+    <div class="col-12 col-lg-9 col-xl-8 shake-auth-card-wide">
+        <div class="card overflow-hidden">
+            <div class="card-header shake-auth-header d-block p-4">
+                <div class="shake-lockup shake-lockup-lg mb-3">
+                    <img src="{% static 'img/shake-emblem.svg' %}" alt="" class="shake-emblem" width="52" height="44">
+                    <span class="shake-wordmark">SHAKE</span>
                 </div>
-                <h1 class="h4 fw-bold mb-1">Create your SHAKE account</h1>
-                <p class="small text-light opacity-75 mb-0">
+                <div class="shake-eyebrow mb-1">Account Onboarding</div>
+                <h1 class="h2 fw-bold mb-1">Create your SHAKE account</h1>
+                <p class="small text-secondary mb-0">
                     Register as a <strong>Freight Analyst / Encoder</strong> to start processing carrier rate contracts. Operations Admin access is granted by an existing administrator.
                 </p>
             </div>
@@ -23,7 +25,7 @@
 
                     {% if form.non_field_errors %}
                         <div class="alert alert-danger d-flex align-items-start gap-2" role="alert">
-                            <i class="bi bi-exclamation-octagon-fill mt-1"></i>
+                            <i class="ti ti-alert-octagon mt-1"></i>
                             <div>
                                 {% for error in form.non_field_errors %}
                                     <div>{{ error }}</div>
@@ -41,7 +43,7 @@
                             {{ form.first_name }}
                             {% for error in form.first_name.errors %}
                                 <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
                                 </div>
                             {% endfor %}
                         </div>
@@ -53,7 +55,7 @@
                             {{ form.last_name }}
                             {% for error in form.last_name.errors %}
                                 <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
                                 </div>
                             {% endfor %}
                         </div>
@@ -66,7 +68,7 @@
                             {{ form.username }}
                             {% for error in form.username.errors %}
                                 <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
                                 </div>
                             {% endfor %}
                             {% if form.username.help_text %}
@@ -81,7 +83,7 @@
                             {{ form.email }}
                             {% for error in form.email.errors %}
                                 <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
                                 </div>
                             {% endfor %}
                         </div>
@@ -101,7 +103,7 @@
                             </datalist>
                             {% for error in form.department.errors %}
                                 <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
                                 </div>
                             {% endfor %}
                         </div>
@@ -114,7 +116,7 @@
                             {{ form.contact_number }}
                             {% for error in form.contact_number.errors %}
                                 <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
                                 </div>
                             {% endfor %}
                         </div>
@@ -127,7 +129,7 @@
                             {{ form.password1 }}
                             {% for error in form.password1.errors %}
                                 <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
                                 </div>
                             {% endfor %}
                             {% if form.password1.help_text %}
@@ -142,7 +144,7 @@
                             {{ form.password2 }}
                             {% for error in form.password2.errors %}
                                 <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
                                 </div>
                             {% endfor %}
                             {% if form.password2.help_text %}
@@ -152,13 +154,13 @@
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold mt-4">
-                        <i class="bi bi-person-check-fill me-1"></i>Create SHAKE Account
+                        <i class="ti ti-user-check me-1"></i>Create SHAKE Account
                     </button>
                 </form>
             </div>
 
-            <div class="card-footer text-center bg-light py-3">
-                <span class="text-muted small">Already have a SHAKE account?</span>
+            <div class="card-footer text-center py-3">
+                <span class="text-secondary small">Already have a SHAKE account?</span>
                 <a href="{% url 'login' %}" class="fw-semibold text-decoration-none ms-1">
                     Sign In
                 </a>

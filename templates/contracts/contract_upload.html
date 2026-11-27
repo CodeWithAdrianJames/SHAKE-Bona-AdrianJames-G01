@@ -13,15 +13,15 @@
                 </ol>
             </nav>
             <a href="{% url 'contract_list' %}" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-arrow-left me-1"></i>Back to Contracts
+                <i class="ti ti-arrow-left me-1"></i>Back to Contracts
             </a>
         </div>
 
-        <div class="card shadow-sm">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <div>
                     <h1 class="h5 fw-bold mb-0">
-                        <i class="bi bi-cloud-arrow-up-fill me-2 text-primary"></i>Upload Ocean Freight Contract PDF
+                        <i class="ti ti-cloud-upload me-2 text-primary"></i>Upload Ocean Freight Contract PDF
                     </h1>
                     <p class="text-muted small mb-0">
                         Local offline vector parsing, table stitching, and PostgreSQL persistence
@@ -34,7 +34,7 @@
 
             <div class="card-body p-4">
                 <div class="alert alert-info d-flex align-items-start gap-2 small mb-4" role="alert">
-                    <i class="bi bi-shield-check fs-5 mt-1"></i>
+                    <i class="ti ti-shield-check fs-5 mt-1"></i>
                     <div>
                         <strong>Ingestion Requirements:</strong>
                         Upload one or more digitally generated, machine-selectable vector-text <code>.pdf</code> files.
@@ -49,12 +49,12 @@
 
                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-2 border-top">
                         <div class="small text-muted">
-                            <i class="bi bi-cpu me-1"></i>Extracts metadata, 20GP/40GP/40HC/45HC rates &amp; port arbitraries
+                            <i class="ti ti-cpu me-1"></i>Extracts metadata, 20GP/40GP/40HC/45HC rates &amp; port arbitraries
                         </div>
                         <div class="d-flex gap-2">
                             <a href="{% url 'contract_list' %}" class="btn btn-light border">Cancel</a>
                             <button type="submit" class="btn btn-primary fw-semibold px-4">
-                                <i class="bi bi-lightning-charge-fill me-1"></i>Start Extraction
+                                <i class="ti ti-bolt me-1"></i>Start Extraction
                             </button>
                         </div>
                     </div>

@@ -1,0 +1,438 @@
+/*
+ * SHAKE brand theme for Tabler (Bootstrap 5).
+ * Load order: vendor/tabler/css/tabler.min.css -> vendor/tabler/icons/tabler-icons.min.css -> this file.
+ * Everything here is local; no fonts or images are fetched from the network.
+ */
+
+:root {
+    /* Maritime navy surfaces */
+    --shake-navy: #0F213E;
+    --shake-navy-elevated: #162E54;
+    /* Brand blues */
+    --shake-blue: #2563EB;
+    --shake-blue-rgb: 37, 99, 235;
+    --shake-sky: #488EE6;
+    /* Amber-gold spark */
+    --shake-amber: #F59E0B;
+    --shake-amber-soft: #FEF3C7;
+    --shake-amber-text: #B45309;
+    /* Light canvas */
+    --shake-canvas: #F8FAFC;
+    --shake-surface: #FFFFFF;
+    --shake-hairline: #E2E8F0;
+    --shake-ink: #0F172A;
+    --shake-ink-muted: #64748B;
+    --shake-font-mono: ui-monospace, "JetBrains Mono", "Cascadia Code", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+    /* Tabler token overrides */
+    --tblr-primary: var(--shake-blue);
+    --tblr-primary-rgb: var(--shake-blue-rgb);
+    --tblr-primary-fg: #FFFFFF;
+    --tblr-link-color: var(--shake-blue);
+    --tblr-link-color-rgb: var(--shake-blue-rgb);
+    --tblr-link-hover-color: var(--shake-sky);
+    --tblr-body-bg: var(--shake-canvas);
+    --tblr-bg-surface: var(--shake-surface);
+    --tblr-border-color: var(--shake-hairline);
+    --tblr-border-color-translucent: var(--shake-hairline);
+    --tblr-font-monospace: var(--shake-font-mono);
+    --tblr-warning: var(--shake-amber);
+    --tblr-sidebar-width: 15.5rem;
+}
+
+body {
+    background-color: var(--shake-canvas);
+    color: var(--shake-ink);
+}
+
+a { color: var(--shake-blue); }
+a:hover { color: var(--shake-sky); }
+
+/* ---------- Brand lockup (S-emblem + SHAKE wordmark, no subtitle) ---------- */
+.shake-lockup {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    text-decoration: none;
+    color: inherit;
+}
+.shake-lockup:hover { text-decoration: none; color: inherit; }
+.shake-emblem {
+    display: block;
+    width: auto;
+    height: 2rem;
+    flex-shrink: 0;
+}
+.shake-lockup-lg .shake-emblem { height: 2.75rem; }
+.shake-wordmark {
+    font-weight: 800;
+    font-size: 1.35rem;
+    line-height: 1;
+    letter-spacing: 0.14em;
+    color: var(--shake-navy);
+}
+.shake-lockup-lg .shake-wordmark { font-size: 1.75rem; }
+.shake-wordmark-light { color: #FFFFFF; }
+
+/* ---------- Dark navy vertical sidebar ---------- */
+.navbar-vertical.shake-sidebar {
+    --tblr-navbar-bg: var(--shake-navy);
+    --tblr-navbar-border-color: var(--shake-navy-elevated);
+    --tblr-navbar-color: rgba(255, 255, 255, 0.72);
+    --tblr-navbar-hover-color: #FFFFFF;
+    --tblr-navbar-active-color: #FFFFFF;
+    --tblr-navbar-active-bg: rgba(var(--shake-blue-rgb), 0.18);
+    background: var(--shake-navy) !important;
+    border-inline-end: 1px solid var(--shake-navy-elevated);
+}
+.shake-sidebar .navbar-brand {
+    padding: 1rem 0.75rem;
+}
+.shake-sidebar .nav-section-title,
+.shake-sidebar .shake-nav-heading {
+    display: block;
+    padding: 1rem 1.25rem 0.35rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.42);
+}
+.shake-sidebar .navbar-nav .nav-link {
+    border-radius: 0.5rem;
+    margin: 0.1rem 0.5rem;
+    color: rgba(255, 255, 255, 0.72);
+    border-inline-start: 3px solid transparent;
+}
+.shake-sidebar .navbar-nav .nav-link:hover {
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.05);
+}
+.shake-sidebar .navbar-nav .nav-item.active > .nav-link,
+.shake-sidebar .navbar-nav .nav-link.active {
+    color: #FFFFFF;
+    font-weight: 600;
+    background: rgba(var(--shake-blue-rgb), 0.22);
+    border-inline-start-color: var(--shake-amber);
+}
+.shake-sidebar .navbar-nav .nav-item.active .nav-link-icon,
+.shake-sidebar .navbar-nav .nav-link.active .nav-link-icon {
+    color: var(--shake-sky);
+}
+.shake-sidebar .nav-link-icon { font-size: 1.15rem; }
+.shake-sidebar .navbar-toggler { border-color: rgba(255, 255, 255, 0.2); }
+.shake-sidebar-footer {
+    margin-top: auto;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--shake-navy-elevated);
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.45);
+}
+.shake-sidebar-footer .ti { color: var(--shake-amber); }
+@media (min-width: 992px) {
+    .shake-sidebar .navbar-collapse {
+        display: flex !important;
+        flex-direction: column;
+        align-items: stretch;
+        height: 100%;
+    }
+}
+
+/* ---------- Top utility bar ---------- */
+.shake-topbar {
+    background: var(--shake-surface);
+    border-bottom: 1px solid var(--shake-hairline);
+    min-height: 3.5rem;
+}
+.shake-topbar .shake-page-context {
+    font-size: 0.8rem;
+    color: var(--shake-ink-muted);
+}
+
+/* ---------- Guest (signed-out) header ---------- */
+.shake-guestbar {
+    background: var(--shake-navy);
+    border-bottom: 1px solid var(--shake-navy-elevated);
+}
+.shake-guestbar .nav-link { color: rgba(255, 255, 255, 0.78); }
+.shake-guestbar .nav-link:hover { color: #FFFFFF; }
+
+/* ---------- Avatars ---------- */
+.shake-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--shake-hairline);
+}
+.shake-avatar-fallback {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--shake-blue);
+    color: #FFFFFF;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+/* ---------- Cards & hero banners ---------- */
+.card {
+    border: 1px solid var(--shake-hairline);
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 2px rgba(15, 33, 62, 0.04);
+}
+.card > .card-header {
+    background: var(--shake-surface);
+    border-bottom: 1px solid var(--shake-hairline);
+}
+.card-title .ti,
+.shake-section-icon { color: var(--shake-blue); }
+
+.shake-hero,
+.card > .card-header.shake-hero {
+    position: relative;
+    overflow: hidden;
+    color: #FFFFFF;
+    border: 1px solid var(--shake-navy-elevated);
+    background:
+        radial-gradient(circle at 92% 18%, rgba(245, 158, 11, 0.20) 0, rgba(245, 158, 11, 0) 22%),
+        linear-gradient(135deg, var(--shake-navy) 0%, var(--shake-navy-elevated) 100%);
+}
+.shake-hero > .card-body { position: relative; z-index: 1; }
+.shake-hero .text-muted,
+.shake-hero .text-secondary,
+.shake-hero-sub { color: rgba(255, 255, 255, 0.72) !important; }
+.shake-hero code {
+    color: #FCD34D;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 0.05rem 0.3rem;
+    border-radius: 0.25rem;
+}
+.shake-hero .shake-hero-mark {
+    position: absolute;
+    right: -1.5rem;
+    bottom: -2.5rem;
+    height: 11rem;
+    opacity: 0.08;
+    pointer-events: none;
+}
+
+/* Light auth / form card header carrying the brand lockup */
+.card > .card-header.shake-auth-header {
+    background: linear-gradient(180deg, #FFFFFF 0%, var(--shake-canvas) 100%) !important;
+    border-bottom: 1px solid var(--shake-hairline);
+    border-top: 3px solid var(--shake-blue);
+}
+.shake-auth-header .shake-eyebrow { color: var(--shake-ink-muted); }
+
+.shake-eyebrow {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+/* ---------- KPI stat blocks ---------- */
+.shake-kpi .card-body { padding: 1.1rem 1.25rem; }
+.shake-kpi .subheader {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--shake-ink-muted);
+}
+.shake-kpi .shake-kpi-value {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--shake-navy);
+    font-variant-numeric: tabular-nums;
+}
+.shake-kpi .shake-kpi-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.6rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+}
+.shake-kpi-accent { border-top: 3px solid var(--shake-blue); }
+.shake-kpi-accent-amber { border-top: 3px solid var(--shake-amber); }
+
+.shake-icon-blue { background: rgba(var(--shake-blue-rgb), 0.1); color: var(--shake-blue); }
+.shake-icon-sky { background: rgba(72, 142, 230, 0.12); color: #1D5FBF; }
+.shake-icon-green { background: rgba(15, 118, 110, 0.1); color: #0F766E; }
+.shake-icon-amber { background: var(--shake-amber-soft); color: var(--shake-amber-text); }
+.shake-icon-navy { background: rgba(15, 33, 62, 0.08); color: var(--shake-navy); }
+
+/* ---------- Badges ---------- */
+.badge { font-weight: 600; }
+.badge-amber,
+.shake-badge-amber {
+    background-color: var(--shake-amber-soft) !important;
+    color: var(--shake-amber-text) !important;
+    border: 1px solid #FDE68A;
+}
+.badge-carrier {
+    background-color: var(--shake-navy) !important;
+    color: #FFFFFF !important;
+    letter-spacing: 0.06em;
+}
+.badge-port {
+    background-color: #F1F5F9 !important;
+    color: var(--shake-navy) !important;
+    border: 1px solid var(--shake-hairline);
+    font-weight: 700;
+}
+.badge-equipment {
+    background-color: rgba(var(--shake-blue-rgb), 0.08) !important;
+    color: #1E40AF !important;
+    border: 1px solid rgba(var(--shake-blue-rgb), 0.2);
+}
+.badge-format {
+    background-color: var(--shake-navy-elevated) !important;
+    color: #FFFFFF !important;
+}
+.badge-role-admin {
+    background-color: var(--shake-amber-soft) !important;
+    color: var(--shake-amber-text) !important;
+    border: 1px solid #FDE68A;
+}
+.badge-role-encoder {
+    background-color: rgba(var(--shake-blue-rgb), 0.1) !important;
+    color: #1D4ED8 !important;
+    border: 1px solid rgba(var(--shake-blue-rgb), 0.22);
+}
+.badge-neutral {
+    background-color: #F1F5F9 !important;
+    color: #334155 !important;
+    border: 1px solid var(--shake-hairline);
+}
+.shake-hero .badge-neutral {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: #FFFFFF !important;
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+/* ---------- Monospace data (UN/LOCODE, rates, SHA-256, IDs) ---------- */
+.font-mono-code,
+.font-monospace,
+code {
+    font-family: var(--shake-font-mono) !important;
+    font-variant-numeric: tabular-nums;
+}
+.font-mono-code { letter-spacing: 0.01em; }
+code {
+    color: #1E3A8A;
+    background: #EFF6FF;
+    padding: 0.08rem 0.3rem;
+    border-radius: 0.25rem;
+    font-size: 0.85em;
+}
+.shake-hash {
+    word-break: break-all;
+    color: var(--shake-ink-muted);
+}
+
+/* ---------- Data-dense tables ---------- */
+.table { --tblr-table-bg: transparent; }
+.card-table thead th,
+.table thead th {
+    background: var(--shake-canvas);
+    color: var(--shake-ink-muted);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--shake-hairline);
+    white-space: nowrap;
+}
+.table > :not(caption) > * > * { border-bottom-color: var(--shake-hairline); }
+.table-hover > tbody > tr:hover > * { background-color: rgba(var(--shake-blue-rgb), 0.035); }
+.shake-rate-table td { padding-top: 0.45rem; padding-bottom: 0.45rem; white-space: nowrap; }
+.shake-amount { font-weight: 700; color: var(--shake-navy); }
+
+/* ---------- Buttons & forms ---------- */
+.btn-primary {
+    --tblr-btn-variant: var(--shake-blue);
+    --tblr-btn-variant-fg: #FFFFFF;
+    --tblr-btn-variant-darken: #1D4ED8;
+}
+.btn-amber {
+    background-color: var(--shake-amber);
+    border-color: var(--shake-amber);
+    color: var(--shake-navy);
+    font-weight: 600;
+}
+.btn-amber:hover { background-color: #D97706; border-color: #D97706; color: #FFFFFF; }
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--shake-sky);
+    box-shadow: 0 0 0 0.2rem rgba(var(--shake-blue-rgb), 0.15);
+}
+.form-label { color: #334155; }
+
+/* Upload dropzone */
+.shake-dropzone {
+    border: 2px dashed #94A3B8;
+    border-radius: 0.75rem;
+    background-color: var(--shake-canvas);
+    transition: border-color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+.shake-dropzone:hover,
+.shake-dropzone.dragover {
+    border-color: var(--shake-blue);
+    background-color: #EFF6FF;
+}
+
+/* ---------- Alerts ---------- */
+.alert { border-radius: 0.6rem; }
+.alert-warning {
+    background-color: var(--shake-amber-soft);
+    border-color: #FDE68A;
+    color: #78350F;
+}
+
+/* ---------- Footer ---------- */
+.shake-footer {
+    border-top: 1px solid var(--shake-hairline);
+    background: var(--shake-surface);
+    color: var(--shake-ink-muted);
+    font-size: 0.8rem;
+}
+
+/* ---------- Guest auth layout ---------- */
+.shake-auth-wrap {
+    min-height: calc(100vh - 8rem);
+}
+.shake-auth-card { max-width: 30rem; margin: 0 auto; }
+.shake-auth-card-wide { max-width: 46rem; margin: 0 auto; }
+
+/* ---------- Contrast & sizing refinements ---------- */
+.shake-hero .badge-role-encoder {
+    background-color: rgba(72, 142, 230, 0.22) !important;
+    color: #DBEAFE !important;
+    border-color: rgba(72, 142, 230, 0.45);
+}
+.shake-hero .badge-role-admin {
+    background-color: rgba(245, 158, 11, 0.2) !important;
+    color: #FDE68A !important;
+    border-color: rgba(245, 158, 11, 0.45);
+}
+.card-header h2.h5,
+.card-header h2.h6,
+.card-header h1.h5 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--shake-navy);
+}
+.shake-field-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--shake-navy);
+}

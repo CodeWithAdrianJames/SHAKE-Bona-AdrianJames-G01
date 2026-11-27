@@ -6,39 +6,39 @@
 <div class="row justify-content-center py-2">
     <div class="col-12 col-lg-9 col-xl-8">
         <!-- Profile Header Card -->
-        <div class="card shadow-sm overflow-hidden mb-4">
-            <div class="card-header border-0 p-4" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff;">
+        <div class="card overflow-hidden mb-4">
+            <div class="card-header shake-hero d-block border-0 rounded-0 p-4">
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
                     <div class="d-flex align-items-center gap-3">
                         {% if user.profile_photo %}
                             <img src="{{ user.profile_photo.url }}"
                                  alt="{{ user.full_name_or_username }}"
-                                 class="rounded-circle object-fit-cover border border-3 border-info shadow-sm"
+                                 class="rounded-circle object-fit-cover border border-3 border-white border-opacity-25"
                                  style="width: 84px; height: 84px;">
                         {% else %}
                             <div class="rounded-circle d-inline-flex align-items-center justify-content-center fw-bold border border-3 border-light border-opacity-25 shadow-sm"
-                                 style="width: 84px; height: 84px; background-color: #0284c7; color: #ffffff; font-size: 1.75rem;">
+                                 style="width: 84px; height: 84px; background-color: #2563EB; color: #ffffff; font-size: 1.75rem;">
                                 {{ user.initials }}
                             </div>
                         {% endif %}
 
                         <div>
                             <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
-                                <span class="badge {% if user.role == 'ADMIN' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} fw-semibold">
+                                <span class="badge {% if user.role == 'ADMIN' %}badge-role-admin{% else %}badge-role-encoder{% endif %} fw-semibold">
                                     {% if user.role == 'ADMIN' %}
-                                        <i class="bi bi-shield-lock-fill me-1"></i>
+                                        <i class="ti ti-shield-lock me-1"></i>
                                     {% else %}
-                                        <i class="bi bi-person-workspace me-1"></i>
+                                        <i class="ti ti-briefcase me-1"></i>
                                     {% endif %}
                                     {{ user.get_role_display }}
                                 </span>
-                                <span class="badge bg-success-subtle text-success border border-success-subtle">
-                                    <i class="bi bi-check-circle-fill me-1"></i>Active Account
+                                <span class="badge badge-neutral">
+                                    <i class="ti ti-circle-check me-1"></i>Active Account
                                 </span>
                             </div>
-                            <h1 class="h3 fw-bold mb-1">{{ user.full_name_or_username }}</h1>
-                            <div class="small text-light opacity-75">
-                                <i class="bi bi-at"></i>{{ user.username }}
+                            <h1 class="h2 fw-bold mb-1 text-white">{{ user.full_name_or_username }}</h1>
+                            <div class="small shake-hero-sub">
+                                <i class="ti ti-at"></i>{{ user.username }}
                                 {% if user.department %}
                                     &bull; {{ user.department }}
                                 {% endif %}
@@ -47,15 +47,15 @@
                     </div>
 
                     <div class="d-flex flex-wrap gap-2">
-                        <a href="{% url 'profile_edit' %}" class="btn btn-info text-dark fw-semibold">
-                            <i class="bi bi-pencil-square me-1"></i>Edit Profile
+                        <a href="{% url 'profile_edit' %}" class="btn btn-amber">
+                            <i class="ti ti-edit me-1"></i>Edit Profile
                         </a>
-                        <a href="{% url 'password_change' %}" class="btn btn-outline-info fw-semibold">
-                            <i class="bi bi-key me-1"></i>Change Password
+                        <a href="{% url 'password_change' %}" class="btn btn-outline-light fw-semibold">
+                            <i class="ti ti-key me-1"></i>Change Password
                         </a>
                         <a href="{% if user.role == 'ADMIN' %}{% url 'admin_dashboard' %}{% else %}{% url 'encoder_dashboard' %}{% endif %}"
-                           class="btn btn-outline-light">
-                            <i class="bi bi-arrow-left me-1"></i>Back to Workspace
+                           class="btn btn-ghost-light">
+                            <i class="ti ti-arrow-left me-1"></i>Back to Workspace
                         </a>
                     </div>
                 </div>
@@ -66,24 +66,24 @@
                 <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
                     <div>
                         <h2 class="h5 fw-bold mb-0">
-                            <i class="bi bi-person-vcard me-2 text-primary"></i>Account &amp; Operational Profile Details
+                            <i class="ti ti-id me-2 text-primary"></i>Account &amp; Operational Profile Details
                         </h2>
                         <p class="text-muted small mb-0">
                             Personal details, operational department, and workspace role for your SHAKE session
                         </p>
                     </div>
-                    <span class="badge bg-light text-secondary border">
-                        <i class="bi bi-lock-fill me-1"></i>Self-Only Access
+                    <span class="badge badge-neutral">
+                        <i class="ti ti-lock me-1"></i>Self-Only Access
                     </span>
                 </div>
 
                 <div class="row g-4">
                     <div class="col-12 col-sm-6">
-                        <div class="p-3 rounded-3 bg-light border h-100">
-                            <div class="text-muted small fw-semibold text-uppercase mb-1">
-                                <i class="bi bi-person me-1"></i>Full Name
+                        <div class="p-3 rounded-3 border bg-body h-100">
+                            <div class="shake-eyebrow text-secondary mb-1">
+                                <i class="ti ti-user me-1"></i>Full Name
                             </div>
-                            <div class="fw-semibold fs-6 text-dark">
+                            <div class="shake-field-value">
                                 {{ user.full_name_or_username }}
                             </div>
                             <div class="text-muted small mt-1">
@@ -93,11 +93,11 @@
                     </div>
 
                     <div class="col-12 col-sm-6">
-                        <div class="p-3 rounded-3 bg-light border h-100">
-                            <div class="text-muted small fw-semibold text-uppercase mb-1">
-                                <i class="bi bi-person-badge me-1"></i>Username
+                        <div class="p-3 rounded-3 border bg-body h-100">
+                            <div class="shake-eyebrow text-secondary mb-1">
+                                <i class="ti ti-id-badge-2 me-1"></i>Username
                             </div>
-                            <div class="fw-semibold fs-6 text-dark font-monospace">
+                            <div class="shake-field-value font-mono-code">
                                 {{ user.username }}
                             </div>
                             <div class="text-muted small mt-1">
@@ -107,11 +107,11 @@
                     </div>
 
                     <div class="col-12 col-sm-6">
-                        <div class="p-3 rounded-3 bg-light border h-100">
-                            <div class="text-muted small fw-semibold text-uppercase mb-1">
-                                <i class="bi bi-envelope me-1"></i>Work Email Address
+                        <div class="p-3 rounded-3 border bg-body h-100">
+                            <div class="shake-eyebrow text-secondary mb-1">
+                                <i class="ti ti-mail me-1"></i>Work Email Address
                             </div>
-                            <div class="fw-semibold fs-6 text-dark">
+                            <div class="shake-field-value">
                                 {{ user.email|default:"Not provided" }}
                             </div>
                             <div class="text-muted small mt-1">
@@ -121,12 +121,12 @@
                     </div>
 
                     <div class="col-12 col-sm-6">
-                        <div class="p-3 rounded-3 bg-light border h-100">
-                            <div class="text-muted small fw-semibold text-uppercase mb-1">
-                                <i class="bi bi-shield-check me-1"></i>Workspace Role
+                        <div class="p-3 rounded-3 border bg-body h-100">
+                            <div class="shake-eyebrow text-secondary mb-1">
+                                <i class="ti ti-shield-check me-1"></i>Workspace Role
                             </div>
                             <div class="mt-1">
-                                <span class="badge {% if user.role == 'ADMIN' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} fs-6 fw-semibold">
+                                <span class="badge {% if user.role == 'ADMIN' %}badge-role-admin{% else %}badge-role-encoder{% endif %} fw-semibold">
                                     {{ user.get_role_display }}
                                 </span>
                             </div>
@@ -137,11 +137,11 @@
                     </div>
 
                     <div class="col-12 col-sm-6">
-                        <div class="p-3 rounded-3 bg-light border h-100">
-                            <div class="text-muted small fw-semibold text-uppercase mb-1">
-                                <i class="bi bi-building me-1"></i>Operational Department
+                        <div class="p-3 rounded-3 border bg-body h-100">
+                            <div class="shake-eyebrow text-secondary mb-1">
+                                <i class="ti ti-building me-1"></i>Operational Department
                             </div>
-                            <div class="fw-semibold fs-6 text-dark">
+                            <div class="shake-field-value">
                                 {{ user.department|default:"Not specified" }}
                             </div>
                             <div class="text-muted small mt-1">
@@ -151,11 +151,11 @@
                     </div>
 
                     <div class="col-12 col-sm-6">
-                        <div class="p-3 rounded-3 bg-light border h-100">
-                            <div class="text-muted small fw-semibold text-uppercase mb-1">
-                                <i class="bi bi-telephone me-1"></i>Contact Number
+                        <div class="p-3 rounded-3 border bg-body h-100">
+                            <div class="shake-eyebrow text-secondary mb-1">
+                                <i class="ti ti-phone me-1"></i>Contact Number
                             </div>
-                            <div class="fw-semibold fs-6 text-dark">
+                            <div class="shake-field-value">
                                 {{ user.contact_number|default:"Not specified" }}
                             </div>
                             <div class="text-muted small mt-1">
@@ -165,12 +165,12 @@
                     </div>
 
                     <div class="col-12">
-                        <div class="p-3 rounded-3 bg-light border d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div class="p-3 rounded-3 border bg-body d-flex flex-wrap justify-content-between align-items-center gap-2">
                             <div>
-                                <span class="text-muted small fw-semibold text-uppercase me-2">
-                                    <i class="bi bi-calendar-check me-1"></i>Member Since:
+                                <span class="shake-eyebrow text-secondary me-2">
+                                    <i class="ti ti-calendar-check me-1"></i>Member Since:
                                 </span>
-                                <span class="fw-semibold text-dark">
+                                <span class="shake-field-value">
                                     {{ user.date_joined|date:"F j, Y" }}
                                 </span>
                             </div>
@@ -186,29 +186,29 @@
                 </div>
             </div>
 
-            <div class="card-footer bg-white py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="card-footer py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <div class="small text-muted">
-                    <i class="bi bi-shield-lock me-1 text-primary"></i>
+                    <i class="ti ti-shield-lock me-1 text-primary"></i>
                     Need to update your name, email, department, contact number, avatar, or password?
                 </div>
                 <div class="d-flex flex-wrap gap-2">
                     <a href="{% url 'password_change' %}" class="btn btn-outline-primary btn-sm fw-semibold px-3">
-                        <i class="bi bi-key me-1"></i>Change Password
+                        <i class="ti ti-key me-1"></i>Change Password
                     </a>
                     <a href="{% url 'profile_edit' %}" class="btn btn-primary btn-sm fw-semibold px-3">
-                        <i class="bi bi-pencil-square me-1"></i>Edit Profile Details
+                        <i class="ti ti-edit me-1"></i>Edit Profile Details
                     </a>
                 </div>
             </div>
         </div>
 
         <!-- Local API Tokens (F-11) -->
-        <div class="card shadow-sm rounded-3 mb-4" id="api-tokens">
+        <div class="card mb-4" id="api-tokens">
             <div class="card-body p-4">
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom pb-3 mb-3">
                     <div>
                         <h2 class="h5 fw-bold mb-0">
-                            <i class="bi bi-terminal me-2 text-primary"></i>Local API Tokens
+                            <i class="ti ti-terminal-2 me-2 text-primary"></i>Local API Tokens
                         </h2>
                         <p class="text-muted small mb-0">
                             Bearer tokens for scripts on this workstation calling
@@ -216,18 +216,18 @@
                             The API only answers loopback (<code>127.0.0.1</code> / <code>::1</code>) connections.
                         </p>
                     </div>
-                    <span class="badge bg-light text-secondary border">
-                        <i class="bi bi-pc-display me-1"></i>Localhost Only
+                    <span class="badge badge-neutral">
+                        <i class="ti ti-device-desktop me-1"></i>Localhost Only
                     </span>
                 </div>
 
                 {% if new_api_token %}
                     <div class="alert alert-warning" role="alert">
                         <div class="fw-semibold mb-1">
-                            <i class="bi bi-exclamation-triangle-fill me-1"></i>Copy your new token now
+                            <i class="ti ti-alert-triangle me-1"></i>Copy your new token now
                         </div>
                         <div class="small mb-2">It is shown only once. Store it somewhere safe; revoke it if it leaks.</div>
-                        <input type="text" class="form-control font-monospace" value="{{ new_api_token }}"
+                        <input type="text" class="form-control font-mono-code" value="{{ new_api_token }}"
                                readonly aria-label="New API token" onfocus="this.select();"
                                data-testid="new-api-token">
                     </div>
@@ -244,15 +244,15 @@
                     </div>
                     <div class="col-12 col-md-auto mb-md-4">
                         <button type="submit" class="btn btn-primary fw-semibold">
-                            <i class="bi bi-plus-circle me-1"></i>Generate Token
+                            <i class="ti ti-circle-plus me-1"></i>Generate Token
                         </button>
                     </div>
                 </form>
 
                 {% if api_tokens %}
                     <div class="table-responsive">
-                        <table class="table table-sm align-middle mb-0">
-                            <thead class="table-light">
+                        <table class="table table-vcenter card-table table-sm mb-0">
+                            <thead>
                                 <tr>
                                     <th scope="col">Label</th>
                                     <th scope="col">Token</th>
@@ -266,7 +266,7 @@
                                 {% for token in api_tokens %}
                                     <tr>
                                         <td class="fw-semibold">{{ token.name }}</td>
-                                        <td class="font-monospace small">{{ token.masked_key }}</td>
+                                        <td class="font-mono-code small">{{ token.masked_key }}</td>
                                         <td class="small text-muted">{{ token.created_at|date:"M j, Y H:i" }}</td>
                                         <td class="small text-muted">{{ token.last_used_at|date:"M j, Y H:i"|default:"Never" }}</td>
                                         <td>
@@ -282,7 +282,7 @@
                                                       data-confirm="Revoke API token '{{ token.name }}'? Scripts using it will stop working immediately.">
                                                     {% csrf_token %}
                                                     <button type="submit" class="btn btn-outline-danger btn-sm">
-                                                        <i class="bi bi-x-circle me-1"></i>Revoke
+                                                        <i class="ti ti-circle-x me-1"></i>Revoke
                                                     </button>
                                                 </form>
                                             {% else %}
@@ -296,7 +296,7 @@
                     </div>
                 {% else %}
                     <p class="text-muted small mb-0">
-                        <i class="bi bi-info-circle me-1"></i>No API tokens yet. Generate one to call the local API from a script.
+                        <i class="ti ti-info-circle me-1"></i>No API tokens yet. Generate one to call the local API from a script.
                     </p>
                 {% endif %}
             </div>

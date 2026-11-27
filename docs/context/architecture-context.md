@@ -5,7 +5,7 @@
 | Layer | Technology | Role |
 | --- | --- | --- |
 | Framework | Django (Python 3.x) | Server-rendered full-stack web application, ORM, and REST endpoints |
-| UI | Bootstrap 5 + Django Templates | Responsive local workspace, forms, and interactive inspection tables |
+| UI | Tabler 1.7.5 (Bootstrap 5) + Tabler Icons 3.53.0 + Django Templates | Offline-bundled responsive workspace (`static/vendor/tabler/`) themed by `static/css/shake-theme.css`; forms and data-dense inspection tables |
 | Auth | Custom Django Auth (`accounts.CustomUser`) | Email-based login, role assignment (`ADMIN`, `ENCODER`), and session/token guards |
 | Database | PostgreSQL (`DATABASE_URL`) / SQLite (`db.sqlite3`) | Normalized 3NF persistence with native `UNIQUE`, `CHECK`, and `FK` constraints |
 | PDF Engine | PyMuPDF (`fitz`) + OpenDataLoader Java AST | 100% offline vector text/coordinate extraction and cross-page table stitching |
@@ -21,7 +21,8 @@
   - `contracts/engine/` — Pure offline document processing modules (`ingestion.py`, `extraction.py`, `mapping.py`, `exporter.py`, `models.py`, `errors.py`) decoupled from HTTP request/response objects.
   - `contracts/services/` — Transactional ORM pipeline orchestration (`pipeline.py`), export artifact + `ExportRecord` audit logging, and the API contract payload builder (`exporter.py`).
   - `contracts/api_views.py`, `contracts/api_urls.py` — Local loopback REST API (`F-11`): loopback guard, Bearer/session authentication, `POST /api/v1/ingest`, `GET /api/v1/contracts/<pk>`.
-- `templates/` — Bootstrap 5 HTML templates (`base.html`, `accounts/`, `contracts/`, `dashboard/`, `includes/`) plus the error pages `403.html`, `404.html`, and `500.html`.
+- `templates/` — Tabler (Bootstrap 5) HTML templates (`base.html`, `accounts/`, `registration/`, `contracts/`, `dashboard/`, `includes/` incl. the `status_badge.html` partial) plus the error pages `403.html`, `404.html`, and `500.html`.
+- `static/` — Local front-end assets served by `django.contrib.staticfiles` (`STATICFILES_DIRS`): `vendor/tabler/` (Tabler `css/tabler.min.css`, `js/tabler.min.js` with the bundled Bootstrap JS, and `icons/tabler-icons.min.css` + `icons/fonts/*.woff2`; MIT), `css/shake-theme.css` (SHAKE brand tokens), and `img/` (`shake-logo.png` source artwork, `shake-emblem.svg` for light surfaces, `shake-emblem-light.svg` for the navy sidebar). No template references a CDN or remote font.
 - `media/` — Runtime directory for local uploaded PDFs and exported files (git-ignored). Only `media/profile_photos/` is ever served as static files (and only when `DEBUG=True`); uploaded contract PDFs and export files are never URL-addressable.
 
 ## Storage Model
@@ -60,8 +61,8 @@
 
 ### Error Pages
 
-- `templates/404.html`: standalone page (inline CSS, no `base.html`, no CDN assets) rendered by Django's default `page_not_found` handler whenever `DEBUG=False`. Every `get_object_or_404` miss, including out-of-scope IDs, lands here. It never echoes the requested path or the exception text. Links: `/dashboard/`, `/contracts/` (signed in) or `/accounts/login/` (anonymous).
-- `templates/500.html`: fully standalone. Django's `server_error` handler renders it with an empty context, so it uses no context processors, no `user`/`messages`/`request`, no URL reversing, and runs zero database queries. Hardcoded links to `/dashboard/` and `/accounts/login/`; no exception details.
+- `templates/404.html`: standalone page (inline CSS and an inline SVG S-emblem, no `base.html`, no static files, no CDN assets) rendered by Django's default `page_not_found` handler whenever `DEBUG=False`. Every `get_object_or_404` miss, including out-of-scope IDs, lands here. It never echoes the requested path or the exception text. Links: `/dashboard/`, `/contracts/` (signed in) or `/accounts/login/` (anonymous).
+- `templates/500.html`: fully standalone. Django's `server_error` handler renders it with an empty context, so it uses no context processors, no `user`/`messages`/`request`, no URL reversing, no `{% static %}` (the S-emblem is inline SVG), and runs zero database queries. Hardcoded links to `/dashboard/` and `/accounts/login/`; no exception details.
 
 ### Server-Side Validation
 
@@ -128,7 +129,7 @@
 
 ## Invariants
 
-1. **Zero Cloud Egress:** All PDF parsing, table stitching, database storage, and exports run 100% locally; never invoke external cloud OCR or third-party LLM APIs.
+1. **Zero Cloud Egress:** All PDF parsing, table stitching, database storage, and exports run 100% locally; never invoke external cloud OCR or third-party LLM APIs. The UI is offline too: CSS, JS, icon fonts, and brand images load only from `static/` (no CDN `<link>`/`<script>` tags or remote fonts).
 2. **Identity & Role Integrity (`BR-01`, `BR-02`):** Unique email addresses and strict role enforcement (`ADMIN`, `ENCODER`) across web views and API endpoints.
 3. **Unique Carrier Definitions (`BR-03`):** `carrier_code` and `carrier_name` must remain unique at both form validation and database constraint levels.
 4. **Batch & Document Integrity (`BR-04`–`BR-08`):** Batch file counts `>= 1`, positive `file_size_bytes` and `page_count`, strict lifecycle status states, and SHA-256 duplicate rejection.

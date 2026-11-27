@@ -30,9 +30,11 @@
 ## Templates and Styling
 
 - Render forms through `templates/includes/form_fields.html` so label, help text, checkbox, and validation error markup stay uniform.
-- Format contract numbers, UN/LOCODE port codes, SHA-256 hashes, and monetary amounts using `font-monospace` (and `text-end` for numeric columns).
+- Format contract numbers, UN/LOCODE port codes, SHA-256 hashes, and monetary amounts using `font-mono-code` (defined in `static/css/shake-theme.css`; `text-end` for numeric columns).
+- Load front-end assets only through `{% static %}` from `static/vendor/tabler/` and `static/css/shake-theme.css`; never add CDN `<link>`/`<script>` tags or remote fonts. Use Tabler Icons (`ti ti-*`) and the brand classes in `shake-theme.css` instead of inline colors.
+- Render `DocumentFile`/`ProcessingJob` status pills with `{% include "includes/status_badge.html" with status=... %}`.
 - Keep templates self-contained and offline-safe without external runtime dependencies that fail without internet access.
-- `templates/404.html` and `templates/500.html` must stay standalone (inline CSS, no `{% extends %}`). `500.html` must not reverse URLs or read `user`/`request`/`messages`, because Django renders it with an empty context.
+- `templates/404.html` and `templates/500.html` must stay standalone (inline CSS and inline SVG emblem, no `{% extends %}`, no `{% static %}`). `500.html` must not reverse URLs or read `user`/`request`/`messages`, because Django renders it with an empty context.
 
 ## API Routes (Loopback REST API — F-11)
 
