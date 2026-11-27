@@ -5,11 +5,22 @@ Update this file whenever the current phase, active feature, or implementation s
 ## Current Phase
 
 - **Project Development 2 (Core Feature Vertical Slice):** Completed and merged into `main`.
-- **Project Development 3 (Loopback REST API `F-11` & SDD Polish):** In progress — `F-01`, `F-04`, `F-09`, `F-11`, and the PD3 validation/error-page/security hardening pass merged into `develop`; dedicated PD3 verification suite on `test/pd3-hardening-verification`.
+- **Project Development 3 (Loopback REST API `F-11`, Hardening & SDD Polish):** Complete — `F-01`, `F-04`, `F-09`, `F-11`, the validation/error-page/security hardening pass, and the dedicated PD3 verification suite are merged into `develop`. Final documentation (traceability matrix, README test instructions) is on `fix/pd3-docs-and-report`.
 
 ## Current Goal
 
-- Open a PR for `test/pd3-hardening-verification` into `develop`.
+- Open a PR for `fix/pd3-docs-and-report` into `develop`, then release `develop` -> `main` via PR with the PD3 report (`docs/SHAKE-Bona-AdrianJames-G01-PD3.pdf`).
+
+## SDD Completion Status
+
+All SDD requirements are implemented and verified by the automated suite (218 tests, 218 passed, 0 skipped on SQLite). Full mapping: [`docs/traceability-matrix.md`](../traceability-matrix.md).
+
+| Area | Items | Status |
+| --- | --- | --- |
+| Functional requirements | `F-01` Auth & access · `F-02` Carrier profiles · `F-03` Single/batch ingestion · `F-04` Offline parsing & cross-page stitching · `F-05` Metadata association · `F-06` Base freight rates · `F-07` Arbitrary charges · `F-08` Viewer, CRUD, archiving & dashboards · `F-09` Multi-format exporters · `F-10` Job telemetry & export audit · `F-11` Local loopback REST API | Complete |
+| Business rules | `BR-01`–`BR-13` (incl. `BR-10` date range and `BR-13` distinct ports), enforced at the form/model layer and the database constraint layer | Complete |
+| PD3 hardening | Custom `404`/`500` pages · `.env` `DEBUG`/`SECRET_KEY` · `/media/` exposure limited to profile photos · IDOR isolation · `POST`-only actions + CSRF · `transaction.atomic()` · query optimization · server-side validation + PRG messages · PD2 `ISS-01`/`ISS-02` workarounds documented | Complete |
+| Documentation | `docs/traceability-matrix.md`, README test-runner instructions, feature specs `01`–`11`, context files | Complete (PD3 report PDF still to be committed) |
 
 ## Completed
 
@@ -81,19 +92,27 @@ Update this file whenever the current phase, active feature, or implementation s
     - `PD1RegistrationTests` (4), `PD1LoginLogoutTests` (4), `PD1RoleDashboardTests` (4), `PD1ProfileAndTokenTests` (5): ENCODER-only registration (posted `role=ADMIN`/`is_staff`/`is_superuser` ignored, email normalized, password hashed), duplicate-email and weak-password rejection; case-insensitive email login routed by role, username/wrong-password/inactive rejection, POST-only logout; role dashboard redirects and KPI counts (encoder sees only own batches/contracts/rates/arbitraries/exports, admin sees system-wide totals); self-only profile, privileged fields ignored on profile edit, password change keeps the session, and the API token lifecycle (generate, shown once, Bearer use updates `last_used_at`, revoke, then `401`).
   - Scope notes recorded in the module docstring: there is no contract hard-delete view (contracts are archived, BR-09), and `ArbitraryCharge` has no web edit/delete views, so its amount rule is tested at the validator and DB layers.
   - Verified with `$env:DATABASE_URL=" "; .\.venv\Scripts\python.exe manage.py test -v 2`: 218 tests on SQLite (156 existing + 62 new), 218 passed, 0 skipped; `manage.py test` discovers `contracts/tests_pd3_hardening.py` with the default `test*.py` pattern. PostgreSQL not verified locally (psycopg `pq` DLL blocked, `ISS-01`).
+  - Merged into `develop` (`d961b42`).
+- **PD3 — Final Documentation & Traceability on `fix/pd3-docs-and-report` (documentation only; no application code changed):**
+  - Added `docs/traceability-matrix.md`: `F-01`–`F-11` → spec file, Django modules, URL routes, models/migrations, and test classes; `BR-01`–`BR-13` → enforcement layer (DB / model / form / service / view) and tests; PD3 hardening items (`404`/`500`, `.env` settings, `/media/`, IDOR, `POST`-only, `transaction.atomic()`, query counts, `ISS-01`/`ISS-02`) → exact files and tests. It notes that spec file numbers differ from feature IDs (e.g. spec `02` is `F-03`) and that `F-02` has no dedicated spec, and lists the remaining verification gaps.
+  - `README.md`: new **Running the Automated Test Suite** section (PostgreSQL `python manage.py test`, SQLite `$env:DATABASE_URL=" "; .\.venv\Scripts\python.exe manage.py test -v 2`, per-module counts including `contracts/tests_pd3_hardening.py`), a **Project Documentation** table linking the traceability matrix and the PD2/PD3 reports, the PD3 phase line, and the PD3 branch list.
+  - Repository hygiene: `.env` is ignored by `.gitignore` (`.env`, `.env.*`, `!.env.example`) and is not tracked (`git ls-files` lists only `.env.example`). `requirements.txt` already matches `.venv` (Python 3.13.15): every direct dependency is listed and satisfied (Django 6.1.3, psycopg[binary] 3.3.9, dj-database-url 3.1.2, python-dotenv 1.2.4, Pillow 13.0.0, pymupdf 2.1, opendataloader-pdf 2.5.24, pandas 3.1.1, openpyxl 3.1.5); the other installed packages are transitive dependencies of `pymupdf` and `pandas`, so the file was not changed.
+  - Verified: `manage.py check` clean; `$env:DATABASE_URL=" "; .\.venv\Scripts\python.exe manage.py test -v 2` ran 218 tests, 218 passed, 0 skipped. The first run of the session failed at import time (`pandas` C extension, "partially initialized module"); `pandas` then imported cleanly and the re-run passed, so it was a transient load failure of the `.pyd` on this OneDrive-synced workstation, not a code issue.
 - **Spec-Driven Context Sync:**
   - Committed `AGENTS.md` and `docs/context/*.md` on `develop` and released `develop` -> `main` via Pull Request.
   - Audited context files against the codebase and corrected drift: context paths now point to `docs/context/`, `BatchUpload` uploader FK documented as `user` (not `uploaded_by`), `RoleRequiredMixin` / `@role_required` documented in `dashboard/views.py`, and `BootstrapFormMixin` documented in `accounts/forms.py`.
 
-## In Progress
-
-- **CI/CD Pipeline (GitHub Actions) on `ci/github-actions-pipeline`:**
+- **CI/CD Pipeline (GitHub Actions) on `ci/github-actions-pipeline` (merged into `develop`, `8b6468e`):**
   - Added `.github/workflows/ci-cd.yml` (runs on push to `develop`, `main`, `feature/**`, `ci/**`, `docs/**` and on PRs into `develop`/`main`) with four jobs:
     - `test-sqlite`: `makemigrations --check --dry-run`, `check`, `migrate`, and the full test suite on SQLite (`DATABASE_URL=""`).
     - `test-postgres`: migrations + full test suite against a `postgres:16-alpine` service container (`DB_SSL_REQUIRE=False` because the service container does not serve SSL and `shake/settings.py` defaults `DB_SSL_REQUIRE` to `True`).
     - `privacy-and-security-guard`: AST scan rejecting cloud/network imports (`boto3`, `botocore`, `openai`, `anthropic`, `google.cloud`, `requests`, `httpx`, `aiohttp`) in `contracts/engine/` (Zero Cloud Egress invariant), plus `check --deploy --fail-level ERROR`.
     - `package-release` (CD): on pushes to `main` only, after all three CI jobs pass, builds a `git archive` zip + SHA-256 checksum and uploads it as a 30-day workflow artifact.
   - Locally verified with the CI environment values: YAML parses, `makemigrations --check` reports no changes, `check` is clean, `check --deploy` reports warnings only (W004, W008, W009, W012, W016), the privacy scan passes, and 45 SQLite tests run (44 passed, 1 external-fixture skipped). The PostgreSQL job has not been verified locally (psycopg `pq` DLL is blocked on this workstation) and will first be verified on GitHub Actions.
+
+## In Progress
+
+- None. All SDD features, business rules, and PD3 hardening tasks are complete; only the documentation PR (`fix/pd3-docs-and-report` -> `develop`) and the `develop` -> `main` release remain.
 
 ## Next Up
 
@@ -103,6 +122,8 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Open Questions
 
+- `docs/SHAKE-Bona-AdrianJames-G01-PD3.pdf` is linked from `README.md` but is not yet in the repository; it must be committed with the PD3 submission.
+- Verification gaps recorded in `docs/traceability-matrix.md` §4: the DEBUG-only `/media/profile_photos/` URL pattern has no automated test (tests run with `DEBUG=False`; it was smoke-tested manually), and no test deletes a referenced `CarrierProfile` to exercise the `BR-11` `ON DELETE RESTRICT` FK. Should tests be added for these?
 - PD3 hardening: there are no web views that edit or delete `ArbitraryCharge` rows (they are read-only via detail, export, and the API, all ownership-scoped). Adding arbitrary-charge CRUD would be a new feature; it was deliberately not added in the hardening pass. Is it required?
 - Exports are downloaded with `GET /contracts/<pk>/export/<fmt>/`, which writes an `ExportRecord` audit row (a side effect on `GET`). It is kept as a download link so the UI is unchanged; should exports move to a `POST` form?
 - With `DEBUG=False`, Django no longer serves `media/profile_photos/`, so avatars only appear when `DEBUG=True` or behind a web server. Is a production static/media server in scope?
@@ -128,6 +149,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Repository: `https://github.com/CodeWithAdrianJames/SHAKE-Bona-AdrianJames-G01.git`
 - Local test runner command (SQLite): `$env:DATABASE_URL=" "; .\.venv\Scripts\python.exe manage.py test -v 2`
-- Local test runner command (PostgreSQL): `.\.venv\Scripts\python.exe manage.py test --keepdb -v 2`
+- Local test runner command (PostgreSQL): `python manage.py test` (add `--keepdb -v 2` to reuse the test database)
+- Traceability: `docs/traceability-matrix.md` maps `F-01`–`F-11`, `BR-01`–`BR-13`, and PD3 hardening to code and the 218 tests.
 - CI/CD: `.github/workflows/ci-cd.yml` runs SQLite tests, PostgreSQL tests, and the offline privacy/deploy audit on every push/PR; release bundles are packaged only on pushes to `main`.
 - Always follow GitFlow (`feature/*` -> `develop` -> `main` via PR; never commit directly to `main`; keep feature branches undeleted; omit AI agent names/trailers from commit messages).
