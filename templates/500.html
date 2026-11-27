@@ -47,7 +47,7 @@
         .mark { display: block; width: auto; height: 1.9rem; }
         .mark path { fill: none; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
         .wordmark { font-family: "Manrope", "Inter", system-ui, sans-serif; font-weight: 800; font-size: 1.6rem; line-height: 1; letter-spacing: 0.08em; text-transform: uppercase; }
-        .label { display: block; font-weight: 600; font-size: 12px; line-height: 16px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--shake-rejected); margin-bottom: 0.5rem; }
+        .code { font-weight: 600; color: var(--shake-deep-hull); }
         h1 { font-family: "Manrope", "Inter", system-ui, sans-serif; font-weight: 800; font-size: 28px; line-height: 34px; margin: 0 0 0.75rem; }
         p { color: var(--shake-slate); margin: 0 0 1.75rem; }
         .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
@@ -64,10 +64,9 @@
     <main>
         <div class="card" role="alert">
             <span class="lockup" aria-label="SHAKE"><svg class="mark" xmlns="http://www.w3.org/2000/svg" viewBox="9 12 46 39" aria-hidden="true" focusable="false"><path stroke="#0E2A3B" d="M12 20C17.33 13.33 26.67 13.33 32 20S46.67 26.67 52 20"/><path stroke="#0E2A3B" d="M12 34C17.33 30.67 26.67 30.67 32 34S46.67 37.33 52 34"/><path stroke="#0E7482" d="M12 48H22M31 48H52"/></svg><span class="wordmark" aria-hidden="true">SHAKE</span></span>
-            <span class="label">HTTP 500</span>
             <h1>Something went wrong on our side</h1>
             <p>
-                SHAKE could not complete your request. Your data has not been
+                <span class="code">Error 500.</span> SHAKE could not complete your request. Your data has not been
                 shared outside this workstation. Please try again, and contact
                 your administrator if the problem continues.
             </p>

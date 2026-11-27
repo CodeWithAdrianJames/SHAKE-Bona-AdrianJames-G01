@@ -918,17 +918,17 @@ table, .table, .shake-num, .shake-kpi-value, .shake-hero-metric, .badge {
 .alert {
     border-radius: 0.6rem;
     border: 1px solid var(--shake-mist);
-    border-left-width: 4px;
     background: #FFFFFF;
     color: var(--shake-deep-hull);
 }
-.alert-success { border-left-color: var(--shake-verified); }
+/* Semantic tint on the whole hairline + icon color; no one-sided accent stripe. */
+.alert-success { border-color: rgba(47, 125, 79, 0.35); background: rgba(47, 125, 79, 0.04); }
 .alert-success .shake-alert-icon { color: var(--shake-verified); }
-.alert-warning { border-left-color: var(--shake-review); }
+.alert-warning { border-color: rgba(154, 99, 18, 0.35); background: rgba(154, 99, 18, 0.04); }
 .alert-warning .shake-alert-icon { color: var(--shake-review); }
-.alert-danger, .alert-error { border-left-color: var(--shake-rejected); }
+.alert-danger, .alert-error { border-color: rgba(178, 62, 55, 0.35); background: rgba(178, 62, 55, 0.04); }
 .alert-danger .shake-alert-icon, .alert-error .shake-alert-icon { color: var(--shake-rejected); }
-.alert-info, .alert-debug { border-left-color: var(--shake-tide); }
+.alert-info, .alert-debug { border-color: rgba(var(--shake-tide-rgb), 0.3); background: rgba(var(--shake-tide-rgb), 0.04); }
 .alert-info .shake-alert-icon { color: var(--shake-tide); }
 .alert .shake-alert-icon { font-size: 1.25rem; flex-shrink: 0; }
 
