@@ -1,242 +1,199 @@
 {% extends "base.html" %}
-{% load static %}
 
 {% block title %}SHAKE — Operations Admin Dashboard{% endblock %}
 
 {% block content %}
-<!-- Operations Admin Header Banner -->
-<div class="card shake-hero mb-4">
-    <img src="{% static 'img/shake-emblem-light.svg' %}" alt="" class="shake-hero-mark">
-    <div class="card-body p-4">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-            <div>
-                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                    <span class="badge badge-role-admin">
-                        <i class="ti ti-shield-lock"></i>{{ user.get_role_display }}
-                    </span>
-                    <span class="badge badge-neutral">
-                        <i class="ti ti-server"></i>{{ engine_status.status_label }}
-                    </span>
-                </div>
-                <h1 class="h2 fw-bold mb-1 text-white">Operations Admin Control Center</h1>
-                <p class="shake-hero-sub mb-0 small">
-                    Monitor system-wide PostgreSQL ingestion batches, contracts, freight rate rows, user accounts, and carrier profiles.
-                </p>
-            </div>
-            <div class="text-md-end">
-                <div class="shake-eyebrow shake-hero-sub">Signed in as</div>
-                <div class="fw-semibold">{{ user.full_name_or_username }} ({{ user.username }})</div>
-                <span class="badge badge-amber mt-1">{{ user.department|default:"Operations Administration" }}</span>
-            </div>
-        </div>
+<div class="shake-page-header d-flex flex-wrap justify-content-between align-items-end gap-3">
+    <div>
+        <span class="shake-label">Admin Overview &middot; {{ user.department|default:"Operations Administration" }}</span>
+        <h1 class="mb-0">Operations Admin Control Center</h1>
+        <p>System-wide ingestion batches, contracts, freight rate rows, user accounts, and carrier profiles on this workstation.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'carrier_list' %}" class="btn btn-outline-secondary">
+            <i class="ti ti-building-warehouse me-1"></i>Manage Carriers
+        </a>
+        <a href="{% url 'contract_upload' %}" class="btn btn-primary">
+            <i class="ti ti-file-upload me-1"></i>Upload PDF
+        </a>
     </div>
 </div>
 
-<!-- Live System-Wide KPI Cards -->
-<div class="row row-cards g-3 mb-4">
-    <div class="col-12 col-sm-6 col-xl">
-        <div class="card shake-kpi shake-kpi-accent h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="subheader">Total Users</div>
-                    <span class="shake-kpi-icon shake-icon-blue"><i class="ti ti-users"></i></span>
+<!-- Hero stat (Deep Hull + Sea Glass) beside white KPI cards -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-xl-5">
+        <div class="card shake-hero h-100">
+            {% include "partials/shake_mark.html" with tone="hull" extra_class="shake-hero-mark" %}
+            <div class="card-body p-4 d-flex flex-column justify-content-between gap-3">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <span class="shake-label">Rate rows settled, system-wide</span>
+                    <span class="shake-pill shake-pill-neutral"><i class="ti ti-server"></i>{{ engine_status.status_label }}</span>
                 </div>
-                <div class="shake-kpi-value mt-2">{{ total_users_count }}</div>
-                <div class="small text-secondary mt-1">{{ admin_users_count }} Admin &bull; {{ encoder_users_count }} Encoder</div>
+                <div>
+                    <div class="shake-hero-metric">{{ total_rate_rows_count }}</div>
+                    <div class="shake-hero-sub small mt-1">
+                        across {{ extracted_contracts_count }} extracted contract{{ extracted_contracts_count|pluralize }} &middot; {{ total_exports_count }} export{{ total_exports_count|pluralize }} logged
+                    </div>
+                </div>
+                <div class="shake-hero-sub small">
+                    Signed in as <strong class="text-white">{{ user.full_name_or_username }}</strong> ({{ user.username }})
+                </div>
             </div>
         </div>
     </div>
-
-    <div class="col-12 col-sm-6 col-xl">
-        <div class="card shake-kpi shake-kpi-accent h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="subheader">Total Batches</div>
-                    <span class="shake-kpi-icon shake-icon-sky"><i class="ti ti-stack-2"></i></span>
+    <div class="col-12 col-xl-7">
+        <div class="row g-3 h-100">
+            <div class="col-12 col-sm-6">
+                <div class="card shake-kpi h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="shake-label">Total Users</span>
+                            <span class="shake-kpi-icon"><i class="ti ti-users"></i></span>
+                        </div>
+                        <div class="shake-kpi-value">{{ total_users_count }}</div>
+                        <div class="shake-kpi-note">{{ admin_users_count }} Admin &middot; {{ encoder_users_count }} Encoder</div>
+                    </div>
                 </div>
-                <div class="shake-kpi-value mt-2">{{ total_batches_count }}</div>
-                <div class="small text-secondary mt-1">PDF ingestion batches</div>
             </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-sm-6 col-xl">
-        <div class="card shake-kpi shake-kpi-accent h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="subheader">Extracted Contracts</div>
-                    <span class="shake-kpi-icon shake-icon-green"><i class="ti ti-file-check"></i></span>
+            <div class="col-12 col-sm-6">
+                <div class="card shake-kpi h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="shake-label">Total Batches</span>
+                            <span class="shake-kpi-icon"><i class="ti ti-stack-2"></i></span>
+                        </div>
+                        <div class="shake-kpi-value">{{ total_batches_count }}</div>
+                        <div class="shake-kpi-note">PDF ingestion batches</div>
+                    </div>
                 </div>
-                <div class="shake-kpi-value mt-2">{{ extracted_contracts_count }}</div>
-                <div class="small text-secondary mt-1">1:1 contract metadata</div>
             </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-sm-6 col-xl">
-        <div class="card shake-kpi shake-kpi-accent-amber h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="subheader">Total Rate Rows</div>
-                    <span class="shake-kpi-icon shake-icon-amber"><i class="ti ti-table"></i></span>
+            <div class="col-12 col-sm-6">
+                <div class="card shake-kpi h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="shake-label">Extracted Contracts</span>
+                            <span class="shake-kpi-icon is-tide"><i class="ti ti-file-check"></i></span>
+                        </div>
+                        <div class="shake-kpi-value">{{ extracted_contracts_count }}</div>
+                        <div class="shake-kpi-note">1:1 contract metadata</div>
+                    </div>
                 </div>
-                <div class="shake-kpi-value mt-2">{{ total_rate_rows_count }}</div>
-                <div class="small text-secondary mt-1">{{ total_exports_count }} export{{ total_exports_count|pluralize }} logged</div>
             </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-sm-6 col-xl">
-        <div class="card shake-kpi shake-kpi-accent h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="subheader">Active Carriers</div>
-                    <span class="shake-kpi-icon shake-icon-navy"><i class="ti ti-ship"></i></span>
-                </div>
-                <div class="shake-kpi-value mt-2">{{ active_carriers_count }}</div>
-                <div class="small fw-semibold mt-1">
-                    <a href="{% url 'carrier_list' %}" class="text-decoration-none">Manage Carriers &rarr;</a>
+            <div class="col-12 col-sm-6">
+                <div class="card shake-kpi h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="shake-label">Active Carriers</span>
+                            <span class="shake-kpi-icon"><i class="ti ti-building-warehouse"></i></span>
+                        </div>
+                        <div class="shake-kpi-value">{{ active_carriers_count }}</div>
+                        <div class="shake-kpi-note"><a href="{% url 'carrier_list' %}" class="text-decoration-none fw-semibold">Manage carriers &rarr;</a></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Registered SHAKE Users Roster Table -->
+<!-- Users roster -->
 <div id="user-roster" class="card mb-4">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
-            <h2 class="h5 fw-bold mb-0">
-                <i class="ti ti-users me-2 text-primary"></i>Registered SHAKE Users Overview
-            </h2>
-            <p class="text-muted small mb-0">Live roster of Operations Admins and Freight Analysts / Encoders stored in PostgreSQL</p>
+            <h2 class="mb-0">Registered SHAKE Users Overview</h2>
+            <p class="shake-card-sub">Operations Admins and Freight Analysts / Encoders with access to this workstation</p>
         </div>
-        <span class="badge badge-neutral">
-            {{ total_users_count }} Total Account{{ total_users_count|pluralize }}
-        </span>
+        <span class="badge badge-neutral">{{ total_users_count }} Total Account{{ total_users_count|pluralize }}</span>
     </div>
     <div class="table-responsive">
-        <table class="table table-vcenter card-table table-hover mb-0">
+        <table class="table table-vcenter card-table table-hover">
             <thead>
                 <tr>
-                    <th class="ps-4">Username</th>
-                    <th>Full Name</th>
-                    <th>Work Email</th>
+                    <th>Username</th>
+                    <th>Full name</th>
+                    <th>Work email</th>
                     <th>Department</th>
-                    <th class="text-center">Batches</th>
-                    <th>Operational Role</th>
-                    <th class="pe-4">Status</th>
+                    <th class="text-end">Batches</th>
+                    <th>Role</th>
+                    <th>Status</th>
                 </tr>
             </thead>
             <tbody>
                 {% for member in registered_users %}
                 <tr>
-                    <td class="ps-4 fw-semibold">
+                    <td class="fw-semibold">
                         <div class="d-flex align-items-center gap-2">
                             {% if member.profile_photo %}
-                                <img src="{{ member.profile_photo.url }}" alt="{{ member.username }}" class="shake-avatar" style="width: 30px; height: 30px;">
+                                <img src="{{ member.profile_photo.url }}" alt="{{ member.username }}" class="shake-avatar shake-avatar-sm">
                             {% else %}
-                                <span class="shake-avatar-fallback" style="width: 30px; height: 30px; font-size: 0.75rem;">
-                                    {{ member.initials }}
-                                </span>
+                                <span class="shake-avatar-fallback shake-avatar-sm">{{ member.initials }}</span>
                             {% endif %}
                             <span>{{ member.username }}</span>
                         </div>
                     </td>
                     <td>{{ member.full_name_or_username }}</td>
+                    <td><a href="mailto:{{ member.email }}" class="text-decoration-none">{{ member.email|default:"—" }}</a></td>
+                    <td class="text-secondary">{{ member.department|default:"Unassigned" }}</td>
+                    <td class="text-end shake-num">{{ member.batch_count }}</td>
                     <td>
-                        <a href="mailto:{{ member.email }}" class="text-decoration-none text-secondary">
-                            {{ member.email|default:"—" }}
-                        </a>
-                    </td>
-                    <td>{{ member.department|default:"Unassigned" }}</td>
-                    <td class="text-center">
-                        <span class="badge badge-neutral">{{ member.batch_count }}</span>
+                        <span class="badge {% if member.role == 'ADMIN' %}badge-role-admin{% else %}badge-role-encoder{% endif %}">{{ member.get_role_display }}</span>
                     </td>
                     <td>
-                        {% if member.role == 'ADMIN' %}
-                            <span class="badge badge-role-admin">
-                                <i class="ti ti-shield-lock me-1"></i>{{ member.get_role_display }}
-                            </span>
-                        {% else %}
-                            <span class="badge badge-role-encoder">
-                                <i class="ti ti-briefcase me-1"></i>{{ member.get_role_display }}
-                            </span>
-                        {% endif %}
-                    </td>
-                    <td class="pe-4">
                         {% if member.is_active %}
-                            <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+                            <span class="shake-pill shake-pill-verified">Active</span>
                         {% else %}
-                            <span class="badge bg-secondary-lt">Inactive</span>
+                            <span class="shake-pill shake-pill-neutral">Inactive</span>
                         {% endif %}
                     </td>
                 </tr>
                 {% empty %}
-                <tr>
-                    <td colspan="7" class="text-center text-muted py-4">No registered users found.</td>
-                </tr>
+                <tr><td colspan="7">{% include "partials/empty_state.html" with title="No registered users found." %}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
 
-<!-- Active Carrier Profiles & Offline AST Engine Health -->
+<!-- Carriers & engine health -->
 <div id="carrier-parsers" class="row g-4 mb-4">
     <div class="col-12 col-lg-8">
         <div class="card h-100">
             <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <div>
-                    <h2 class="h5 fw-bold mb-0">
-                        <i class="ti ti-ship me-2 text-primary"></i>Carrier Profiles &amp; Parser Registry
-                    </h2>
-                    <p class="text-muted small mb-0">Live shipping line configurations in PostgreSQL (<code>carrier_profiles</code>)</p>
+                    <h2 class="mb-0">Carrier Profiles &amp; Parser Registry</h2>
+                    <p class="shake-card-sub">Shipping line configurations used to bind extracted contracts (BR-03)</p>
                 </div>
-                <a href="{% url 'carrier_list' %}" class="btn btn-sm btn-primary">
+                <a href="{% url 'carrier_list' %}" class="btn btn-sm btn-outline-primary">
                     <i class="ti ti-adjustments me-1"></i>Manage Carriers
                 </a>
             </div>
             <div class="table-responsive">
-                <table class="table table-vcenter card-table mb-0">
+                <table class="table table-vcenter card-table">
                     <thead>
                         <tr>
-                            <th class="ps-4">Code</th>
-                            <th>Carrier Name</th>
-                            <th>Template Version</th>
-                            <th class="text-center">Contracts</th>
-                            <th class="pe-4">Status</th>
+                            <th>Code</th>
+                            <th>Carrier name</th>
+                            <th>Template</th>
+                            <th class="text-end">Contracts</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for carrier in carrier_profiles %}
                         <tr>
-                            <td class="ps-4">
-                                <span class="badge badge-carrier font-mono-code">{{ carrier.carrier_code }}</span>
-                            </td>
+                            <td><span class="shake-chip shake-chip-carrier">{{ carrier.carrier_code }}</span></td>
                             <td class="fw-semibold">{{ carrier.carrier_name }}</td>
+                            <td><code>{{ carrier.template_version }}</code></td>
+                            <td class="text-end shake-num">{{ carrier.contract_count }}</td>
                             <td>
-                                <code>{{ carrier.template_version }}</code>
-                            </td>
-                            <td class="text-center">
-                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
-                                    {{ carrier.contract_count }}
-                                </span>
-                            </td>
-                            <td class="pe-4">
                                 {% if carrier.is_active %}
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
-                                        <i class="ti ti-circle-check me-1"></i>Active
-                                    </span>
+                                    <span class="shake-pill shake-pill-verified">Active</span>
                                 {% else %}
-                                    <span class="badge bg-secondary-lt">Inactive</span>
+                                    <span class="shake-pill shake-pill-neutral">Inactive</span>
                                 {% endif %}
                             </td>
                         </tr>
                         {% empty %}
-                        <tr>
-                            <td colspan="5" class="text-center py-4 text-muted">No carrier profiles found.</td>
-                        </tr>
+                        <tr><td colspan="5">{% include "partials/empty_state.html" with title="No carrier profiles found." %}</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -247,47 +204,31 @@
     <div class="col-12 col-lg-4">
         <div class="card h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h2 class="h5 fw-bold mb-0">
-                    <i class="ti ti-cpu me-2 text-success"></i>Offline AST Engine Health
-                </h2>
-                <span class="badge bg-success-lt">
-                    <i class="ti ti-circle-check me-1"></i>Healthy
-                </span>
+                <h2 class="mb-0">Offline Engine Health</h2>
+                <span class="shake-pill shake-pill-verified">Healthy</span>
             </div>
             <div class="card-body d-flex flex-column justify-content-between">
                 <div>
-                    <div class="p-3 rounded-3 bg-success-subtle border border-success-subtle mb-3">
-                        <div class="d-flex align-items-center gap-2 text-success fw-bold">
-                            <i class="ti ti-shield-check fs-5"></i>
-                            <span>{{ engine_status.name }}</span>
+                    <div class="shake-hero shake-hero-callout mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            {% include "partials/shake_mark.html" with tone="hull" size=28 %}
+                            <span class="fw-semibold">{{ engine_status.name }}</span>
                         </div>
-                        <div class="small text-success-emphasis mt-1">
-                            {{ engine_status.mode }} &mdash; zero external LLM or cloud OCR calls.
-                        </div>
+                        <div class="small shake-hero-sub mt-1">{{ engine_status.mode }} &mdash; zero external LLM or cloud OCR calls.</div>
                     </div>
-
-                    <ul class="list-group list-group-flush small">
-                        <li class="list-group-item px-0 d-flex justify-content-between">
-                            <span class="text-muted">Engine Status</span>
-                            <span class="fw-semibold text-success">{{ engine_status.status_label }}</span>
-                        </li>
-                        <li class="list-group-item px-0 d-flex justify-content-between">
-                            <span class="text-muted">Active Carrier Profiles</span>
-                            <span class="fw-semibold">{{ active_carriers_count }}</span>
-                        </li>
-                        <li class="list-group-item px-0 d-flex justify-content-between">
-                            <span class="text-muted">Arbitrary Surcharges</span>
-                            <span class="fw-semibold">{{ total_arb_rows_count }} rows</span>
-                        </li>
-                        <li class="list-group-item px-0 d-flex justify-content-between">
-                            <span class="text-muted">Export Schemas</span>
-                            <span class="fw-semibold">.xlsx / .csv / .json</span>
-                        </li>
-                    </ul>
+                    <dl class="row small mb-0 g-0">
+                        <dt class="col-7 shake-meta-key py-2 border-bottom mb-0">Engine status</dt>
+                        <dd class="col-5 text-end fw-semibold py-2 border-bottom mb-0 shake-text-verified">{{ engine_status.status_label }}</dd>
+                        <dt class="col-7 shake-meta-key py-2 border-bottom mb-0">Active carrier profiles</dt>
+                        <dd class="col-5 text-end fw-semibold py-2 border-bottom mb-0 shake-num">{{ active_carriers_count }}</dd>
+                        <dt class="col-7 shake-meta-key py-2 border-bottom mb-0">Arbitrary surcharges</dt>
+                        <dd class="col-5 text-end fw-semibold py-2 border-bottom mb-0 shake-num">{{ total_arb_rows_count }} rows</dd>
+                        <dt class="col-7 shake-meta-key py-2 mb-0">Export schemas</dt>
+                        <dd class="col-5 text-end fw-semibold py-2 mb-0">.xlsx / .csv / .json</dd>
+                    </dl>
                 </div>
-
                 <div class="mt-3 pt-3 border-top d-flex justify-content-between align-items-center small">
-                    <span class="text-muted"><i class="ti ti-lock me-1"></i>Admin Only</span>
+                    <span class="text-secondary"><i class="ti ti-user-cog me-1"></i>Admin only</span>
                     <a href="{% url 'contract_list' %}" class="btn btn-sm btn-outline-primary">View All Contracts</a>
                 </div>
             </div>
@@ -295,48 +236,40 @@
     </div>
 </div>
 
-<!-- Recent System Extraction Jobs & Export Activity -->
+<!-- Recent jobs & exports -->
 <div class="row g-4">
     <div class="col-12 col-lg-6">
         <div class="card h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h2 class="h6 fw-bold mb-0">
-                    <i class="ti ti-activity me-2 text-primary"></i>Recent System Processing Jobs
-                </h2>
-                <a href="{% url 'contract_list' %}" class="small text-decoration-none">All Contracts &rarr;</a>
+                <h2 class="mb-0">Recent System Processing Jobs</h2>
+                <a href="{% url 'contract_list' %}" class="small text-decoration-none fw-semibold">All contracts &rarr;</a>
             </div>
             <div class="table-responsive">
-                <table class="table table-vcenter card-table table-sm mb-0">
+                <table class="table table-vcenter card-table">
                     <thead>
                         <tr>
-                            <th class="ps-4">Document</th>
+                            <th>Document</th>
                             <th>Operator</th>
                             <th>Status</th>
-                            <th class="pe-4">Started</th>
+                            <th>Started</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for job in recent_jobs %}
                         <tr>
-                            <td class="ps-4 small fw-semibold">
+                            <td class="small fw-semibold">
                                 {% if job.document.contract_metadata %}
-                                    <a href="{% url 'contract_detail' job.document.contract_metadata.pk %}" class="text-decoration-none">
-                                        {{ job.document.original_file_name|truncatechars:28 }}
-                                    </a>
+                                    <a href="{% url 'contract_detail' job.document.contract_metadata.pk %}" class="text-decoration-none">{{ job.document.original_file_name|truncatechars:28 }}</a>
                                 {% else %}
                                     {{ job.document.original_file_name|truncatechars:28 }}
                                 {% endif %}
                             </td>
-                            <td class="small text-muted">{{ job.document.batch.user.username }}</td>
-                            <td>
-                                {% include "includes/status_badge.html" with status=job.status %}
-                            </td>
-                            <td class="pe-4 small text-muted text-nowrap">{{ job.started_at|date:"Y-m-d H:i" }}</td>
+                            <td class="small text-secondary">{{ job.document.batch.user.username }}</td>
+                            <td>{% include "includes/status_badge.html" with status=job.status %}</td>
+                            <td class="small text-secondary text-nowrap shake-num">{{ job.started_at|date:"Y-m-d H:i" }}</td>
                         </tr>
                         {% empty %}
-                        <tr>
-                            <td colspan="4" class="text-center py-4 text-muted">No processing jobs recorded yet.</td>
-                        </tr>
+                        <tr><td colspan="4">{% include "partials/empty_state.html" with title="No processing jobs recorded yet." %}</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -347,37 +280,29 @@
     <div class="col-12 col-lg-6">
         <div class="card h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h2 class="h6 fw-bold mb-0">
-                    <i class="ti ti-clipboard-check me-2 text-primary"></i>Recent Export Audit Activity
-                </h2>
+                <h2 class="mb-0">Recent Export Audit Activity</h2>
                 <span class="badge badge-neutral">{{ total_exports_count }} Total</span>
             </div>
             <div class="table-responsive">
-                <table class="table table-vcenter card-table table-sm mb-0">
+                <table class="table table-vcenter card-table">
                     <thead>
                         <tr>
-                            <th class="ps-4">Contract</th>
+                            <th>Contract</th>
                             <th>Format</th>
                             <th>User</th>
-                            <th class="pe-4">Exported</th>
+                            <th>Exported</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for exp in recent_exports %}
                         <tr>
-                            <td class="ps-4 small fw-semibold">
-                                <a href="{% url 'contract_detail' exp.contract.pk %}" class="text-decoration-none">
-                                    {{ exp.contract.contract_number }}
-                                </a>
-                            </td>
-                            <td><span class="badge badge-format font-mono-code">{{ exp.export_format }}</span></td>
-                            <td class="small text-muted">{{ exp.user.username }}</td>
-                            <td class="pe-4 small text-muted text-nowrap">{{ exp.exported_at|date:"Y-m-d H:i" }}</td>
+                            <td><a href="{% url 'contract_detail' exp.contract.pk %}" class="font-mono-data text-decoration-none">{{ exp.contract.contract_number }}</a></td>
+                            <td><span class="shake-chip shake-chip-format">{{ exp.export_format }}</span></td>
+                            <td class="small text-secondary">{{ exp.user.username }}</td>
+                            <td class="small text-secondary text-nowrap shake-num">{{ exp.exported_at|date:"Y-m-d H:i" }}</td>
                         </tr>
                         {% empty %}
-                        <tr>
-                            <td colspan="4" class="text-center py-4 text-muted">No export downloads recorded yet.</td>
-                        </tr>
+                        <tr><td colspan="4">{% include "partials/empty_state.html" with title="No export downloads recorded yet." %}</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

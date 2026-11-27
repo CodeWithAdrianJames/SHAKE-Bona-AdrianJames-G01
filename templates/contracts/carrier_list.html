@@ -3,84 +3,74 @@
 {% block title %}SHAKE — Carrier Profiles{% endblock %}
 
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+<div class="shake-page-header d-flex flex-wrap justify-content-between align-items-end gap-3">
     <div>
-        <h1 class="h3 fw-bold mb-1">
-            <i class="ti ti-ship me-2 text-primary"></i>Shipping Carrier Profiles
-        </h1>
-        <p class="text-muted small mb-0">
-            Admin-managed ocean carrier registry and deterministic AST template versions (BR-03)
-        </p>
+        <span class="shake-label">Administration &middot; Carriers</span>
+        <h1 class="mb-0">Shipping Carrier Profiles</h1>
+        <p>Admin-managed ocean carrier registry and deterministic template versions (BR-03)</p>
     </div>
-    <a href="{% url 'carrier_create' %}" class="btn btn-primary fw-semibold">
+    <a href="{% url 'carrier_create' %}" class="btn btn-primary">
         <i class="ti ti-circle-plus me-1"></i>Add Carrier Profile
     </a>
 </div>
 
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h2 class="h6 fw-bold mb-0">Registered Carrier Profiles</h2>
-        <span class="badge badge-neutral">{{ carriers|length }} Profile{{ carriers|length|pluralize }}</span>
+        <h2 class="mb-0">Registered Carrier Profiles</h2>
+        <span class="badge badge-neutral shake-num">{{ carriers|length }} Profile{{ carriers|length|pluralize }}</span>
     </div>
+    {% if carriers %}
     <div class="table-responsive">
-        <table class="table table-vcenter card-table table-hover mb-0">
+        <table class="table table-vcenter card-table table-hover">
             <thead>
                 <tr>
-                    <th class="ps-4">SCAC Code</th>
-                    <th>Carrier Name</th>
-                    <th>Template Version</th>
-                    <th class="text-center">Contracts</th>
-                    <th>Status</th>
-                    <th class="pe-4 text-end">Actions</th>
+                    <th scope="col">SCAC code</th>
+                    <th scope="col">Carrier name</th>
+                    <th scope="col">Template</th>
+                    <th scope="col" class="text-end">Contracts</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="text-end">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for carrier in carriers %}
                 <tr>
-                    <td class="ps-4">
-                        <span class="badge badge-carrier font-mono-code">{{ carrier.carrier_code }}</span>
-                    </td>
+                    <td><span class="shake-chip shake-chip-carrier">{{ carrier.carrier_code }}</span></td>
                     <td class="fw-semibold">{{ carrier.carrier_name }}</td>
                     <td><code>{{ carrier.template_version }}</code></td>
-                    <td class="text-center">
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
-                            {{ carrier.contract_count }}
-                        </span>
-                    </td>
+                    <td class="text-end shake-num">{{ carrier.contract_count }}</td>
                     <td>
                         {% if carrier.is_active %}
-                            <span class="badge bg-success-lt">Active</span>
+                            <span class="shake-pill shake-pill-verified">Active</span>
                         {% else %}
-                            <span class="badge bg-secondary-lt">Inactive</span>
+                            <span class="shake-pill shake-pill-neutral">Inactive</span>
                         {% endif %}
                     </td>
-                    <td class="pe-4 text-end text-nowrap">
-                        <a href="{% url 'carrier_edit' carrier.pk %}" class="btn btn-sm btn-outline-primary">
+                    <td class="text-end text-nowrap">
+                        <a href="{% url 'carrier_edit' carrier.pk %}" class="btn btn-sm btn-outline-primary" aria-label="Edit carrier {{ carrier.carrier_code }}">
                             <i class="ti ti-pencil me-1"></i>Edit
                         </a>
                         <form method="post" action="{% url 'carrier_toggle' carrier.pk %}" class="d-inline m-0">
                             {% csrf_token %}
                             {% if carrier.is_active %}
-                                <button type="submit" class="btn btn-sm btn-outline-warning">
+                                <button type="submit" class="btn btn-sm btn-outline-review" aria-label="Deactivate carrier {{ carrier.carrier_code }}">
                                     <i class="ti ti-player-pause me-1"></i>Deactivate
                                 </button>
                             {% else %}
-                                <button type="submit" class="btn btn-sm btn-outline-success">
+                                <button type="submit" class="btn btn-sm btn-outline-verified" aria-label="Activate carrier {{ carrier.carrier_code }}">
                                     <i class="ti ti-player-play me-1"></i>Activate
                                 </button>
                             {% endif %}
                         </form>
                     </td>
                 </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6" class="text-center py-4 text-muted">
-                        No carrier profiles registered yet.
-                    </td>
-                </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    {% else %}
+        {% url 'carrier_create' as carrier_create_url %}
+        {% include "partials/empty_state.html" with title="No carrier profiles registered yet." message="Add a carrier so extracted contracts can be bound to it." action_url=carrier_create_url action_label="Add Carrier Profile" action_icon="ti-circle-plus" %}
+    {% endif %}
 </div>
 {% endblock %}

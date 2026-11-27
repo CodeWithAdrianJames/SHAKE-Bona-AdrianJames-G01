@@ -1,204 +1,171 @@
 {% extends "base.html" %}
-{% load static %}
 
 {% block title %}SHAKE — Freight Analyst / Encoder Dashboard{% endblock %}
 
 {% block content %}
-<!-- Freight Analyst / Encoder Header Banner -->
-<div class="card shake-hero mb-4">
-    <img src="{% static 'img/shake-emblem-light.svg' %}" alt="" class="shake-hero-mark">
-    <div class="card-body p-4">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-            <div>
-                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                    <span class="badge badge-role-encoder">
-                        <i class="ti ti-briefcase"></i>{{ user.get_role_display }}
-                    </span>
-                    <span class="badge badge-neutral">
-                        <i class="ti ti-wifi-off"></i>Offline OpenDataLoader AST Ready
-                    </span>
+<div class="shake-page-header d-flex flex-wrap justify-content-between align-items-end gap-3">
+    <div>
+        <span class="shake-label">Dashboard &middot; {{ user.department|default:"Pricing & Tariff Management" }}</span>
+        <h1 class="mb-0">Freight Analyst &amp; Contract Encoder Workspace</h1>
+        <p>Turn carrier contract PDFs into structured rate rows, then export them as Excel (<code>.xlsx</code>), CSV (<code>.csv</code>), or JSON (<code>.json</code>).</p>
+    </div>
+    <a href="{% url 'contract_list' %}" class="btn btn-outline-secondary">
+        <i class="ti ti-file-text me-1"></i>View All My Contracts
+    </a>
+</div>
+
+<!-- Hero stat (Deep Hull + Sea Glass) beside white KPI cards -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-xl-5">
+        <div class="card shake-hero h-100">
+            {% include "partials/shake_mark.html" with tone="hull" extra_class="shake-hero-mark" %}
+            <div class="card-body p-4 d-flex flex-column justify-content-between gap-3">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <span class="shake-label">Structured rate rows</span>
+                    <span class="shake-pill shake-pill-neutral"><i class="ti ti-wifi-off"></i>Offline engine ready</span>
                 </div>
-                <h1 class="h2 fw-bold mb-1 text-white">Freight Analyst &amp; Contract Encoder Workspace</h1>
-                <p class="shake-hero-sub mb-0 small">
-                    Transform ocean freight service contract PDFs into standardized Excel (<code>.xlsx</code>), CSV (<code>.csv</code>), and JSON AST (<code>.json</code>) feeds stored in PostgreSQL.
-                </p>
+                <div>
+                    <div class="shake-hero-metric">{{ total_rate_rows_count }}</div>
+                    <div class="shake-hero-sub small mt-1">
+                        base freight rates settled from your PDFs &middot; + {{ total_arb_rows_count }} arbitrary charge{{ total_arb_rows_count|pluralize }}
+                    </div>
+                </div>
+                <div class="shake-hero-sub small">
+                    Signed in as <strong class="text-white">{{ user.full_name_or_username }}</strong> ({{ user.username }})
+                </div>
             </div>
-            <div class="text-md-end">
-                <div class="shake-eyebrow shake-hero-sub">Active Analyst</div>
-                <div class="fw-semibold">{{ user.full_name_or_username }} ({{ user.username }})</div>
-                <span class="badge badge-amber mt-1">
-                    {{ user.department|default:"Pricing & Tariff Management" }}
-                </span>
+        </div>
+    </div>
+    <div class="col-12 col-xl-7">
+        <div class="row g-3 h-100">
+            <div class="col-12 col-sm-4">
+                <div class="card shake-kpi h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="shake-label">My Batches</span>
+                            <span class="shake-kpi-icon"><i class="ti ti-stack-2"></i></span>
+                        </div>
+                        <div class="shake-kpi-value">{{ user_batches_count }}</div>
+                        <div class="shake-kpi-note">Uploaded ingestion batches</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-4">
+                <div class="card shake-kpi h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="shake-label">Extracted Contracts</span>
+                            <span class="shake-kpi-icon is-tide"><i class="ti ti-file-check"></i></span>
+                        </div>
+                        <div class="shake-kpi-value">{{ extracted_contracts_count }}</div>
+                        <div class="shake-kpi-note">Structured contract records</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-4">
+                <div class="card shake-kpi h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="shake-label">Exports Generated</span>
+                            <span class="shake-kpi-icon"><i class="ti ti-download"></i></span>
+                        </div>
+                        <div class="shake-kpi-value">{{ exports_generated_count }}</div>
+                        <div class="shake-kpi-note">JSON / XLSX / CSV downloads</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Live Personal KPI Cards -->
-<div class="row row-cards g-3 mb-4">
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card shake-kpi shake-kpi-accent h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="subheader">My Batches</div>
-                    <span class="shake-kpi-icon shake-icon-blue"><i class="ti ti-stack-2"></i></span>
-                </div>
-                <div class="shake-kpi-value mt-2">{{ user_batches_count }}</div>
-                <div class="small text-secondary mt-1">Uploaded ingestion batches</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card shake-kpi shake-kpi-accent h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="subheader">Extracted Contracts</div>
-                    <span class="shake-kpi-icon shake-icon-green"><i class="ti ti-file-check"></i></span>
-                </div>
-                <div class="shake-kpi-value mt-2">{{ extracted_contracts_count }}</div>
-                <div class="small text-secondary mt-1">Structured contract records</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card shake-kpi shake-kpi-accent h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="subheader">Total Rate Rows</div>
-                    <span class="shake-kpi-icon shake-icon-sky"><i class="ti ti-table"></i></span>
-                </div>
-                <div class="shake-kpi-value mt-2">{{ total_rate_rows_count }}</div>
-                <div class="small text-secondary mt-1">+ {{ total_arb_rows_count }} arbitrary charge{{ total_arb_rows_count|pluralize }}</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card shake-kpi shake-kpi-accent-amber h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="subheader">Exports Generated</div>
-                    <span class="shake-kpi-icon shake-icon-amber"><i class="ti ti-download"></i></span>
-                </div>
-                <div class="shake-kpi-value mt-2">{{ exports_generated_count }}</div>
-                <div class="small text-secondary mt-1">JSON / XLSX / CSV downloads</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Primary CTA Banner -->
-<div id="upload-contract" class="card mb-4 border-primary-subtle">
+<!-- Primary upload CTA (reversed on Tide) -->
+<div id="upload-contract" class="card shake-cta-tide mb-4">
     <div class="card-body p-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
-        <div>
-            <div class="d-flex align-items-center gap-2 mb-1">
-                <h2 class="h5 fw-bold mb-0">
-                    <i class="ti ti-cloud-upload me-2 text-primary"></i>Upload Ocean Freight Contract PDF
-                </h2>
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
-                    Zero-Cloud Local Parser
-                </span>
-            </div>
-            <p class="text-muted small mb-2">
-                Ingest digital vector-text shipping contracts with SHA-256 deduplication (<code>BR-06</code>) and automatic container rate unpivoting.
-            </p>
-            <div class="d-flex flex-wrap gap-1">
-                {% for carrier in active_carriers %}
-                    <span class="badge badge-port font-mono-code">{{ carrier.carrier_code }}</span>
-                {% endfor %}
+        <div class="d-flex align-items-start gap-3 shake-cta-body">
+            {% include "partials/shake_mark.html" with tone="tide" size=44 %}
+            <div>
+                <h2 class="mb-1">Upload Ocean Freight Contract PDF</h2>
+                <p class="mb-2">Digital vector-text contracts only. Duplicates are blocked by SHA-256 checksum (BR-06), and container rates are unpivoted automatically.</p>
+                {% if active_carriers %}
+                <div class="d-flex flex-wrap gap-1" aria-label="Active carrier profiles">
+                    {% for carrier in active_carriers %}
+                        <span class="shake-chip shake-chip-on-tide">{{ carrier.carrier_code }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
         </div>
-        <div class="d-flex flex-wrap gap-2">
-            <a href="{% url 'contract_list' %}" class="btn btn-outline-secondary fw-semibold">
-                <i class="ti ti-folder-open me-1"></i>View All My Contracts
-            </a>
-            <a href="{% url 'contract_upload' %}" class="btn btn-primary fw-semibold px-4">
-                <i class="ti ti-cloud-upload me-1"></i>Upload Ocean Freight Contract PDF
-            </a>
-        </div>
+        <a href="{% url 'contract_upload' %}" class="btn btn-paper btn-lg px-4">
+            <i class="ti ti-file-upload me-1"></i>Upload PDF
+        </a>
     </div>
 </div>
 
-<!-- Recent Extraction Jobs Table -->
+<!-- Recent contracts -->
 <div id="extraction-queue" class="card mb-4">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
-            <h2 class="h5 fw-bold mb-0">
-                <i class="ti ti-history me-2 text-primary"></i>Recent Extraction Jobs
-            </h2>
-            <p class="text-muted small mb-0">
-                Latest uploaded contract PDFs and normalized rate counts for {{ user.full_name_or_username }}
-            </p>
+            <h2 class="mb-0">Recent Extraction Jobs</h2>
+            <p class="shake-card-sub">Latest uploaded contract PDFs and normalized rate counts for {{ user.full_name_or_username }}</p>
         </div>
         <a href="{% url 'contract_list' %}" class="btn btn-sm btn-outline-primary">
             <i class="ti ti-table me-1"></i>Manage Contracts
         </a>
     </div>
+    {% if recent_documents %}
     <div class="table-responsive">
-        <table class="table table-vcenter card-table table-hover mb-0">
+        <table class="table table-vcenter card-table table-hover">
             <thead>
                 <tr>
-                    <th class="ps-4">Batch #</th>
-                    <th>Filename / Contract</th>
+                    <th>Contract</th>
                     <th>Carrier</th>
                     <th>Status</th>
-                    <th class="text-center">Extracted Rows</th>
+                    <th class="text-end">Rate rows</th>
                     <th>Uploaded</th>
-                    <th class="pe-4 text-end">Actions</th>
+                    <th class="text-end">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for doc in recent_documents %}
                 <tr>
-                    <td class="ps-4">
-                        <code class="fw-semibold small">{{ doc.batch.batch_number }}</code>
-                    </td>
                     <td>
-                        <div class="fw-semibold d-flex align-items-center gap-2">
-                            <i class="ti ti-file-type-pdf text-danger"></i>
-                            <span>{{ doc.original_file_name }}</span>
+                        {% if doc.contract_metadata %}
+                            <div class="font-mono-data">{{ doc.contract_metadata.contract_number }}</div>
+                        {% endif %}
+                        <div class="small text-secondary text-truncate shake-truncate" title="{{ doc.original_file_name }}">
+                            <i class="ti ti-file-type-pdf me-1"></i>{{ doc.original_file_name }} &middot; <span class="font-mono-data small">{{ doc.batch.batch_number }}</span>
                         </div>
-                        {% if doc.contract_metadata %}
-                            <div class="small text-muted">Contract: <strong>{{ doc.contract_metadata.contract_number }}</strong></div>
-                        {% endif %}
                     </td>
                     <td>
                         {% if doc.contract_metadata %}
-                            <span class="badge badge-carrier font-mono-code">{{ doc.contract_metadata.carrier.carrier_code }}</span>
+                            <span class="shake-chip shake-chip-carrier">{{ doc.contract_metadata.carrier.carrier_code }}</span>
                         {% else %}
-                            <span class="text-muted small">—</span>
+                            <span class="text-secondary small">—</span>
                         {% endif %}
                     </td>
-                    <td>
-                        {% include "includes/status_badge.html" with status=doc.status %}
-                    </td>
-                    <td class="text-center">
+                    <td>{% include "includes/status_badge.html" with status=doc.status %}</td>
+                    <td class="text-end shake-num">
                         {% if doc.contract_metadata %}
                             <span class="fw-semibold">{{ doc.rate_count }}</span>
-                            <span class="text-muted small">rate{{ doc.rate_count|pluralize }}</span>
-                            {% if doc.arb_count %}
-                                <div class="text-muted small">+ {{ doc.arb_count }} arb</div>
-                            {% endif %}
+                            {% if doc.arb_count %}<div class="text-secondary small">+ {{ doc.arb_count }} arb</div>{% endif %}
                         {% else %}
-                            <span class="text-muted small">0</span>
+                            <span class="text-secondary">0</span>
                         {% endif %}
                     </td>
-                    <td class="text-muted small text-nowrap">{{ doc.uploaded_at|date:"Y-m-d H:i" }}</td>
-                    <td class="pe-4 text-end text-nowrap">
+                    <td class="text-secondary small text-nowrap shake-num">{{ doc.uploaded_at|date:"Y-m-d H:i" }}</td>
+                    <td class="text-end text-nowrap">
                         {% if doc.contract_metadata %}
                             <a href="{% url 'contract_detail' doc.contract_metadata.pk %}" class="btn btn-sm btn-outline-primary">
                                 <i class="ti ti-eye me-1"></i>Inspect
                             </a>
                             <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-outline-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Export
+                                <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="ti ti-download me-1"></i>Export
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><a class="dropdown-item" href="{% url 'contract_export' doc.contract_metadata.pk 'json' %}">.json</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'contract_export' doc.contract_metadata.pk 'xlsx' %}">.xlsx</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'contract_export' doc.contract_metadata.pk 'csv' %}">.csv</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'contract_export' doc.contract_metadata.pk 'xlsx' %}">Excel (.xlsx)</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'contract_export' doc.contract_metadata.pk 'csv' %}">CSV (.csv)</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'contract_export' doc.contract_metadata.pk 'json' %}">JSON (.json)</a></li>
                                 </ul>
                             </div>
                         {% else %}
@@ -208,53 +175,35 @@
                         {% endif %}
                     </td>
                 </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7" class="text-center py-4 text-muted">
-                        No contract PDFs uploaded yet. Click <strong>Upload Ocean Freight Contract PDF</strong> above to begin.
-                    </td>
-                </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    {% else %}
+        {% url 'contract_upload' as upload_url %}
+        {% include "partials/empty_state.html" with title="Nothing has settled yet" message="No contract PDFs uploaded yet. Upload a carrier contract and its rates will settle here as structured rows." action_url=upload_url action_label="Upload PDF" %}
+    {% endif %}
 </div>
 
-<!-- Standardized Output Schema Summary Cards -->
-<div id="output-schemas" class="mb-2">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h2 class="h5 fw-bold mb-0">
-                <i class="ti ti-box-multiple me-2 text-primary"></i>Standardized SHAKE Output Schemas
-            </h2>
-            <p class="text-muted small mb-0">Every extracted contract can be exported into three canonical formats</p>
-        </div>
+<!-- Output formats -->
+<div id="output-schemas">
+    <div class="mb-3">
+        <h2 class="mb-0">Standardized SHAKE Output Schemas</h2>
+        <p class="text-secondary small mb-0">Every extracted contract can be exported into three canonical formats</p>
     </div>
-
     <div class="row g-3">
         {% for schema in output_schemas %}
         <div class="col-12 col-lg-4">
             <div class="card h-100">
-                <div class="card-body d-flex flex-column justify-content-between">
-                    <div>
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="shake-kpi-icon {% if schema.extension == '.xlsx' %}shake-icon-green{% elif schema.extension == '.csv' %}shake-icon-blue{% else %}shake-icon-amber{% endif %}"><i class="ti {% if schema.extension == '.xlsx' %}ti-file-spreadsheet{% elif schema.extension == '.csv' %}ti-file-type-csv{% else %}ti-braces{% endif %}"></i></span>
-                                <div>
-                                    <h3 class="h6 fw-bold mb-0">{{ schema.title }}</h3>
-                                    <div class="text-muted small">Canonical Export Target</div>
-                                </div>
-                            </div>
-                            <span class="badge {{ schema.badge_class }} font-mono-code">
-                                {{ schema.extension }}
-                            </span>
-                        </div>
-                        <p class="small text-secondary mb-3">
-                            {{ schema.description }}
-                        </p>
+                <div class="card-body d-flex flex-column gap-3">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <h3 class="mb-0">{{ schema.title }}</h3>
+                        <span class="shake-chip shake-chip-format">{{ schema.extension }}</span>
                     </div>
-                    <div class="p-2 rounded border bg-body small fw-medium">
-                        <i class="ti ti-stack me-1 text-primary"></i>{{ schema.sheets_or_structure }}
+                    <p class="small text-secondary mb-0 flex-grow-1">{{ schema.description }}</p>
+                    <div class="shake-well small">
+                        <span class="shake-meta-key">Structure</span>
+                        {{ schema.sheets_or_structure }}
                     </div>
                 </div>
             </div>

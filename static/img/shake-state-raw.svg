@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="1 · Raw">
+  <title>1 · Raw — unstructured carrier PDF</title>
+  <g fill="none" stroke="#55666E" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 18C17.33 12.67 26.67 12.67 32 18S46.67 23.33 52 18"/>
+    <path d="M12 32C17.33 26.67 26.67 26.67 32 32S46.67 37.33 52 32"/>
+    <path d="M12 46C17.33 40.67 26.67 40.67 32 46S46.67 51.33 52 46"/>
+  </g>
+</svg>

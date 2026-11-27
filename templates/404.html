@@ -4,21 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#0E2A3B">
     <title>404 Not Found — SHAKE</title>
-    {# Self-contained: inline styles and an inline SVG emblem only; no base.html, no static files, no CDN assets, no stack traces. #}
+    {# Self-contained: inline styles and the inline "Settle" SVG mark only; no base.html, no static files, no CDN assets, no stack traces. #}
     <style>
         :root {
-            --shake-navy: #0F213E;
-            --shake-navy-elevated: #162E54;
-            --shake-blue: #2563EB;
-            --shake-sky: #488EE6;
-            --shake-amber: #F59E0B;
-            --shake-amber-soft: #FEF3C7;
-            --shake-amber-text: #B45309;
-            --shake-canvas: #F8FAFC;
-            --shake-hairline: #E2E8F0;
-            --shake-ink: #0F172A;
-            --shake-muted: #64748B;
+            --shake-paper: #F6F3EC;
+            --shake-deep-hull: #0E2A3B;
+            --shake-tide: #0E7482;
+            --shake-tide-deep: #0B5E69;
+            --shake-slate: #55666E;
+            --shake-mist: #E4E8E6;
+            --shake-review: #9A6312;
         }
         * { box-sizing: border-box; }
         body {
@@ -26,100 +23,41 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            background-color: var(--shake-canvas);
-            color: var(--shake-ink);
-            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--shake-paper);
+            color: var(--shake-deep-hull);
+            font: 400 15px/23px "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
-        header {
-            background: var(--shake-navy);
-            border-bottom: 1px solid var(--shake-navy-elevated);
-            padding: 0.75rem 1.5rem;
-        }
-        .brand {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.6rem;
-            color: #FFFFFF;
-            text-decoration: none;
-        }
-        .wordmark {
-            font-weight: 800;
-            font-size: 1.3rem;
-            letter-spacing: 0.14em;
-            line-height: 1;
-        }
-        .emblem { display: block; width: auto; }
-        main {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem 1rem;
-        }
+        main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
         .card {
             width: 100%;
-            max-width: 32rem;
+            max-width: 30rem;
             background: #FFFFFF;
-            border: 1px solid var(--shake-hairline);
-            border-top: 3px solid var(--shake-blue);
+            border: 1px solid var(--shake-mist);
             border-radius: 0.75rem;
-            box-shadow: 0 1px 2px rgba(15, 33, 62, 0.06);
-            padding: 2.25rem 2rem;
-            text-align: center;
+            padding: 2.5rem 2rem;
         }
-        .card-brand {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.6rem;
-            margin-bottom: 1.25rem;
-        }
-        .card-brand .wordmark { color: var(--shake-navy); font-size: 1.6rem; }
-        .code {
-            display: inline-block;
-            font-family: ui-monospace, "JetBrains Mono", "Cascadia Code", SFMono-Regular, Menlo, Consolas, monospace;
-            font-size: 0.85rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            padding: 0.25rem 0.6rem;
-            border-radius: 999px;
-            margin: 0 0 0.9rem;
-        }
-        .code-404 { background: var(--shake-amber-soft); color: var(--shake-amber-text); border: 1px solid #FDE68A; }
-        .code-500 { background: #FEE2E2; color: #B91C1C; border: 1px solid #FECACA; }
-        h1 { font-size: 1.35rem; margin: 0 0 0.75rem; color: var(--shake-navy); }
-        p { color: var(--shake-muted); margin: 0 0 1.75rem; line-height: 1.55; }
-        .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
-        .btn {
-            display: inline-block;
-            padding: 0.55rem 1.15rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            font-size: 0.95rem;
-            text-decoration: none;
-            border: 1px solid var(--shake-blue);
-        }
-        .btn-primary { background: var(--shake-blue); color: #FFFFFF; }
-        .btn-primary:hover { background: #1D4ED8; border-color: #1D4ED8; }
-        .btn-outline { background: #FFFFFF; color: var(--shake-blue); }
-        .btn-outline:hover { border-color: var(--shake-sky); color: var(--shake-sky); }
-        footer {
-            border-top: 1px solid var(--shake-hairline);
-            background: #FFFFFF;
-            color: var(--shake-muted);
-            font-size: 0.85rem;
-            padding: 0.9rem 1.5rem;
-            text-align: center;
-        }
+        .lockup { display: inline-flex; align-items: center; gap: 0.75rem; color: var(--shake-deep-hull); text-decoration: none; margin-bottom: 2rem; }
+        .mark { display: block; width: auto; height: 1.9rem; }
+        .mark path { fill: none; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+        .wordmark { font-family: "Manrope", "Inter", system-ui, sans-serif; font-weight: 800; font-size: 1.6rem; line-height: 1; letter-spacing: 0.08em; text-transform: uppercase; }
+        .label { display: block; font-weight: 600; font-size: 12px; line-height: 16px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--shake-review); margin-bottom: 0.5rem; }
+        h1 { font-family: "Manrope", "Inter", system-ui, sans-serif; font-weight: 800; font-size: 28px; line-height: 34px; margin: 0 0 0.75rem; }
+        p { color: var(--shake-slate); margin: 0 0 1.75rem; }
+        .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+        .btn { display: inline-block; padding: 0.55rem 1.15rem; border-radius: 0.5rem; font-weight: 600; text-decoration: none; border: 1px solid var(--shake-tide); }
+        .btn-primary { background: var(--shake-tide); color: #FFFFFF; }
+        .btn-primary:hover { background: var(--shake-tide-deep); border-color: var(--shake-tide-deep); }
+        .btn-outline { background: #FFFFFF; color: var(--shake-tide); border-color: var(--shake-mist); }
+        .btn-outline:hover { background: var(--shake-paper); }
+        .btn:focus-visible { outline: 2px solid var(--shake-tide); outline-offset: 2px; }
+        footer { border-top: 1px solid var(--shake-mist); color: var(--shake-slate); font-size: 13px; padding: 0.9rem 1.5rem; text-align: center; }
     </style>
 </head>
 <body>
-    <header>
-        <a class="brand" href="/dashboard/"><svg class="emblem" xmlns="http://www.w3.org/2000/svg" viewBox="40 24 760 644" height="30" aria-hidden="true" focusable="false"><defs><linearGradient id="shake-s-sky" x1="0" y1="67" x2="0" y2="656" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#7DB4F5"/><stop offset="0.5" stop-color="#488EE6"/><stop offset="1" stop-color="#2563EB"/></linearGradient></defs><path fill="url(#shake-s-sky)" d="M97.2 219.7 646 67 645 191.5 245 299.7 245 326.7 796.5 179.9 787 461 51.8 656 62.6 539.4 698 365.4 698 339.6 67 505.4Z"/><path fill="#F59E0B" d="M727 33 744.5 87.5 790 105 744.5 122.5 727 175 709.5 122.5 664 105 709.5 87.5Z"/></svg><span class="wordmark">SHAKE</span></a>
-    </header>
     <main>
         <div class="card" role="alert">
-            <div class="card-brand"><svg class="emblem" xmlns="http://www.w3.org/2000/svg" viewBox="40 24 760 644" height="52" aria-hidden="true" focusable="false"><defs><linearGradient id="shake-s-navy" x1="0" y1="67" x2="0" y2="656" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4C99F3"/><stop offset="0.45" stop-color="#3A70B2"/><stop offset="1" stop-color="#0F213E"/></linearGradient></defs><path fill="url(#shake-s-navy)" d="M97.2 219.7 646 67 645 191.5 245 299.7 245 326.7 796.5 179.9 787 461 51.8 656 62.6 539.4 698 365.4 698 339.6 67 505.4Z"/><path fill="#F59E0B" d="M727 33 744.5 87.5 790 105 744.5 122.5 727 175 709.5 122.5 664 105 709.5 87.5Z"/></svg><span class="wordmark">SHAKE</span></div>
-            <div><span class="code code-404">HTTP 404</span></div>
+            <span class="lockup" aria-label="SHAKE"><svg class="mark" xmlns="http://www.w3.org/2000/svg" viewBox="9 12 46 39" aria-hidden="true" focusable="false"><path stroke="#0E2A3B" d="M12 20C17.33 13.33 26.67 13.33 32 20S46.67 26.67 52 20"/><path stroke="#0E2A3B" d="M12 34C17.33 30.67 26.67 30.67 32 34S46.67 37.33 52 34"/><path stroke="#0E7482" d="M12 48H22M31 48H52"/></svg><span class="wordmark" aria-hidden="true">SHAKE</span></span>
+            <span class="label">HTTP 404</span>
             <h1>Page not found</h1>
             <p>
                 The page or record you requested does not exist, or you do not have
@@ -136,8 +74,6 @@
             </div>
         </div>
     </main>
-    <footer>
-        <strong>SHAKE</strong> &middot; Offline-first ocean freight contract extraction
-    </footer>
+    <footer>contract in &middot; structured data out &middot; nothing leaves the device</footer>
 </body>
 </html>

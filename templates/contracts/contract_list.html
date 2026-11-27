@@ -3,13 +3,11 @@
 {% block title %}SHAKE — {% if is_admin_view %}All Contracts{% else %}My Contracts{% endif %}{% endblock %}
 
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+<div class="shake-page-header d-flex flex-wrap justify-content-between align-items-end gap-3">
     <div>
-        <h1 class="h3 fw-bold mb-1">
-            <i class="ti ti-file-text me-2 text-primary"></i>
-            {% if is_admin_view %}All Contracts{% else %}My Contracts{% endif %}
-        </h1>
-        <p class="text-muted small mb-0">
+        <span class="shake-label">Contracts</span>
+        <h1 class="mb-0">{% if is_admin_view %}All Contracts{% else %}My Contracts{% endif %}</h1>
+        <p>
             {% if is_admin_view %}
                 System-wide extracted ocean freight contracts across all Freight Analysts / Encoders
             {% else %}
@@ -17,22 +15,23 @@
             {% endif %}
         </p>
     </div>
-    <a href="{% url 'contract_upload' %}" class="btn btn-primary fw-semibold">
-        <i class="ti ti-cloud-upload me-1"></i>Upload Contract PDF
+    <a href="{% url 'contract_upload' %}" class="btn btn-primary">
+        <i class="ti ti-file-upload me-1"></i>Upload PDF
     </a>
 </div>
 
-<!-- Search & Status Filter Bar -->
+<!-- Search & status filter bar -->
 <div class="card mb-4">
     <div class="card-body py-3">
-        <form method="get" class="row g-2 align-items-center">
+        <form method="get" class="row g-2 align-items-center" role="search" aria-label="Filter contracts">
             <div class="col-12 col-md-6">
                 <div class="input-group">
-                    <span class="input-group-text"><i class="ti ti-search text-muted"></i></span>
+                    <span class="input-group-text"><i class="ti ti-search"></i></span>
                     <input type="text"
                            name="q"
                            value="{{ search_query }}"
                            class="form-control"
+                           aria-label="Search contracts"
                            placeholder="Search contract #, carrier code, trade scope, batch #, or filename...">
                 </div>
             </div>
@@ -49,61 +48,54 @@
                     <i class="ti ti-filter me-1"></i>Filter
                 </button>
                 {% if search_query or status_filter != 'ALL' %}
-                    <a href="{% url 'contract_list' %}" class="btn btn-light border">Reset</a>
+                    <a href="{% url 'contract_list' %}" class="btn btn-outline-secondary">Reset</a>
                 {% endif %}
             </div>
         </form>
     </div>
 </div>
 
-<!-- Extracted Contracts Table -->
+<!-- Extracted contracts -->
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h2 class="h6 fw-bold mb-0">Extracted Contract Records</h2>
-        <span class="badge badge-neutral">
-            {{ contracts|length }} Contract{{ contracts|length|pluralize }} shown
-        </span>
+        <h2 class="mb-0">Extracted Contract Records</h2>
+        <span class="badge badge-neutral shake-num">{{ contracts|length }} Contract{{ contracts|length|pluralize }} shown</span>
     </div>
+    {% if contracts %}
     <div class="table-responsive">
-        <table class="table table-vcenter card-table table-hover mb-0">
+        <table class="table table-vcenter card-table table-hover">
             <thead>
                 <tr>
-                    <th class="ps-4">Batch #</th>
-                    <th>Contract #</th>
-                    <th>Carrier</th>
-                    <th>Trade Scope</th>
-                    <th>Validity Period</th>
-                    <th class="text-center">Base Rates</th>
-                    <th>Status</th>
-                    {% if is_admin_view %}<th>Owner</th>{% endif %}
-                    <th class="pe-4 text-end">Actions</th>
+                    <th scope="col">Contract #</th>
+                    <th scope="col">Batch #</th>
+                    <th scope="col">Carrier</th>
+                    <th scope="col">Trade scope</th>
+                    <th scope="col">Validity</th>
+                    <th scope="col" class="text-end">Base rates</th>
+                    <th scope="col">Status</th>
+                    {% if is_admin_view %}<th scope="col">Owner</th>{% endif %}
+                    <th scope="col" class="text-end">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for contract in contracts %}
                 <tr>
-                    <td class="ps-4">
-                        <code class="small">{{ contract.document.batch.batch_number }}</code>
-                    </td>
                     <td>
-                        <div class="fw-bold font-mono-code">{{ contract.contract_number }}</div>
-                        <div class="text-muted small text-truncate" style="max-width: 210px;" title="{{ contract.document.original_file_name }}">
-                            <i class="ti ti-file-type-pdf text-danger me-1"></i>{{ contract.document.original_file_name }}
+                        <a href="{% url 'contract_detail' contract.pk %}" class="font-mono-data text-decoration-none">{{ contract.contract_number }}</a>
+                        <div class="text-secondary small text-truncate shake-truncate" title="{{ contract.document.original_file_name }}">
+                            <i class="ti ti-file-type-pdf me-1"></i>{{ contract.document.original_file_name }}
                         </div>
                     </td>
+                    <td><span class="font-mono-data small">{{ contract.document.batch.batch_number }}</span></td>
                     <td>
-                        <span class="badge badge-carrier font-mono-code">{{ contract.carrier.carrier_code }}</span>
-                        <div class="small text-muted">{{ contract.carrier.carrier_name }}</div>
+                        <span class="shake-chip shake-chip-carrier">{{ contract.carrier.carrier_code }}</span>
+                        <div class="small text-secondary">{{ contract.carrier.carrier_name }}</div>
                     </td>
                     <td class="small">{{ contract.trade_scope }}</td>
-                    <td class="small text-nowrap">
+                    <td class="small text-nowrap shake-num">
                         {{ contract.effective_date|date:"Y-m-d" }} &rarr; {{ contract.expiration_date|date:"Y-m-d" }}
                     </td>
-                    <td class="text-center">
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
-                            {{ contract.rate_count }}
-                        </span>
-                    </td>
+                    <td class="text-end shake-num fw-semibold">{{ contract.rate_count }}</td>
                     <td>
                         {% with doc_status=contract.document.status %}
                             {% include "includes/status_badge.html" with status=doc_status %}
@@ -112,22 +104,22 @@
                     {% if is_admin_view %}
                     <td class="small">{{ contract.document.batch.user.username }}</td>
                     {% endif %}
-                    <td class="pe-4 text-end text-nowrap">
+                    <td class="text-end text-nowrap">
                         <div class="d-inline-flex align-items-center gap-1">
                             <a href="{% url 'contract_detail' contract.pk %}" class="btn btn-sm btn-outline-primary" title="Inspect contract">
                                 <i class="ti ti-eye me-1"></i>Inspect
                             </a>
-                            <a href="{% url 'contract_edit' contract.pk %}" class="btn btn-sm btn-outline-secondary" title="Edit metadata">
+                            <a href="{% url 'contract_edit' contract.pk %}" class="btn btn-sm btn-outline-secondary btn-icon" title="Edit metadata" aria-label="Edit metadata for {{ contract.contract_number }}">
                                 <i class="ti ti-pencil"></i>
                             </a>
                             <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-outline-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="ti ti-download me-1"></i>Export
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><a class="dropdown-item" href="{% url 'contract_export' contract.pk 'json' %}"><i class="ti ti-braces me-2 text-warning-emphasis"></i>JSON (.json)</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'contract_export' contract.pk 'xlsx' %}"><i class="ti ti-file-spreadsheet me-2 text-success"></i>Excel (.xlsx)</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'contract_export' contract.pk 'csv' %}"><i class="ti ti-file-type-csv me-2 text-primary"></i>CSV (.csv)</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'contract_export' contract.pk 'xlsx' %}"><i class="ti ti-file-spreadsheet me-2"></i>Excel (.xlsx)</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'contract_export' contract.pk 'csv' %}"><i class="ti ti-file-type-csv me-2"></i>CSV (.csv)</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'contract_export' contract.pk 'json' %}"><i class="ti ti-braces me-2"></i>JSON (.json)</a></li>
                                 </ul>
                             </div>
                             {% if contract.document.status != 'ARCHIVED' %}
@@ -135,7 +127,7 @@
                                       data-confirm="Archive contract {{ contract.contract_number }}? Archived contracts stay readable but cannot be un-archived from the UI (BR-09).">
                                     {% csrf_token %}
                                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-dark" title="Archive contract (BR-09)">
+                                    <button type="submit" class="btn btn-sm btn-outline-review btn-icon" title="Archive contract (BR-09)" aria-label="Archive contract {{ contract.contract_number }}">
                                         <i class="ti ti-archive"></i>
                                     </button>
                                 </form>
@@ -143,18 +135,16 @@
                         </div>
                     </td>
                 </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="{% if is_admin_view %}9{% else %}8{% endif %}" class="text-center py-5 text-muted">
-                        <i class="ti ti-inbox fs-2 d-block mb-2"></i>
-                        No extracted contracts found.
-                        <a href="{% url 'contract_upload' %}" class="text-decoration-none fw-semibold">Upload a contract PDF</a> to begin.
-                    </td>
-                </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    {% elif search_query or status_filter != 'ALL' %}
+        {% include "partials/empty_state.html" with title="No contracts match these filters" message="No extracted contracts found. Try a different search, or reset the filters." %}
+    {% else %}
+        {% url 'contract_upload' as upload_url %}
+        {% include "partials/empty_state.html" with title="No contracts yet" message="No extracted contracts found. Upload a contract PDF to begin." action_url=upload_url action_label="Upload PDF" %}
+    {% endif %}
 </div>
 
 {% if is_paginated %}
@@ -178,35 +168,37 @@
 {% endif %}
 
 {% if failed_documents %}
-<div class="card border-danger-subtle">
-    <div class="card-header bg-danger-lt py-2">
-        <h2 class="h6 fw-bold mb-0">
-            <i class="ti ti-alert-triangle me-2"></i>Recent Failed Ingestion Documents
-        </h2>
+<div class="card">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+            <h2 class="mb-0">Recent Failed Ingestion Documents</h2>
+            <p class="shake-card-sub">PDFs that produced no contract; they can be deleted safely</p>
+        </div>
+        <span class="shake-pill shake-pill-rejected">Parse error</span>
     </div>
     <div class="table-responsive">
-        <table class="table table-vcenter card-table table-sm mb-0">
+        <table class="table table-vcenter card-table">
             <thead>
                 <tr>
-                    <th class="ps-4">Batch #</th>
-                    <th>Filename</th>
-                    <th>Status</th>
-                    <th>Diagnostic</th>
-                    <th class="pe-4 text-end">Actions</th>
+                    <th scope="col">Batch #</th>
+                    <th scope="col">Filename</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Diagnostic</th>
+                    <th scope="col" class="text-end">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for doc in failed_documents %}
                 <tr>
-                    <td class="ps-4"><code>{{ doc.batch.batch_number }}</code></td>
+                    <td><span class="font-mono-data small">{{ doc.batch.batch_number }}</span></td>
                     <td>{{ doc.original_file_name }}</td>
-                    <td><span class="badge bg-danger-lt">{{ doc.status }}</span></td>
-                    <td class="small text-muted">
+                    <td>{% include "includes/status_badge.html" with status=doc.status %}</td>
+                    <td class="small text-secondary">
                         {% with last_job=doc.jobs.all.0 %}
                             {{ last_job.error_message|default:"Pipeline execution failed."|truncatechars:140 }}
                         {% endwith %}
                     </td>
-                    <td class="pe-4 text-end">
+                    <td class="text-end">
                         <form method="post" action="{% url 'document_delete' doc.pk %}" class="d-inline m-0"
                               data-confirm="Permanently delete the failed document '{{ doc.original_file_name }}'? This cannot be undone.">
                             {% csrf_token %}

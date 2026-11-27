@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}SHAKE — From Paper to Data{% endblock %}</title>
-    <link rel="icon" type="image/svg+xml" href="{% static 'img/shake-emblem.svg' %}">
-    {# Offline Tabler (Bootstrap 5) bundle + Tabler Icons, served from static/vendor/tabler/. No CDN. #}
+    <title>{% block title %}SHAKE — Deep water, clear data{% endblock %}</title>
+    <meta name="theme-color" content="#0E2A3B">
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+    {# Offline Tabler (Bootstrap 5) + Tabler Icons + SHAKE "Settle" theme with bundled WOFF2 fonts. No CDN, no Google Fonts. #}
     <link href="{% static 'vendor/tabler/css/tabler.min.css' %}" rel="stylesheet">
     <link href="{% static 'vendor/tabler/icons/tabler-icons.min.css' %}" rel="stylesheet">
     <link href="{% static 'css/shake-theme.css' %}" rel="stylesheet">
@@ -15,7 +16,7 @@
 {% with url_name=request.resolver_match.url_name %}
 <div class="page">
     {% if user.is_authenticated %}
-    <!-- Dark navy vertical sidebar -->
+    <!-- Deep Hull vertical sidebar -->
     <aside class="navbar navbar-vertical navbar-expand-lg shake-sidebar" data-bs-theme="dark" aria-label="Primary navigation">
         <div class="container-fluid">
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -24,73 +25,59 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-            <div class="navbar-brand navbar-brand-autodark">
-                <a class="shake-lockup"
-                   href="{% if user.role == 'ADMIN' %}{% url 'admin_dashboard' %}{% else %}{% url 'encoder_dashboard' %}{% endif %}">
-                    <img src="{% static 'img/shake-emblem-light.svg' %}" alt="" class="shake-emblem" width="38" height="32">
-                    <span class="shake-wordmark shake-wordmark-light">SHAKE</span>
-                </a>
+            <div class="navbar-brand">
+                {% if user.role == 'ADMIN' %}{% url 'admin_dashboard' as home_url %}{% else %}{% url 'encoder_dashboard' as home_url %}{% endif %}
+                {% include "partials/shake_lockup.html" with tone="hull" href=home_url %}
             </div>
 
             <div class="collapse navbar-collapse" id="shakeNavbar">
-                <ul class="navbar-nav pt-lg-2">
+                <ul class="navbar-nav pt-lg-1">
+                    <li><span class="shake-nav-heading">Workspace</span></li>
+                    {% if user.role != 'ADMIN' %}
+                    <li class="nav-item {% if url_name == 'encoder_dashboard' %}active{% endif %}">
+                        <a class="nav-link" href="{% url 'encoder_dashboard' %}" {% if url_name == 'encoder_dashboard' %}aria-current="page"{% endif %}>
+                            <span class="nav-link-icon"><i class="ti ti-layout-dashboard"></i></span>
+                            <span class="nav-link-title">Dashboard</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item {% if url_name == 'contract_list' or url_name == 'contract_detail' or url_name == 'contract_edit' or url_name == 'rate_create' or url_name == 'rate_edit' %}active{% endif %}">
+                        <a class="nav-link" href="{% url 'contract_list' %}" {% if url_name == 'contract_list' %}aria-current="page"{% endif %}>
+                            <span class="nav-link-icon"><i class="ti ti-file-text"></i></span>
+                            <span class="nav-link-title">Contracts</span>
+                        </a>
+                    </li>
+                    <li class="nav-item {% if url_name == 'contract_upload' %}active{% endif %}">
+                        <a class="nav-link" href="{% url 'contract_upload' %}" {% if url_name == 'contract_upload' %}aria-current="page"{% endif %}>
+                            <span class="nav-link-icon"><i class="ti ti-file-upload"></i></span>
+                            <span class="nav-link-title">Upload PDF</span>
+                        </a>
+                    </li>
                     {% if user.role == 'ADMIN' %}
-                        <li><span class="shake-nav-heading">Admin Workspace</span></li>
-                        <li class="nav-item {% if url_name == 'admin_dashboard' %}active{% endif %}">
-                            <a class="nav-link" href="{% url 'admin_dashboard' %}" {% if url_name == 'admin_dashboard' %}aria-current="page"{% endif %}>
-                                <span class="nav-link-icon"><i class="ti ti-shield-lock"></i></span>
-                                <span class="nav-link-title">Admin Dashboard</span>
-                            </a>
-                        </li>
-                        <li class="nav-item {% if url_name == 'contract_list' or url_name == 'contract_detail' or url_name == 'contract_edit' or url_name == 'rate_create' or url_name == 'rate_edit' %}active{% endif %}">
-                            <a class="nav-link" href="{% url 'contract_list' %}">
-                                <span class="nav-link-icon"><i class="ti ti-file-text"></i></span>
-                                <span class="nav-link-title">All Contracts</span>
-                            </a>
-                        </li>
-                        <li class="nav-item {% if url_name == 'contract_upload' %}active{% endif %}">
-                            <a class="nav-link" href="{% url 'contract_upload' %}">
-                                <span class="nav-link-icon"><i class="ti ti-cloud-upload"></i></span>
-                                <span class="nav-link-title">Upload Contract</span>
-                            </a>
-                        </li>
-                        <li class="nav-item {% if url_name == 'carrier_list' or url_name == 'carrier_create' or url_name == 'carrier_edit' %}active{% endif %}">
-                            <a class="nav-link" href="{% url 'carrier_list' %}">
-                                <span class="nav-link-icon"><i class="ti ti-ship"></i></span>
-                                <span class="nav-link-title">Carrier Profiles</span>
-                            </a>
-                        </li>
-                    {% else %}
-                        <li><span class="shake-nav-heading">Encoder Workspace</span></li>
-                        <li class="nav-item {% if url_name == 'encoder_dashboard' %}active{% endif %}">
-                            <a class="nav-link" href="{% url 'encoder_dashboard' %}" {% if url_name == 'encoder_dashboard' %}aria-current="page"{% endif %}>
-                                <span class="nav-link-icon"><i class="ti ti-layout-dashboard"></i></span>
-                                <span class="nav-link-title">Encoder Workspace</span>
-                            </a>
-                        </li>
-                        <li class="nav-item {% if url_name == 'contract_upload' %}active{% endif %}">
-                            <a class="nav-link" href="{% url 'contract_upload' %}">
-                                <span class="nav-link-icon"><i class="ti ti-cloud-upload"></i></span>
-                                <span class="nav-link-title">Upload Contract</span>
-                            </a>
-                        </li>
-                        <li class="nav-item {% if url_name == 'contract_list' or url_name == 'contract_detail' or url_name == 'contract_edit' or url_name == 'rate_create' or url_name == 'rate_edit' %}active{% endif %}">
-                            <a class="nav-link" href="{% url 'contract_list' %}">
-                                <span class="nav-link-icon"><i class="ti ti-table"></i></span>
-                                <span class="nav-link-title">My Contracts</span>
-                            </a>
-                        </li>
+                    <li><span class="shake-nav-heading">Administration</span></li>
+                    <li class="nav-item {% if url_name == 'admin_dashboard' %}active{% endif %}">
+                        <a class="nav-link" href="{% url 'admin_dashboard' %}" {% if url_name == 'admin_dashboard' %}aria-current="page"{% endif %}>
+                            <span class="nav-link-icon"><i class="ti ti-layout-dashboard"></i></span>
+                            <span class="nav-link-title">Admin Overview</span>
+                        </a>
+                    </li>
+                    <li class="nav-item {% if url_name == 'carrier_list' or url_name == 'carrier_create' or url_name == 'carrier_edit' %}active{% endif %}">
+                        <a class="nav-link" href="{% url 'carrier_list' %}" {% if url_name == 'carrier_list' %}aria-current="page"{% endif %}>
+                            <span class="nav-link-icon"><i class="ti ti-building-warehouse"></i></span>
+                            <span class="nav-link-title">Carriers</span>
+                        </a>
+                    </li>
                     {% endif %}
                     <li><span class="shake-nav-heading">Account</span></li>
                     <li class="nav-item {% if url_name == 'profile' or url_name == 'profile_edit' or url_name == 'password_change' %}active{% endif %}">
-                        <a class="nav-link" href="{% url 'profile' %}">
-                            <span class="nav-link-icon"><i class="ti ti-id-badge-2"></i></span>
+                        <a class="nav-link" href="{% url 'profile' %}" {% if url_name == 'profile' %}aria-current="page"{% endif %}>
+                            <span class="nav-link-icon"><i class="ti ti-user-circle"></i></span>
                             <span class="nav-link-title">Profile</span>
                         </a>
                     </li>
                 </ul>
                 <div class="shake-sidebar-footer d-none d-lg-block">
-                    <i class="ti ti-wifi-off me-1"></i>Offline-first &middot; zero cloud egress
+                    contract in · structured data out · nothing leaves the device
                 </div>
             </div>
         </div>
@@ -99,12 +86,11 @@
 
     <div class="page-wrapper">
         {% if user.is_authenticated %}
-        <!-- Top utility bar -->
+        <!-- Top user / role bar -->
         <header class="navbar navbar-expand shake-topbar d-print-none">
             <div class="container-xl">
-                <div class="shake-page-context d-none d-md-flex align-items-center gap-2">
-                    <i class="ti ti-anchor"></i>
-                    <span>{% if user.role == 'ADMIN' %}Operations Admin Workspace{% else %}Freight Analyst / Encoder Workspace{% endif %}</span>
+                <div class="shake-page-context d-none d-md-block shake-label">
+                    {% if user.role == 'ADMIN' %}Operations Admin Workspace{% else %}Freight Analyst / Encoder Workspace{% endif %}
                 </div>
                 <div class="navbar-nav flex-row align-items-center gap-3 ms-auto">
                     <a href="{% url 'profile' %}" class="d-flex align-items-center gap-2 text-reset text-decoration-none">
@@ -113,9 +99,9 @@
                         {% else %}
                             <span class="shake-avatar-fallback" title="{{ user.full_name_or_username }}">{{ user.initials }}</span>
                         {% endif %}
-                        <span class="d-none d-sm-block lh-sm">
-                            <span class="d-block fw-semibold small">{{ user.full_name_or_username }}</span>
-                            <span class="badge {% if user.role == 'ADMIN' %}badge-role-admin{% else %}badge-role-encoder{% endif %} mt-1">{{ user.get_role_display }}</span>
+                        <span class="d-none d-sm-flex flex-column align-items-start gap-1">
+                            <span class="shake-user-name">{{ user.full_name_or_username }}</span>
+                            <span class="badge {% if user.role == 'ADMIN' %}badge-role-admin{% else %}badge-role-encoder{% endif %}">{{ user.get_role_display }}</span>
                         </span>
                     </a>
                     <form method="post" action="{% url 'logout' %}" class="m-0">
@@ -127,34 +113,20 @@
                 </div>
             </div>
         </header>
-        {% else %}
-        <!-- Guest header -->
-        <header class="navbar navbar-expand shake-guestbar d-print-none" data-bs-theme="dark">
-            <div class="container-xl">
-                <a class="shake-lockup" href="{% url 'dashboard' %}">
-                    <img src="{% static 'img/shake-emblem-light.svg' %}" alt="" class="shake-emblem" width="38" height="32">
-                    <span class="shake-wordmark shake-wordmark-light">SHAKE</span>
-                </a>
-                <div class="navbar-nav flex-row align-items-center gap-2 ms-auto">
-                    <a class="nav-link" href="{% url 'login' %}">
-                        <i class="ti ti-login me-1"></i>Log in
-                    </a>
-                    <a class="btn btn-amber btn-sm px-3" href="{% url 'register' %}">
-                        <i class="ti ti-user-plus me-1"></i>Create Account
-                    </a>
-                </div>
-            </div>
-        </header>
         {% endif %}
 
-        <!-- Main Content Container -->
+        <!-- Main workspace (Manifest Paper ground) -->
         <main class="page-body flex-grow-1">
             <div class="container-xl">
                 {% if messages %}
-                    <div class="mb-4">
+                    <div class="mb-4" aria-live="polite">
                         {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
-                                <i class="ti {% if message.tags == 'success' %}ti-circle-check{% elif message.tags == 'danger' %}ti-alert-triangle{% elif message.tags == 'warning' %}ti-alert-circle{% else %}ti-info-circle{% endif %} me-2 fs-2"></i>
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+                                {% if message.tags == 'success' %}
+                                    {% include "partials/shake_state.html" with state="structured" tone="light" %}
+                                {% else %}
+                                    <i class="ti shake-alert-icon {% if message.tags == 'danger' or message.tags == 'error' %}ti-alert-octagon{% elif message.tags == 'warning' %}ti-alert-triangle{% else %}ti-info-circle{% endif %}"></i>
+                                {% endif %}
                                 <div>{{ message }}</div>
                                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
@@ -166,18 +138,10 @@
             </div>
         </main>
 
-        <!-- Footer -->
         <footer class="shake-footer py-3 mt-auto d-print-none">
             <div class="container-xl d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
-                <div class="d-flex align-items-center gap-2">
-                    <img src="{% static 'img/shake-emblem.svg' %}" alt="" width="20" height="17">
-                    <strong class="text-body">SHAKE</strong>
-                    <span>&middot; Offline-first ocean freight contract extraction</span>
-                </div>
-                <div class="d-flex flex-wrap gap-1">
-                    <span class="badge badge-neutral"><i class="ti ti-wifi-off"></i>Offline-First PDF Engine</span>
-                    <span class="badge badge-neutral">MSC &bull; CMA CGM &bull; COSCO &rarr; Excel / CSV / JSON</span>
-                </div>
+                <span>SHAKE &middot; Structured Handling and Automated Knowledge Extraction</span>
+                <span><i class="ti ti-device-desktop me-1"></i>Runs on this workstation &middot; zero cloud egress</span>
             </div>
         </footer>
     </div>

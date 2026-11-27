@@ -1,25 +1,21 @@
 {% extends "base.html" %}
-{% load static %}
 
 {% block title %}SHAKE — Create Account{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center py-2">
-    <div class="col-12 col-lg-9 col-xl-8 shake-auth-card-wide">
-        <div class="card overflow-hidden">
-            <div class="card-header shake-auth-header d-block p-4">
-                <div class="shake-lockup shake-lockup-lg mb-3">
-                    <img src="{% static 'img/shake-emblem.svg' %}" alt="" class="shake-emblem" width="52" height="44">
-                    <span class="shake-wordmark">SHAKE</span>
-                </div>
-                <div class="shake-eyebrow mb-1">Account Onboarding</div>
-                <h1 class="h2 fw-bold mb-1">Create your SHAKE account</h1>
-                <p class="small text-secondary mb-0">
+<div class="row justify-content-center shake-auth-wrap">
+    <div class="col-12 shake-auth-card-wide">
+        <div class="card">
+            <div class="shake-auth-head">
+                {% include "partials/shake_lockup.html" with tone="light" scale="lg" %}
+                <span class="shake-label d-block mb-1">Account onboarding</span>
+                <h1 class="mb-0">Create your SHAKE account</h1>
+                <p>
                     Register as a <strong>Freight Analyst / Encoder</strong> to start processing carrier rate contracts. Operations Admin access is granted by an existing administrator.
                 </p>
             </div>
 
-            <div class="card-body p-4">
+            <div class="card-body">
                 <form method="post" novalidate>
                     {% csrf_token %}
 
@@ -35,6 +31,7 @@
                     {% endif %}
 
                     <div class="row g-3">
+                        <div class="col-12"><div class="shake-label shake-form-section mb-0">Identity</div></div>
                         <!-- First Name & Last Name -->
                         <div class="col-12 col-md-6">
                             <label for="{{ form.first_name.id_for_label }}" class="form-label fw-semibold small text-secondary mb-1">
@@ -88,6 +85,7 @@
                             {% endfor %}
                         </div>
 
+                        <div class="col-12 mt-4"><div class="shake-label shake-form-section mb-0">Operations</div></div>
                         <!-- Department -->
                         <div class="col-12">
                             <label for="{{ form.department.id_for_label }}" class="form-label fw-semibold small text-secondary mb-1">
@@ -121,6 +119,7 @@
                             {% endfor %}
                         </div>
 
+                        <div class="col-12 mt-4"><div class="shake-label shake-form-section mb-0">Security</div></div>
                         <!-- Password & Confirm Password -->
                         <div class="col-12 col-md-6">
                             <label for="{{ form.password1.id_for_label }}" class="form-label fw-semibold small text-secondary mb-1">
@@ -153,7 +152,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold mt-4">
+                    <button type="submit" class="btn btn-primary w-100 py-2 mt-4">
                         <i class="ti ti-user-check me-1"></i>Create SHAKE Account
                     </button>
                 </form>
@@ -166,6 +165,10 @@
                 </a>
             </div>
         </div>
+        <p class="shake-privacy-note">
+            {% include "partials/shake_mark.html" with tone="light" %}
+            Runs locally &mdash; contract data never leaves this device.
+        </p>
     </div>
 </div>
 {% endblock %}

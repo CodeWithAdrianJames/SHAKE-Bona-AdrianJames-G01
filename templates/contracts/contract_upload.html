@@ -4,10 +4,10 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-12 col-lg-8 col-xl-7">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="col-12 col-lg-10 col-xl-8">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0 small">
+                <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item"><a href="{% url 'contract_list' %}">Contracts</a></li>
                     <li class="breadcrumb-item active" aria-current="page">Upload Contract PDF</li>
                 </ol>
@@ -17,44 +17,105 @@
             </a>
         </div>
 
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="shake-page-header">
+            <span class="shake-label">Upload PDF</span>
+            <h1 class="mb-0">Upload Ocean Freight Contract PDF</h1>
+            <p>Shake the contract loose, let the data settle. Parsing, table stitching, and storage all run on this device.</p>
+        </div>
+
+        <!-- 1 · Raw -> 2 · SHAKE -> 3 · Structured (Board 01) -->
+        <ol class="shake-pipeline list-unstyled mb-4" aria-label="Extraction pipeline">
+            <li class="shake-step">
+                {% include "partials/shake_state.html" with state="raw" %}
+                <div class="shake-step-title">1 &middot; Raw</div>
+                <p>Unstructured carrier PDF. Every carrier formats it differently.</p>
+            </li>
+            <li class="shake-step is-dark">
+                {% include "partials/shake_state.html" with state="shake" %}
+                <div class="shake-step-title">2 &middot; SHAKE</div>
+                <p>The moment of extraction: vector text, stitched tables, bound metadata.</p>
+            </li>
+            <li class="shake-step">
+                {% include "partials/shake_state.html" with state="structured" %}
+                <div class="shake-step-title">3 &middot; Structured</div>
+                <p>Clean rate rows, ready to review and export as XLSX, CSV, or JSON.</p>
+            </li>
+        </ol>
+
+        <div class="card" id="shake-upload-card">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <div>
-                    <h1 class="h5 fw-bold mb-0">
-                        <i class="ti ti-cloud-upload me-2 text-primary"></i>Upload Ocean Freight Contract PDF
-                    </h1>
-                    <p class="text-muted small mb-0">
-                        Local offline vector parsing, table stitching, and PostgreSQL persistence
-                    </p>
+                    <h2 class="mb-0">Select contract files</h2>
+                    <p class="shake-card-sub">Digital vector-text <code>.pdf</code> only &middot; one or many per batch</p>
                 </div>
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
-                    Zero-Cloud Engine
-                </span>
+                <span class="shake-pill shake-pill-info">Zero-cloud engine</span>
             </div>
 
             <div class="card-body p-4">
-                <div class="alert alert-info d-flex align-items-start gap-2 small mb-4" role="alert">
-                    <i class="ti ti-shield-check fs-5 mt-1"></i>
+                <div class="alert alert-info d-flex align-items-start gap-2 small mb-4" role="note">
+                    <i class="ti ti-info-circle shake-alert-icon"></i>
                     <div>
-                        <strong>Ingestion Requirements:</strong>
-                        Upload one or more digitally generated, machine-selectable vector-text <code>.pdf</code> files.
-                        Scanned/image PDFs are rejected, and duplicate PDFs are blocked via cryptographic
-                        <strong>SHA-256</strong> checksum validation (<code>BR-06</code>).
+                        <strong>Ingestion requirements:</strong>
+                        machine-selectable vector-text PDFs only. Scanned or image-only PDFs are rejected (BR-07, BR-08),
+                        and duplicates are blocked by their <strong>SHA-256</strong> checksum (BR-06).
                     </div>
                 </div>
 
-                <form method="post" enctype="multipart/form-data" novalidate>
+                <form method="post" enctype="multipart/form-data" novalidate id="shake-upload-form">
                     {% csrf_token %}
-                    {% include "includes/form_fields.html" %}
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger d-flex align-items-start gap-2" role="alert">
+                            <i class="ti ti-alert-octagon shake-alert-icon"></i>
+                            <div>{% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}</div>
+                        </div>
+                    {% endif %}
 
-                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-2 border-top">
-                        <div class="small text-muted">
+                    <!-- PDF dropzone (pdf_files) -->
+                    <div class="shake-dropzone mb-4" id="shake-dropzone">
+                        <div class="d-flex justify-content-center mb-2">
+                            {% include "partials/shake_state.html" with state="raw" %}
+                        </div>
+                        <label for="{{ form.pdf_files.id_for_label }}" class="d-block fw-semibold mb-1">
+                            Drop contract PDFs here, or choose files <span class="text-danger" title="Required field">*</span>
+                        </label>
+                        <div class="shake-dropzone-files mb-3" id="shake-dropzone-files" aria-live="polite">No files selected yet.</div>
+                        <div class="shake-dropzone-input">{{ form.pdf_files }}</div>
+                        {% for error in form.pdf_files.errors %}
+                            <div class="invalid-feedback d-block text-danger small mt-2">
+                                <i class="ti ti-alert-circle me-1"></i>{{ error }}
+                            </div>
+                        {% endfor %}
+                        <div class="form-text small mt-2">{{ form.pdf_files.help_text }}</div>
+                    </div>
+
+                    <!-- Carrier template hint (carrier_profile) -->
+                    <div class="mb-4">
+                        <label for="{{ form.carrier_profile.id_for_label }}" class="form-label mb-1">{{ form.carrier_profile.label }}</label>
+                        {{ form.carrier_profile }}
+                        {% for error in form.carrier_profile.errors %}
+                            <div class="invalid-feedback d-block text-danger small mt-1">
+                                <i class="ti ti-alert-circle me-1"></i>{{ error }}
+                            </div>
+                        {% endfor %}
+                        <div class="form-text small">{{ form.carrier_profile.help_text }}</div>
+                    </div>
+
+                    <div class="shake-extracting mb-3" role="status">
+                        {% include "partials/shake_mark.html" with tone="hull" size=44 %}
+                        <div>
+                            <div class="shake-extracting-title">Extracting&hellip; letting the data settle</div>
+                            <p>Reading vector text, stitching tables across pages, and binding contract metadata. Keep this tab open.</p>
+                        </div>
+                    </div>
+
+                    <div class="shake-upload-actions d-flex flex-wrap justify-content-between align-items-center gap-2 pt-3 border-top">
+                        <div class="small text-secondary">
                             <i class="ti ti-cpu me-1"></i>Extracts metadata, 20GP/40GP/40HC/45HC rates &amp; port arbitraries
                         </div>
                         <div class="d-flex gap-2">
-                            <a href="{% url 'contract_list' %}" class="btn btn-light border">Cancel</a>
-                            <button type="submit" class="btn btn-primary fw-semibold px-4">
-                                <i class="ti ti-bolt me-1"></i>Start Extraction
+                            <a href="{% url 'contract_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="ti ti-file-upload me-1"></i>Start Extraction
                             </button>
                         </div>
                     </div>
@@ -63,4 +124,41 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Progressive enhancement only: the plain file input and POST still work without JavaScript.
+    (function () {
+        var zone = document.getElementById("shake-dropzone");
+        var form = document.getElementById("shake-upload-form");
+        var card = document.getElementById("shake-upload-card");
+        var list = document.getElementById("shake-dropzone-files");
+        if (!zone || !form) { return; }
+        var input = zone.querySelector('input[type="file"]');
+        if (!input) { return; }
+
+        function showFiles() {
+            var names = Array.prototype.map.call(input.files || [], function (f) { return f.name; });
+            list.textContent = names.length ? names.length + " file" + (names.length === 1 ? "" : "s") + ": " + names.join(", ") : "No files selected yet.";
+        }
+        input.addEventListener("change", showFiles);
+        ["dragenter", "dragover"].forEach(function (type) {
+            zone.addEventListener(type, function (event) { event.preventDefault(); zone.classList.add("is-dragover"); });
+        });
+        ["dragleave", "drop"].forEach(function (type) {
+            zone.addEventListener(type, function () { zone.classList.remove("is-dragover"); });
+        });
+        zone.addEventListener("drop", function (event) {
+            event.preventDefault();
+            if (event.dataTransfer && event.dataTransfer.files.length) {
+                input.files = event.dataTransfer.files;
+                showFiles();
+            }
+        });
+        form.addEventListener("submit", function () {
+            if (input.files && input.files.length) { card.classList.add("is-extracting"); }
+        });
+    })();
+</script>
 {% endblock %}

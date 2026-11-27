@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="SHAKE mark (reversed on Tide)">
+  <title>SHAKE mark (reversed on Tide)</title>
+  <!-- SHAKE "Settle" mark: 64 x 64 grid, stroke 6, round caps, strokes 14 units apart.
+       Top: rough wave (raw carrier PDF). Middle: calmer wave (extraction). Bottom: divided row (field | value). -->
+  <g fill="none" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke="#F6F3EC" d="M12 20C17.33 13.33 26.67 13.33 32 20S46.67 26.67 52 20"/>
+    <path stroke="#F6F3EC" d="M12 34C17.33 30.67 26.67 30.67 32 34S46.67 37.33 52 34"/>
+    <path stroke="#F6F3EC" d="M12 48H22M31 48H52"/>
+  </g>
+</svg>

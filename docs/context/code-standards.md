@@ -30,11 +30,12 @@
 ## Templates and Styling
 
 - Render forms through `templates/includes/form_fields.html` so label, help text, checkbox, and validation error markup stay uniform.
-- Format contract numbers, UN/LOCODE port codes, SHA-256 hashes, and monetary amounts using `font-mono-code` (defined in `static/css/shake-theme.css`; `text-end` for numeric columns).
-- Load front-end assets only through `{% static %}` from `static/vendor/tabler/` and `static/css/shake-theme.css`; never add CDN `<link>`/`<script>` tags or remote fonts. Use Tabler Icons (`ti ti-*`) and the brand classes in `shake-theme.css` instead of inline colors.
+- Use JetBrains Mono only for extracted/structured values: `.font-mono-data` (contract and batch numbers, SHA-256 hashes), `.shake-chip-*` (UN/LOCODE ports, ISO equipment, carrier codes, export formats), and `.shake-amount` (right-aligned rates with a `.shake-currency` prefix). Tables and counters use `tabular-nums`. Inline technical text (API paths, tokens) uses `<code>`.
+- Load front-end assets only through `{% static %}` from `static/vendor/tabler/`, `static/css/shake-theme.css`, `static/fonts/`, and `static/img/`; never add CDN `<link>`/`<script>` tags, Google Fonts, or remote fonts. Use Tabler Icons (`ti ti-*`), the `--shake-*` tokens, and the brand classes in `shake-theme.css` instead of inline colors or inline styles.
+- Render the brand mark only through `templates/partials/shake_mark.html` / `shake_lockup.html` / `shake_state.html` (inline SVG). Never place Sea Glass (`#7FD8C3`) on a light surface, never add symbols (anchors, ships, padlocks, sparkles, stars) to the mark, and never rotate, stretch, or animate its strokes upward.
 - Render `DocumentFile`/`ProcessingJob` status pills with `{% include "includes/status_badge.html" with status=... %}`.
 - Keep templates self-contained and offline-safe without external runtime dependencies that fail without internet access.
-- `templates/404.html` and `templates/500.html` must stay standalone (inline CSS and inline SVG emblem, no `{% extends %}`, no `{% static %}`). `500.html` must not reverse URLs or read `user`/`request`/`messages`, because Django renders it with an empty context.
+- `templates/404.html` and `templates/500.html` must stay standalone (inline CSS and the inline SVG Settle mark, no `{% extends %}`, no `{% static %}`). `500.html` must not reverse URLs or read `user`/`request`/`messages`, because Django renders it with an empty context.
 
 ## API Routes (Loopback REST API — F-11)
 
