@@ -10,8 +10,20 @@
 |---|---|
 | **Student** | Adrian James F. Bona |
 | **Course & Section** | CSIT327 (Information Management 2) — Section G1 |
-| **Phase** | Phase 2 — Core Feature Vertical Slice (PDF Ingestion, Extraction, CRUD & Exports) |
+| **Phase** | Project Development 3 — Loopback REST API (`F-11`), Validation/Error-Page/Security Hardening & Final Documentation |
 | **Tech Stack** | Full Stack Django (Django Backend + Django Templates + Bootstrap 5.3 CDN), PyMuPDF / OpenDataLoader / pandas / openpyxl, & SQLite (default) / PostgreSQL (optional via `DATABASE_URL`) |
+
+---
+
+## Project Documentation
+
+| Document | Description |
+|---|---|
+| [`docs/traceability-matrix.md`](docs/traceability-matrix.md) | End-to-end traceability: `F-01`–`F-11` → specs, modules, routes, migrations & test classes; `BR-01`–`BR-13` → enforcement layer & tests; PD3 hardening → files & tests |
+| [`docs/SHAKE-Bona-AdrianJames-G01-PD3.pdf`](docs/SHAKE-Bona-AdrianJames-G01-PD3.pdf) | Project Development 3 report |
+| [`docs/SHAKE-Bona-AdrianJames-G1-PD2.pdf`](docs/SHAKE-Bona-AdrianJames-G1-PD2.pdf) | Project Development 2 report (incl. outstanding issues `ISS-01`, `ISS-02`) |
+| [`docs/feature-specs/`](docs/feature-specs/) | Spec-driven feature specifications `01`–`11` |
+| [`docs/context/`](docs/context/) | Project overview, architecture, UI, code standards, workflow rules & progress tracker |
 
 ---
 
@@ -177,10 +189,48 @@ Run SHAKE locally with zero external database setup (`db.sqlite3` is created aut
    ```
    Open `http://127.0.0.1:8000/` in your browser.
 
-7. **Run the automated test suite (SQLite)**
-   ```bash
-   python manage.py test -v 2
-   ```
+7. **Run the automated test suite** — see [Running the Automated Test Suite](#running-the-automated-test-suite) below.
+
+---
+
+## Running the Automated Test Suite
+
+The suite has **218 tests, all passing on local SQLite** (0 skipped when Java is on `PATH`; otherwise the OpenDataLoader end-to-end test skips). Django's default `test*.py` pattern discovers every module:
+
+| Module | Tests | Covers |
+|---|---:|---|
+| `accounts/tests.py` | 46 | Users, registration, email login, profile, password change, API tokens |
+| `contracts/tests.py` | 66 | Schema constraints (`BR-03`–`BR-13`), ingestion, cross-page stitching, CRUD, archiving, exports, carrier admin, loopback API |
+| `contracts/test_hardening.py` | 35 | Hardening pass: error pages, settings, access control, template audit, validation, integrity, query counts |
+| `contracts/tests_pd3_hardening.py` | 62 | Dedicated PD3 verification suite: `PD3ErrorPageTests`, `PD3ServerSideValidationTests`, `PD3MessagesAndPRGTests`, `PD3AuthenticationGuardTests`, `PD3IDORIsolationTests`, `PD3RequestSafetyTests`, and the `PD1*` feature tests |
+| `dashboard/tests.py` | 9 | Role dashboards, role guards, live metrics |
+
+Test runs never need a real `SECRET_KEY`: `manage.py test` uses a random per-process key when none is set.
+
+**PostgreSQL** (uses `DATABASE_URL` from `.env`):
+
+```bash
+python manage.py test
+```
+
+**Local SQLite** (Windows PowerShell; the blank `DATABASE_URL` overrides `.env` and forces `db.sqlite3`):
+
+```powershell
+$env:DATABASE_URL=" "; .\.venv\Scripts\python.exe manage.py test -v 2
+```
+
+Bash / WSL equivalent: `DATABASE_URL="" python manage.py test -v 2`.
+
+**Run one module or one class:**
+
+```powershell
+$env:DATABASE_URL=" "; .\.venv\Scripts\python.exe manage.py test contracts.tests_pd3_hardening -v 2
+$env:DATABASE_URL=" "; .\.venv\Scripts\python.exe manage.py test contracts.tests_pd3_hardening.PD3IDORIsolationTests -v 2
+```
+
+> **Note (PD2 `ISS-01`):** on Windows workstations where Smart App Control blocks psycopg's `pq` DLL, use the SQLite command above, WSL, or the `test-postgres` job in `.github/workflows/ci-cd.yml`.
+
+See [`docs/traceability-matrix.md`](docs/traceability-matrix.md) for which test class verifies each feature, business rule, and hardening requirement.
 
 ---
 
@@ -207,8 +257,9 @@ To run SHAKE against **Neon**, **Supabase**, or a local **PostgreSQL** instance 
    ```bash
    python manage.py migrate
    python manage.py runserver
-   python manage.py test --keepdb -v 2
+   python manage.py test
    ```
+   (Add `--keepdb -v 2` to reuse the test database between runs on a remote PostgreSQL host.)
 
 > **Tip:** Even when `.env` defines `DATABASE_URL`, you can temporarily force SQLite in bash (`DATABASE_URL="" python manage.py test -v 2`) or PowerShell (`$env:DATABASE_URL=" "; python manage.py test -v 2`).
 
@@ -222,4 +273,5 @@ SHAKE follows a protected **GitFlow** workflow across Project Development 2:
 - **`develop`**: Integration branch created from `main`.
 - **`feature/contract-ingestion-engine`**: Feature Branch 1 implementing the `contracts` app, normalized PostgreSQL schema (`BR-03`–`BR-13`), ported offline extraction engine, and upload/list/inspection views -> merged into `develop` (PR #1).
 - **`feature/contract-crud-and-exports`**: Feature Branch 2 implementing contract/rate CRUD, non-destructive archiving (`BR-09`), canonical JSON/XLSX/CSV exports + `ExportRecord`, Admin `CarrierProfile` CRUD, and live role dashboards -> merged into `develop` (PR #2), followed by `develop` -> `main` (PR #3).
+- **Project Development 3** branches merged into `develop`: `feature/f01-auth-hardening`, `feature/f04-cross-page-stitching`, `feature/f09-csv-arbitrary-export`, `feature/f11-local-loopback-api`, `hardening/validation-errors-and-security`, and `test/pd3-hardening-verification`. `fix/pd3-docs-and-report` adds the traceability matrix and final PD3 documentation.
 - All merged feature branches are preserved in the repository history.
