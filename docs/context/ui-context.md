@@ -126,8 +126,8 @@ JavaScript comes only from the local `tabler.min.js` (Bootstrap dropdowns, alert
 
 - **Signed-in shell (`templates/base.html`):** Deep Hull navigation rail (`.shake-rail`). At `>= 992px` it is a 72px compact rail (cropped Settle mark: Paper waves + Sea Glass row, centered Tabler icons, Sea Glass active left rail, hairlines in place of group headings) and the workspace reserves a fixed 72px margin. Hover or keyboard focus expands it over the canvas to 252px (`220ms cubic-bezier(0.22, 1, 0.36, 1)`, shadow `12px 0 32px rgba(9, 27, 38, 0.24)`), fading in the `SHAKE` wordmark, the grouped navigation, and the Abyss footer `contract in · structured data out · nothing leaves the device`. The pin button (`localStorage` `shake.sidebar.pinned`) locks it open and reserves 252px. Below `992px` it is a slide-over drawer opened from the top bar, with a dismissible backdrop. Navigation:
   - Workspace: Dashboard (`/dashboard/encoder/`, ENCODER only), Contracts (`/contracts/`), Upload PDF (`/contracts/upload/`).
-  - Administration (ADMIN only): Admin Overview (`/dashboard/admin/`), Carriers (`/contracts/carriers/`).
-  - Account: Profile (`/accounts/profile/`), Sign Out (`POST` logout form).
+  - Administration (ADMIN only): Admin overview (`/dashboard/admin/`), Carriers (`/contracts/carriers/`).
+  - Account: Profile (`/accounts/profile/`), Sign out (`POST` logout form).
   - The sticky Manifest Paper top bar shows the drawer toggle and small lockup (`< 992px`) and the user's name, role chip, and avatar. It carries no workspace label (the H1 already names the page). The footer shows only the product name; the offline promise lives in the rail tagline, the guest privacy note, and the upload rules.
 - **Page header:** every signed-in page starts with `.shake-page-head`: breadcrumb, Manrope H1, one-line Slate subtitle on the left; primary CTAs on the right.
 - **Guest pages (login, register):** no app chrome; a centered white card on Manifest Paper with the light-surface lockup, then the H1 directly (no eyebrow label above it), Tide submit button and focus rings, and a local-device privacy note under the card.
@@ -137,6 +137,15 @@ JavaScript comes only from the local `tabler.min.js` (Bootstrap dropdowns, alert
 - **Upload (`/contracts/upload/`), 7 / 5 split:** left card with the carrier template hint (`carrier_profile`), the PDF dropzone (`pdf_files`) with live file cards (name, size, remove), the extracting state, and Start Extraction; right column with the `1 · Raw` → `2 · SHAKE` → `3 · Structured` steps (step 1 is current, then done once files are chosen while step 2 becomes current) and the ingestion rules (100% local parsing, SHA-256 duplicate protection, vector text only).
 - **Forms (contract, rate, carrier, profile edit, password):** page header + one card; fields grouped into fieldsets with 12px uppercase legends and 2-column rows (Contract # + Carrier, Effective + Expiration Date, Origin + Destination Port Code, Origin + Destination Port Name, Equipment Type + Base Rate, Carrier Code + Name, Template + Active); errors sit directly under each field.
 - **Profile:** page header (Change Password, Edit Profile) → Deep Hull identity card (natural height, top-aligned) beside sectioned details (Identity, Operations, Activity) → Local API Tokens (Generate a token, Your tokens).
+
+## Copy, Responsive, and Accessibility Conventions
+
+- **Sentence case** for headings, page titles, labels (including form labels, set in `label=` / `Meta.labels`, never by changing model `verbose_name`, which would need a migration), buttons, links, and empty states: "Add rate row", "Edit metadata", "Back to contracts", "Origin port code (POL)". Product, role, and format names keep their capitals (SHAKE, Freight Analyst / Encoder, Operations Admin, PDF, API, SHA-256, XLSX, UN/LOCODE). Uppercase table headers and labels come from CSS, so their source text is sentence case too.
+- Test-anchored strings stay verbatim and are the only Title Case headings left: "Upload Ocean Freight Contract PDF" (upload H1 and encoder CTA), "Operations Admin Control Center" (admin H1), "Export Audit Log", "Local API Tokens", plus "No API tokens yet" and "Copy your new token now".
+- **Page gutter:** `--tblr-page-padding` stays 1rem below 992px (Tabler drops it to 0.5rem, narrower than a `.row.g-4` gutter, which caused a 4px horizontal overflow on tablets).
+- **Scroll containers:** `.shake-table-scroll` caps its height (`min(70vh, 42rem)`) only at `>= 768px`; on phones the page scrolls instead of a nested table.
+- **Targets:** `.shake-copy` is at least 24px tall and the icon-only copy button 24 × 24px (WCAG 2.5.8); the lane copy icon rests at 0.75 opacity (>= 3 : 1).
+- **Rail and drawer:** at `>= 992px` a pointer hover expands the rail after a 120ms intent delay (keyboard focus expands it immediately; collapsing is never delayed). Below 992px the open drawer makes `.page-wrapper` `inert`, so Tab stays inside the drawer; Escape or the backdrop closes it and returns focus to the opener.
 
 ## Icons
 

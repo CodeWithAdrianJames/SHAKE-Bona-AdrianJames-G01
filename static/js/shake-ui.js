@@ -50,6 +50,7 @@
         var rail = document.querySelector("[data-shake-rail]");
         if (!rail) { return; }
         var backdrop = document.querySelector(".shake-rail-backdrop");
+        var workspace = document.querySelector(".page-wrapper");
         var openers = document.querySelectorAll("[data-shake-drawer-open]");
         var pin = rail.querySelector("[data-shake-pin]");
         var lastOpener = null;
@@ -84,6 +85,10 @@
             rail.classList.toggle("is-open", open);
             root.classList.toggle("shake-drawer-open", open);
             if (backdrop) { backdrop.hidden = !open; }
+            // Keep Tab inside the open drawer: the workspace behind the backdrop is inert until it closes.
+            if (workspace) {
+                if (open) { workspace.setAttribute("inert", ""); } else { workspace.removeAttribute("inert"); }
+            }
             Array.prototype.forEach.call(openers, function (btn) { btn.setAttribute("aria-expanded", open ? "true" : "false"); });
             if (open) {
                 var first = rail.querySelector(".shake-rail-link");

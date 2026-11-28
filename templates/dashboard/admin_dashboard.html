@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}SHAKE — Operations Admin Dashboard{% endblock %}
+{% block title %}SHAKE — Operations admin dashboard{% endblock %}
 
 {% block content %}
 <!-- Page header -->
@@ -9,7 +9,7 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item">Administration</li>
-                <li class="breadcrumb-item active" aria-current="page">Admin Overview</li>
+                <li class="breadcrumb-item active" aria-current="page">Admin overview</li>
             </ol>
         </nav>
         <h1>Operations Admin Control Center</h1>
@@ -34,21 +34,21 @@
     </div>
     <div class="card shake-kpi">
         <div class="card-body">
-            <span class="shake-label">Total Users</span>
+            <span class="shake-label">Total users</span>
             <span class="shake-kpi-figure">{{ total_users_count }}</span>
             <span class="shake-kpi-caption">{{ admin_users_count }} Admin &middot; {{ encoder_users_count }} Encoder</span>
         </div>
     </div>
     <div class="card shake-kpi">
         <div class="card-body">
-            <span class="shake-label">Extracted Contracts</span>
+            <span class="shake-label">Extracted contracts</span>
             <span class="shake-kpi-figure">{{ extracted_contracts_count }}</span>
             <span class="shake-kpi-caption">from {{ total_batches_count }} ingestion batch{{ total_batches_count|pluralize:"es" }}</span>
         </div>
     </div>
     <div class="card shake-kpi">
         <div class="card-body">
-            <span class="shake-label">Active Carriers</span>
+            <span class="shake-label">Active carriers</span>
             <span class="shake-kpi-figure">{{ active_carriers_count }}</span>
             <span class="shake-kpi-caption">of {{ carrier_profiles|length }} registered profile{{ carrier_profiles|length|pluralize }}</span>
         </div>
@@ -63,7 +63,7 @@
             <div class="card">
                 <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
                     <div>
-                        <h2 class="mb-0">Recent Contracts</h2>
+                        <h2 class="mb-0">Recent contracts</h2>
                         <p class="shake-card-sub">Latest processing jobs across every operator</p>
                     </div>
                     <a href="{% url 'contract_list' %}" class="shake-card-link">All contracts<i class="ti ti-arrow-right" aria-hidden="true"></i></a>
@@ -115,7 +115,7 @@
             <div id="user-roster" class="card">
                 <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
                     <div>
-                        <h2 class="mb-0">Registered SHAKE Users</h2>
+                        <h2 class="mb-0">Registered SHAKE users</h2>
                         <p class="shake-card-sub">Operations Admins and Freight Analysts / Encoders on this workstation</p>
                     </div>
                     <span class="shake-count"><strong>{{ total_users_count }}</strong> account{{ total_users_count|pluralize }}</span>
@@ -177,7 +177,7 @@
         <div class="shake-side-stack">
             <div id="engine-health" class="card shake-side-card">
                 <div class="card-header">
-                    <h2 class="mb-0">Offline Engine</h2>
+                    <h2 class="mb-0">Offline engine</h2>
                 </div>
                 <ul class="shake-mini-list">
                     <li>
@@ -193,7 +193,7 @@
 
             <div id="carrier-parsers" class="card shake-side-card">
                 <div class="card-header d-flex justify-content-between align-items-center gap-2">
-                    <h2 class="mb-0">Carrier Registry</h2>
+                    <h2 class="mb-0">Carrier registry</h2>
                     <a href="{% url 'carrier_list' %}" class="shake-card-link">Manage carriers<i class="ti ti-arrow-right" aria-hidden="true"></i></a>
                 </div>
                 {% if carrier_profiles %}
@@ -216,7 +216,7 @@
 
             <div class="card shake-side-card">
                 <div class="card-header d-flex justify-content-between align-items-center gap-2">
-                    <h2 class="mb-0">Recent Exports</h2>
+                    <h2 class="mb-0">Recent exports</h2>
                     <span class="shake-count"><strong>{{ total_exports_count }}</strong> logged</span>
                 </div>
                 {% if recent_exports %}

@@ -570,6 +570,14 @@ html.shake-drawer-open { overflow: hidden; }
     .shake-rail:hover .shake-rail-heading::after,
     .shake-rail:focus-within .shake-rail-heading::after { opacity: 0; }
 
+    /* Hover intent: a pointer passing over the rail on its way elsewhere does not pop it open.
+       Keyboard focus (:focus-within) still expands it immediately, and collapsing is never delayed. */
+    @media (hover: hover) {
+        .shake-rail:hover:not(:focus-within),
+        .shake-rail:hover:not(:focus-within) .shake-rail-label,
+        .shake-rail:hover:not(:focus-within) .shake-rail-fade { transition-delay: 120ms; }
+    }
+
     /* Pinned: locked open and the workspace makes room (no overlay shadow). */
     .shake-rail-pinned .shake-rail { width: var(--shake-rail-expanded); box-shadow: none; }
     .shake-rail-pinned .shake-rail .shake-rail-label,
@@ -579,6 +587,9 @@ html.shake-drawer-open { overflow: hidden; }
 }
 
 .page-wrapper { background: var(--shake-paper); min-width: 0; }
+/* Tabler drops the page gutter to 0.5rem below 992px, narrower than a .row.g-4 gutter (0.75rem), which pushed
+   rows 4px past the viewport on tablets and left phone content 8px from the edge. Keep 1rem at every width. */
+@media (max-width: 991.98px) { :root { --tblr-page-padding: 1rem; } }
 .page-body { margin-top: 1.75rem; margin-bottom: 2.5rem; }
 
 .shake-topbar {
@@ -829,7 +840,9 @@ html.shake-drawer-open { overflow: hidden; }
 .card-table tr td:first-child, .card-table tr th:first-child { padding-left: var(--shake-pad-x); }
 .card-table tr td:last-child, .card-table tr th:last-child { padding-right: var(--shake-pad-x); }
 
-.shake-table-scroll { max-height: min(70vh, 42rem); overflow: auto; }
+.shake-table-scroll { overflow: auto; }
+/* Inner vertical scrolling only where there is room for it; on phones the page scrolls instead (no scroll trap). */
+@media (min-width: 768px) { .shake-table-scroll { max-height: min(70vh, 42rem); } }
 .shake-table-sticky thead th { position: sticky; top: 0; z-index: 2; box-shadow: inset 0 -1px 0 var(--shake-mist); }
 .shake-rate-table td { padding-top: 0.55rem; padding-bottom: 0.55rem; white-space: nowrap; }
 .shake-amount {
@@ -1287,12 +1300,13 @@ h1 .font-mono-data, .h1 .font-mono-data { font-size: inherit; font-weight: 500; 
     line-height: 1.25rem;
     color: var(--shake-slate);
     cursor: pointer;
+    min-height: 1.5rem;              /* 24px target (WCAG 2.5.8) */
     transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
 }
 .shake-copy:hover { color: var(--shake-deep-hull); border-color: var(--shake-line-strong); background: var(--shake-paper); }
 .shake-copy:focus-visible { outline: 2px solid var(--shake-tide); outline-offset: 1px; }
 .shake-copy.is-copied { color: var(--shake-tide); border-color: var(--shake-tide-line-strong); background: var(--shake-tide-tint); }
-.shake-copy-icon-only { padding: 0.1rem 0.3rem; }
+.shake-copy-icon-only { justify-content: center; min-width: 1.5rem; padding: 0.1rem 0.3rem; }
 .shake-hash-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.3rem; min-width: 0; }
 .shake-hash-short { font-family: var(--shake-font-mono); font-size: var(--shake-text-sm); color: var(--shake-slate); white-space: nowrap; }
 
@@ -1371,7 +1385,7 @@ h1 .font-mono-data, .h1 .font-mono-data { font-size: inherit; font-weight: 500; 
 .shake-lane-codes { display: inline-flex; align-items: center; gap: 0.35rem; }
 .shake-lane-codes .ti { color: var(--shake-slate); font-size: 0.9rem; }
 .shake-lane-names { display: block; font-size: var(--shake-text-sm); color: var(--shake-slate); margin-top: 0.15rem; max-width: 22rem; overflow: hidden; text-overflow: ellipsis; }
-.shake-lane .shake-copy { opacity: 0.55; }
+.shake-lane .shake-copy { opacity: 0.75; }   /* resting icon stays >= 3 : 1 */
 tr:hover .shake-lane .shake-copy,
 .shake-lane .shake-copy:focus-visible,
 .shake-lane .shake-copy.is-copied { opacity: 1; }

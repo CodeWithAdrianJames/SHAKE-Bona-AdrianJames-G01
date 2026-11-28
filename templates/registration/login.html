@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}SHAKE — Sign In{% endblock %}
+{% block title %}SHAKE — Sign in{% endblock %}
 
 {% block content %}
 <div class="d-flex align-items-center justify-content-center shake-auth-wrap">
@@ -23,14 +23,14 @@
                         <input type="hidden" name="next" value="{{ next }}">
                     {% endif %}
                     <button type="submit" class="btn btn-primary w-100 py-2 mt-2">
-                        <i class="ti ti-login me-1"></i>Sign In to SHAKE
+                        <i class="ti ti-login me-1"></i>Sign in to SHAKE
                     </button>
                 </form>
             </div>
 
             <div class="card-footer text-center py-3">
                 <span class="text-secondary small">Don't have an account yet?</span>
-                <a href="{% url 'register' %}" class="fw-semibold text-decoration-none ms-1">Register an Account</a>
+                <a href="{% url 'register' %}" class="fw-semibold text-decoration-none ms-1">Register an account</a>
             </div>
         </div>
         <p class="shake-privacy-note">

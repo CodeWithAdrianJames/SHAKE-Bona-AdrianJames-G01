@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}SHAKE — Carrier Profiles{% endblock %}
+{% block title %}SHAKE — Carrier profiles{% endblock %}
 
 {% block content %}
 <!-- Page header -->
@@ -12,12 +12,12 @@
                 <li class="breadcrumb-item active" aria-current="page">Carriers</li>
             </ol>
         </nav>
-        <h1>Shipping Carrier Profiles</h1>
+        <h1>Shipping carrier profiles</h1>
         <p class="shake-page-head-sub">Admin-managed carrier registry and parser template versions; codes and names stay unique (BR-03).</p>
     </div>
     <div class="shake-page-head-actions">
         <a href="{% url 'carrier_create' %}" class="btn btn-primary">
-            <i class="ti ti-circle-plus me-1"></i>Add Carrier Profile
+            <i class="ti ti-circle-plus me-1"></i>Add carrier profile
         </a>
     </div>
 </div>
@@ -25,7 +25,7 @@
 <section class="card" data-shake-ledger aria-labelledby="carriers-heading">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
-            <h2 class="mb-0" id="carriers-heading">Registered Carrier Profiles</h2>
+            <h2 class="mb-0" id="carriers-heading">Registered carrier profiles</h2>
             <p class="shake-card-sub">Showing <strong class="shake-num" data-shake-visible-count>{{ carriers|length }}</strong> of <span class="shake-num">{{ carriers|length }}</span> profile{{ carriers|length|pluralize }}</p>
         </div>
     </div>

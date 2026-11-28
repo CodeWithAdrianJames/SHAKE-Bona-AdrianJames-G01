@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}SHAKE — Freight Analyst / Encoder Dashboard{% endblock %}
+{% block title %}SHAKE — Freight analyst dashboard{% endblock %}
 
 {% block content %}
 <!-- Page header: breadcrumb + title + subtitle | primary CTAs -->
@@ -12,7 +12,7 @@
                 <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
             </ol>
         </nav>
-        <h1>Freight Analyst &amp; Contract Encoder Workspace</h1>
+        <h1>Freight analyst and contract encoder workspace</h1>
         <p class="shake-page-head-sub">{{ user.department|default:"Pricing & Tariff Management" }} &middot; carrier PDFs in, structured rate rows out, all on this device.</p>
     </div>
     {# The Tide upload card leads the side column at >= 992px; below that it stacks under the ledger, so the header carries the action. #}
@@ -35,21 +35,21 @@
     </div>
     <div class="card shake-kpi">
         <div class="card-body">
-            <span class="shake-label">My Batches</span>
+            <span class="shake-label">My batches</span>
             <span class="shake-kpi-figure">{{ user_batches_count }}</span>
             <span class="shake-kpi-caption">Uploaded ingestion batches</span>
         </div>
     </div>
     <div class="card shake-kpi">
         <div class="card-body">
-            <span class="shake-label">Extracted Contracts</span>
+            <span class="shake-label">Extracted contracts</span>
             <span class="shake-kpi-figure">{{ extracted_contracts_count }}</span>
             <span class="shake-kpi-caption">Structured contract records</span>
         </div>
     </div>
     <div class="card shake-kpi">
         <div class="card-body">
-            <span class="shake-label">Exports Generated</span>
+            <span class="shake-label">Exports generated</span>
             <span class="shake-kpi-figure">{{ exports_generated_count }}</span>
             <span class="shake-kpi-caption">JSON / XLSX / CSV downloads</span>
         </div>
@@ -62,7 +62,7 @@
         <div id="extraction-queue" class="card">
             <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <div>
-                    <h2 class="mb-0">Recent Contracts</h2>
+                    <h2 class="mb-0">Recent contracts</h2>
                     <p class="shake-card-sub">Latest uploaded contract PDFs and their normalized rate counts</p>
                 </div>
                 <a href="{% url 'contract_list' %}" class="shake-card-link">All contracts<i class="ti ti-arrow-right" aria-hidden="true"></i></a>
@@ -162,7 +162,7 @@
             </div>
 
             <div id="output-schemas" class="card shake-side-card">
-                <div class="card-header"><h2 class="mb-0">Output Schemas</h2></div>
+                <div class="card-header"><h2 class="mb-0">Output schemas</h2></div>
                 <ul class="shake-mini-list">
                     {% for schema in output_schemas %}
                     <li>
@@ -178,7 +178,7 @@
 
             {% if active_carriers %}
             <div class="card shake-side-card">
-                <div class="card-header"><h2 class="mb-0">Active Carrier Profiles</h2></div>
+                <div class="card-header"><h2 class="mb-0">Active carrier profiles</h2></div>
                 <div class="card-body">
                     <div class="shake-chip-row" aria-label="Active carrier profiles">
                         {% for carrier in active_carriers %}

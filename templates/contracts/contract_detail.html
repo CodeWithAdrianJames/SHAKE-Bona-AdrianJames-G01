@@ -35,7 +35,7 @@
         </div>
         <span class="shake-toolbar-sep d-none d-md-block" aria-hidden="true"></span>
         <a href="{% url 'contract_edit' contract.pk %}" class="btn btn-outline-secondary">
-            <i class="ti ti-edit me-1"></i>Edit Metadata
+            <i class="ti ti-edit me-1"></i>Edit metadata
         </a>
         {% if contract.document.status != 'ARCHIVED' %}
             <form method="post" action="{% url 'contract_archive' contract.pk %}" class="d-inline m-0"
@@ -54,7 +54,7 @@
 <!-- Zone 2: 4-cell contract metadata strip -->
 <section class="card shake-meta-strip" aria-label="Contract metadata">
     <div class="shake-meta-cell">
-        <span class="shake-meta-key"><i class="ti ti-building-warehouse" aria-hidden="true"></i>Carrier &amp; Code</span>
+        <span class="shake-meta-key"><i class="ti ti-building-warehouse" aria-hidden="true"></i>Carrier &amp; code</span>
         <div class="d-flex align-items-center gap-2 flex-wrap">
             <span class="shake-chip shake-chip-carrier">{{ contract.carrier.carrier_code }}</span>
             <span class="shake-meta-primary">{{ contract.carrier.carrier_name }}</span>
@@ -62,16 +62,16 @@
         <div class="shake-meta-secondary">Batch <span class="font-mono-data">{{ contract.document.batch.batch_number }}</span></div>
     </div>
     <div class="shake-meta-cell">
-        <span class="shake-meta-key"><i class="ti ti-calendar-event" aria-hidden="true"></i>Validity Window</span>
+        <span class="shake-meta-key"><i class="ti ti-calendar-event" aria-hidden="true"></i>Validity window</span>
         <div class="shake-meta-primary shake-meta-range">
             <span>{{ contract.effective_date|date:"Y-m-d" }}</span>
             <i class="ti ti-arrow-right" aria-label="to"></i>
             <span>{{ contract.expiration_date|date:"Y-m-d" }}</span>
         </div>
-        <div class="shake-meta-secondary">Effective &rarr; Expiration (BR-10)</div>
+        <div class="shake-meta-secondary">Effective &rarr; expiration (BR-10)</div>
     </div>
     <div class="shake-meta-cell">
-        <span class="shake-meta-key"><i class="ti ti-list-details" aria-hidden="true"></i>Extracted Line Items</span>
+        <span class="shake-meta-key"><i class="ti ti-list-details" aria-hidden="true"></i>Extracted line items</span>
         <div class="shake-meta-counts">
             <div>
                 <div class="shake-kpi-figure">{{ rate_count }}</div>
@@ -84,7 +84,7 @@
         </div>
     </div>
     <div class="shake-meta-cell">
-        <span class="shake-meta-key"><i class="ti ti-file-type-pdf" aria-hidden="true"></i>Source File &amp; SHA-256</span>
+        <span class="shake-meta-key"><i class="ti ti-file-type-pdf" aria-hidden="true"></i>Source file &amp; SHA-256</span>
         <div class="shake-meta-primary shake-meta-file" title="{{ contract.document.original_file_name }}">{{ contract.document.original_file_name }}</div>
         <div class="shake-meta-secondary shake-num">{{ contract.document.page_count }} page{{ contract.document.page_count|pluralize }} &middot; {{ contract.document.file_size_bytes|filesizeformat }}</div>
         <div class="shake-hash-row">
@@ -95,7 +95,7 @@
         </div>
     </div>
     <div class="shake-meta-cell shake-meta-cell-wide">
-        <span class="shake-meta-key"><i class="ti ti-route" aria-hidden="true"></i>Trade Scope &amp; Commodity</span>
+        <span class="shake-meta-key"><i class="ti ti-route" aria-hidden="true"></i>Trade scope &amp; commodity</span>
         <div class="shake-meta-secondary mt-0"><span class="shake-field-value">{{ contract.trade_scope }}</span> &middot; {{ contract.commodity_desc }}</div>
     </div>
 </section>
@@ -104,11 +104,11 @@
 <section class="card shake-ledger-card mb-4" data-shake-ledger aria-labelledby="rates-heading">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
-            <h2 class="mb-0" id="rates-heading">Base Ocean Freight Rates</h2>
+            <h2 class="mb-0" id="rates-heading">Base ocean freight rates</h2>
             <p class="shake-card-sub">Port-to-port base rates &middot; Verified &ge; 0.900 confidence</p>
         </div>
         <a href="{% url 'rate_create' contract.pk %}" class="btn btn-sm btn-primary">
-            <i class="ti ti-plus me-1"></i>Add Rate Row
+            <i class="ti ti-plus me-1"></i>Add rate row
         </a>
     </div>
     {% if freight_rates %}
@@ -139,10 +139,10 @@
         <table class="table table-vcenter card-table table-hover shake-rate-table shake-table-sticky">
             <thead>
                 <tr>
-                    <th scope="col">Lane (Origin &rarr; Destination)</th>
+                    <th scope="col">Lane (origin &rarr; destination)</th>
                     <th scope="col">Equipment</th>
-                    <th scope="col" class="text-end">Rate &amp; Currency</th>
-                    <th scope="col">Source &middot; Notes</th>
+                    <th scope="col" class="text-end">Rate &amp; currency</th>
+                    <th scope="col">Source &middot; notes</th>
                     <th scope="col">Confidence</th>
                     <th scope="col" class="text-end">Actions</th>
                 </tr>
@@ -216,7 +216,7 @@
 <section class="card mb-4" aria-labelledby="arb-heading">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
-            <h2 class="mb-0" id="arb-heading">Origin &amp; Destination Arbitrary Charges</h2>
+            <h2 class="mb-0" id="arb-heading">Origin and destination arbitrary charges</h2>
             <p class="shake-card-sub">Inland gateway surcharges and transport mode fees, billed on top of base rates</p>
         </div>
         <span class="shake-count"><strong>{{ arb_count }}</strong> charge row{{ arb_count|pluralize }}</span>
@@ -265,7 +265,7 @@
     <div class="col-12">
         <section class="card" aria-labelledby="jobs-heading">
             <div class="card-header">
-                <h2 class="mb-0" id="jobs-heading">Processing Job History</h2>
+                <h2 class="mb-0" id="jobs-heading">Processing job history</h2>
             </div>
             <div class="table-responsive">
                 <table class="table table-vcenter card-table">

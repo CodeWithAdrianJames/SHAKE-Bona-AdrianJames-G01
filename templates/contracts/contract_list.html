@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}SHAKE — {% if is_admin_view %}All Contracts{% else %}My Contracts{% endif %}{% endblock %}
+{% block title %}SHAKE — {% if is_admin_view %}All contracts{% else %}My contracts{% endif %}{% endblock %}
 
 {% block content %}
 <!-- Page header -->
@@ -12,7 +12,7 @@
                 <li class="breadcrumb-item active" aria-current="page">Contracts</li>
             </ol>
         </nav>
-        <h1>{% if is_admin_view %}All Contracts{% else %}My Contracts{% endif %}</h1>
+        <h1>{% if is_admin_view %}All contracts{% else %}My contracts{% endif %}</h1>
         <p class="shake-page-head-sub">
             {% if is_admin_view %}
                 System-wide extracted ocean freight contracts across all Freight Analysts / Encoders.
@@ -32,7 +32,7 @@
 <section class="card mb-4" aria-labelledby="contracts-heading">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
-            <h2 class="mb-0" id="contracts-heading">Extracted Contract Records</h2>
+            <h2 class="mb-0" id="contracts-heading">Extracted contract records</h2>
             <p class="shake-card-sub">
                 Showing <span class="shake-num">{{ contracts|length }}</span> of <span class="shake-num">{% if page_obj %}{{ page_obj.paginator.count }}{% else %}{{ contracts|length }}{% endif %}</span> contract{% if page_obj %}{{ page_obj.paginator.count|pluralize }}{% else %}{{ contracts|length|pluralize }}{% endif %}{% if search_query or status_filter != 'ALL' %} matching your filters{% endif %}
             </p>
@@ -52,7 +52,7 @@
             <span class="shake-kbd" aria-hidden="true">/</span>
         </div>
         <select name="status" class="form-select" aria-label="Filter by document status">
-            <option value="ALL" {% if status_filter == 'ALL' %}selected{% endif %}>All Statuses</option>
+            <option value="ALL" {% if status_filter == 'ALL' %}selected{% endif %}>All statuses</option>
             <option value="EXTRACTED" {% if status_filter == 'EXTRACTED' %}selected{% endif %}>Extracted</option>
             <option value="ARCHIVED" {% if status_filter == 'ARCHIVED' %}selected{% endif %}>Archived</option>
             <option value="FAILED" {% if status_filter == 'FAILED' %}selected{% endif %}>Failed</option>
@@ -168,7 +168,7 @@
 <section class="card" aria-labelledby="failed-heading">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
-            <h2 class="mb-0" id="failed-heading">Recent Failed Ingestion Documents</h2>
+            <h2 class="mb-0" id="failed-heading">Recent failed ingestion documents</h2>
             <p class="shake-card-sub">PDFs that produced no contract; they can be deleted safely</p>
         </div>
     </div>

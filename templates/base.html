@@ -65,8 +65,8 @@
                     <span class="shake-rail-heading"><span class="shake-rail-fade">Administration</span></span>
                     <ul class="shake-rail-list">
                         <li>
-                            <a class="shake-rail-link {% if url_name == 'admin_dashboard' %}is-active{% endif %}" href="{% url 'admin_dashboard' %}" {% if url_name == 'admin_dashboard' %}aria-current="page"{% endif %} title="Admin Overview">
-                                <i class="ti ti-layout-dashboard" aria-hidden="true"></i><span class="shake-rail-label">Admin Overview</span>
+                            <a class="shake-rail-link {% if url_name == 'admin_dashboard' %}is-active{% endif %}" href="{% url 'admin_dashboard' %}" {% if url_name == 'admin_dashboard' %}aria-current="page"{% endif %} title="Admin overview">
+                                <i class="ti ti-layout-dashboard" aria-hidden="true"></i><span class="shake-rail-label">Admin overview</span>
                             </a>
                         </li>
                         <li>
@@ -89,8 +89,8 @@
                         <li>
                             <form method="post" action="{% url 'logout' %}" class="m-0">
                                 {% csrf_token %}
-                                <button type="submit" class="shake-rail-link" title="Sign Out">
-                                    <i class="ti ti-logout" aria-hidden="true"></i><span class="shake-rail-label">Sign Out</span>
+                                <button type="submit" class="shake-rail-link" title="Sign out">
+                                    <i class="ti ti-logout" aria-hidden="true"></i><span class="shake-rail-label">Sign out</span>
                                 </button>
                             </form>
                         </li>
