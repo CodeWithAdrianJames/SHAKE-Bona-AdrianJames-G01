@@ -106,32 +106,31 @@
                     {% endif %}
                     <td class="text-end text-nowrap">
                         <div class="d-inline-flex align-items-center gap-1">
-                            <a href="{% url 'contract_detail' contract.pk %}" class="btn btn-sm btn-outline-primary" title="Inspect contract">
-                                <i class="ti ti-eye me-1"></i>Inspect
-                            </a>
                             <a href="{% url 'contract_edit' contract.pk %}" class="btn btn-sm btn-outline-secondary btn-icon" title="Edit metadata" aria-label="Edit metadata for {{ contract.contract_number }}">
-                                <i class="ti ti-pencil"></i>
+                                <i class="ti ti-pencil" aria-hidden="true"></i>
                             </a>
-                            <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-outline-secondary btn-icon dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Export {{ contract.contract_number }}" title="Export">
-                                    <i class="ti ti-download"></i>
+                            <div class="dropdown">
+                                <button type="button" class="btn btn-sm btn-outline-secondary btn-icon" data-bs-toggle="dropdown" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false" aria-label="Export or archive {{ contract.contract_number }}" title="Export or archive">
+                                    <i class="ti ti-dots" aria-hidden="true"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><a class="dropdown-item" href="{% url 'contract_export' contract.pk 'xlsx' %}"><i class="ti ti-file-spreadsheet me-2"></i>Excel (.xlsx)</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'contract_export' contract.pk 'csv' %}"><i class="ti ti-file-type-csv me-2"></i>CSV (.csv)</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'contract_export' contract.pk 'json' %}"><i class="ti ti-braces me-2"></i>JSON (.json)</a></li>
+                                    <li><h6 class="dropdown-header">Export</h6></li>
+                                    <li><a class="dropdown-item" href="{% url 'contract_export' contract.pk 'xlsx' %}"><i class="ti ti-file-spreadsheet me-2" aria-hidden="true"></i>Excel (.xlsx)</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'contract_export' contract.pk 'csv' %}"><i class="ti ti-file-type-csv me-2" aria-hidden="true"></i>CSV (.csv)</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'contract_export' contract.pk 'json' %}"><i class="ti ti-braces me-2" aria-hidden="true"></i>JSON (.json)</a></li>
+                                    {% if contract.document.status != 'ARCHIVED' %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form method="post" action="{% url 'contract_archive' contract.pk %}" class="m-0"
+                                              data-confirm="Archive contract {{ contract.contract_number }}? Archived contracts stay readable but cannot be un-archived from the UI (BR-09).">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                            <button type="submit" class="dropdown-item"><i class="ti ti-archive me-2" aria-hidden="true"></i>Archive contract</button>
+                                        </form>
+                                    </li>
+                                    {% endif %}
                                 </ul>
                             </div>
-                            {% if contract.document.status != 'ARCHIVED' %}
-                                <form method="post" action="{% url 'contract_archive' contract.pk %}" class="d-inline m-0"
-                                      data-confirm="Archive contract {{ contract.contract_number }}? Archived contracts stay readable but cannot be un-archived from the UI (BR-09).">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-secondary btn-icon" title="Archive contract (BR-09)" aria-label="Archive contract {{ contract.contract_number }}">
-                                        <i class="ti ti-archive"></i>
-                                    </button>
-                                </form>
-                            {% endif %}
                         </div>
                     </td>
                 </tr>
@@ -188,7 +187,7 @@
             <tbody>
                 {% for doc in failed_documents %}
                 <tr>
-                    <td><span class="font-mono-data">{{ doc.batch.batch_number }}</span></td>
+                    <td class="text-nowrap"><span class="font-mono-data">{{ doc.batch.batch_number }}</span></td>
                     <td>{{ doc.original_file_name }}</td>
                     <td>{% include "includes/status_badge.html" with status=doc.status %}</td>
                     <td class="shake-secondary">

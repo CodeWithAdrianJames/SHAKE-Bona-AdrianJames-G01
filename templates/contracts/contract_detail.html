@@ -263,8 +263,8 @@
 
 <div class="row g-4">
     <!-- Processing job history -->
-    <div class="col-12 col-xxl-6">
-        <section class="card h-100" aria-labelledby="jobs-heading">
+    <div class="col-12">
+        <section class="card" aria-labelledby="jobs-heading">
             <div class="card-header">
                 <h2 class="mb-0" id="jobs-heading">Processing Job History</h2>
             </div>
@@ -281,16 +281,18 @@
                     </thead>
                     <tbody>
                         {% for job in processing_jobs %}
-                        <tr>
+                        <tr{% if job.error_message %} class="has-detail"{% endif %}>
                             <td class="shake-num">#{{ job.job_id }}</td>
                             <td>{{ job.get_job_type_display }}</td>
                             <td>{% include "includes/status_badge.html" with status=job.status %}</td>
                             <td class="shake-secondary shake-num text-nowrap">{{ job.started_at|date:"Y-m-d H:i:s" }}</td>
                             <td class="shake-secondary shake-num text-nowrap">{{ job.completed_at|date:"Y-m-d H:i:s"|default:"—" }}</td>
                         </tr>
-                        <tr>
-                            <td colspan="5" class="shake-secondary pt-0">{{ job.error_message|default:"Pipeline completed without errors." }}</td>
+                        {% if job.error_message %}
+                        <tr class="shake-detail-row">
+                            <td colspan="5"><span class="{% if job.status == 'FAILED' %}shake-diagnostic{% else %}shake-secondary{% endif %}">{{ job.error_message }}</span></td>
                         </tr>
+                        {% endif %}
                         {% empty %}
                         <tr><td colspan="5">{% include "partials/empty_state.html" with title="No processing jobs recorded." %}</td></tr>
                         {% endfor %}
@@ -301,8 +303,8 @@
     </div>
 
     <!-- Export audit log -->
-    <div class="col-12 col-xxl-6">
-        <section class="card h-100" aria-labelledby="exports-heading">
+    <div class="col-12">
+        <section class="card" aria-labelledby="exports-heading">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h2 class="mb-0" id="exports-heading">Export Audit Log</h2>
                 <span class="shake-count"><strong>{{ export_records|length }}</strong> export{{ export_records|length|pluralize }}</span>

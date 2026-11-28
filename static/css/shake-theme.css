@@ -1402,6 +1402,12 @@ tr:hover .shake-lane .shake-copy,
 .shake-rate-table td.shake-amount { min-width: 9rem; }
 .shake-ledger-card .card-header { align-items: flex-start; }
 .shake-no-match td { padding: 0 !important; }
+/* A row's optional detail line (e.g. a job's error message) reads as part of the row above it. */
+.table > tbody > tr.has-detail > td { border-bottom-width: 0; }
+.table > tbody > tr.shake-detail-row > td { padding-top: 0; }
+.shake-diagnostic { font-size: var(--shake-text-sm); line-height: 1.25rem; color: var(--shake-rejected); }
+.dropdown-header { font-size: var(--shake-text-xs); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--shake-slate); }
+.dropdown-item { font-size: var(--shake-text-md); }
 
 /* Section label separating base rates from surcharges / audit */
 .shake-section-label {
