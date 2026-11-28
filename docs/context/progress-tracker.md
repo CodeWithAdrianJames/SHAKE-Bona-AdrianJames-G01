@@ -7,6 +7,7 @@ Update this file whenever the current phase, active feature, or implementation s
 - **Project Development 2 (Core Feature Vertical Slice):** Completed and merged into `main`.
 - **Project Development 3 (Loopback REST API `F-11`, Hardening & SDD Polish):** Complete — `F-01`, `F-04`, `F-09`, `F-11`, the validation/error-page/security hardening pass, and the dedicated PD3 verification suite are merged into `develop`. Final documentation (traceability matrix, README test instructions) is on `fix/pd3-docs-and-report`.
 - **UI Polish (offline Tabler theme + official SHAKE "Settle" brand identity, hover-expand rail, restructured layouts):** Implemented on `ui/tabler-brand-theme` (templates, static assets, and context docs only; no routes, views, forms, models, or business rules changed).
+- **UI Refinement (audit-driven consistency pass on the Tabler foundation):** In progress on `ui/tabler-refinement`, branched from `develop`; seven batches (B1–B7), one commit each.
 
 ## Current Goal
 
@@ -122,6 +123,10 @@ All SDD requirements are implemented and verified by the automated suite (218 te
   - Guardrails kept: every form field `name`, URL name, `{% csrf_token %}`, the `messages` block, and every `data-confirm` prompt (rate delete, failed-document delete, archive on detail and list, token revoke) are unchanged; no `|safe` added; Sea Glass only on Deep Hull / Abyss; no CDN or network requests; motion settles downward and is disabled under `prefers-reduced-motion`. Destructive prompts stay on the existing `data-confirm` mechanism rather than inline `onsubmit` handlers.
   - Verified: `manage.py check` clean; `$env:DATABASE_URL=" "; .\.venv\Scripts\python.exe manage.py test --parallel` ran 218 tests, OK (0 failures, 0 skipped). Rendered both dashboards, contract list (incl. filtered empty state), detail (incl. live filter, no-match row, SHA-256 and route copy via real clicks), upload (file cards and step states), rate / contract / carrier forms, carrier directory, profile, the pinned rail, hover expansion, and the 390px drawer and detail from a throwaway SQLite fixture in headless Chrome; no console errors.
 
+- **UI Refinement on `ui/tabler-refinement` (branched from `develop` at `fc29c5d`; `main` stays at the PD3 submission). Seven approved batches, one commit each, from the read-only UI/UX audit:**
+  - **B1 — Token consolidation and unused-CSS removal (`static/css/shake-theme.css` only):** added RGB-channel, line, tint, on-dark, focus, and elevation tokens (documented under "Derived tokens" in `ui-context.md`); every rule outside `:root` now uses `--shake-*` variables (no raw hex or `rgba()` literals remain). Mapped Tabler's `--tblr-form-invalid-*` / `--tblr-form-valid-*` to Rejected / Verified and redrew the in-field invalid cross in Rejected, so invalid borders, icons, and messages share one red. Accessibility: form control borders `#D5DCD8` (1.4 : 1) -> `#8A9892` (3.0 : 1), placeholder `#7C8A90` (3.6 : 1) -> `#687880` (4.6 : 1), collapsed-rail group headings 0.46 -> 0.62 Paper alpha (3.9 : 1 -> 5.8 : 1), Tide CTA copy 0.86 alpha -> full Paper. Removed about 30 unused classes and their rules (e.g. `.shake-pipeline`, `.shake-step`, `.shake-display`, `.shake-hero-metric`, `.shake-kpi-value/-note/-icon`, `.shake-export-toolbar`, `.badge-port/-equipment/-carrier/-format/-count`, `.btn-outline-paper`, `.shake-chip-lg`, `.shake-page-header`). No template, route, form, or DOM hook changed.
+  - B1 verified: 218 tests OK on SQLite (`--parallel`); 23 views re-rendered at 1440 / 768 / 390 px in headless Chrome against a throwaway SQLite fixture (incl. register, rate, and contract-edit validation states, rail hover, and the mobile drawer); no console errors. Pre-existing 4px horizontal overflow at 768px (`.row.g-4` gutter wider than Tabler's 0.5rem page padding below 992px) is scheduled for B7.
+
 - **Spec-Driven Context Sync:**
   - Committed `AGENTS.md` and `docs/context/*.md` on `develop` and released `develop` -> `main` via Pull Request.
   - Audited context files against the codebase and corrected drift: context paths now point to `docs/context/`, `BatchUpload` uploader FK documented as `user` (not `uploaded_by`), `RoleRequiredMixin` / `@role_required` documented in `dashboard/views.py`, and `BootstrapFormMixin` documented in `accounts/forms.py`.
@@ -136,7 +141,7 @@ All SDD requirements are implemented and verified by the automated suite (218 te
 
 ## In Progress
 
-- None. All SDD features, business rules, and PD3 hardening tasks are complete; only the documentation PR (`fix/pd3-docs-and-report` -> `develop`) and the `develop` -> `main` release remain.
+- UI Refinement on `ui/tabler-refinement` (presentation only): B1 done; B2 type and spacing scale, B3 form consistency (incl. `aria-invalid` / `aria-describedby` in `BootstrapFormMixin`, approved), B4 pills and badges (ARCHIVED -> neutral Slate, approved), B5 tables and density, B6 dashboard de-duplication and empty states, B7 responsive and accessibility hardening (sentence case, approved) remain.
 
 ## Next Up
 

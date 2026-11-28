@@ -23,6 +23,17 @@ Brand tokens are CSS custom properties in `shake-theme.css`, which also maps the
 
 `--shake-tide-deep` (`#0B5E69`) is the pressed/hover shade of Tide.
 
+### Derived tokens
+
+Every rule in `shake-theme.css` outside the token block uses a `--shake-*` variable; raw hex or `rgba()` values live only in `:root`.
+
+- **RGB channels:** `--shake-{paper,abyss,slate,tide,tide-light,sea-glass,deep-hull,verified,review,rejected}-rgb`, for `rgba(var(--x-rgb), alpha)`.
+- **Lines and controls on light surfaces:** `--shake-line-input` `#8A9892` (form control boundary, 3.0 : 1 on white per WCAG 1.4.11), `--shake-line-strong` `#CBD3CF` (hover border on quiet controls), `--shake-line-dashed` `#B9C4BF` (dropzone), `--shake-placeholder` `#687880` (4.6 : 1 on white), `--shake-on-tide` (text on Tide fills).
+- **Tints (one alpha set):** `--shake-tide-wash` (0.04, hover), `--shake-tide-tint` (0.08, chips / icon wells / pills), `--shake-tide-line` (0.3), `--shake-tide-line-strong` (0.45); `--shake-{verified,review,rejected}-tint` (0.06) and `-line` (0.35) for pills, alerts, and outline buttons.
+- **Paper on dark surfaces:** `--shake-on-dark-muted` (0.76, secondary copy), `--shake-on-dark-subtle` (0.62, labels and icons; the floor for small text on Deep Hull), `--shake-on-dark-fill` / `-fill-strong` (0.08 / 0.12, hover / active), `--shake-on-dark-line` / `-line-strong` (0.16 / 0.3). Secondary copy on Tide uses full Paper (lower alphas drop below 4.5 : 1).
+- **Focus and elevation:** `--shake-focus-ring` (3px Tide at 0.25), `--shake-shadow-card`, `--shake-shadow-menu`, `--shake-shadow-overlay` (rail), `--shake-scrim` (drawer backdrop).
+- **Validation:** `--tblr-form-invalid-*` and `--tblr-form-valid-*` map to Rejected and Verified, and the in-field invalid cross is redrawn in Rejected, so the border, cross, and message share one red.
+
 ## Brand Mark ("Settle")
 
 - The mark is three strokes on a **64 × 64** grid, `stroke-width 6`, round caps, strokes 14 units apart (clear space `x = 14`). Read top to bottom: a rough wave (the raw carrier PDF), a calmer wave (extraction in progress), and a flat divided row (field on the left, value on the right).
@@ -42,7 +53,7 @@ All three families are SIL OFL 1.1 WOFF2 files bundled in `static/fonts/` (latin
 
 | Role | Font | Size / line height | Class |
 | --- | --- | --- | --- |
-| Display | Manrope 800 | 36 / 40 | `.shake-display`, `.shake-hero-metric` |
+| KPI figure | Manrope 800 | 32 / 38 | `.shake-kpi-figure` |
 | H1 | Manrope 800 | 28 / 34 | `h1`, `.h1` |
 | H2 | Manrope 700 | 20 / 28 | `h2`, `.h2` (card titles) |
 | Body | Inter 400 | 15 / 23 | `body` |
@@ -50,7 +61,7 @@ All three families are SIL OFL 1.1 WOFF2 files bundled in `static/fonts/` (latin
 | Data | JetBrains Mono 500 | 14 | `.font-mono-data`, `.shake-chip-*`, `.shake-amount` |
 
 - JetBrains Mono is reserved for extracted/structured values: UN/LOCODE ports (`PHCEB`), ISO equipment (`40HC`), currencies and freight rates, contract and batch numbers, and SHA-256 hashes. Inline technical text (`<code>`: API paths, token prefixes) uses JetBrains Mono 400.
-- `font-variant-numeric: tabular-nums` is on for every table, badge, and numeric counter (`.shake-num`, `.shake-kpi-value`).
+- `font-variant-numeric: tabular-nums` is on for every table, badge, and numeric counter (`.shake-num`, `.shake-kpi-figure`).
 - Error pages cannot load static files, so they fall back to the system sans stack.
 
 ## Border Radius & Elevation
@@ -77,7 +88,7 @@ All three families are SIL OFL 1.1 WOFF2 files bundled in `static/fonts/` (latin
 
 Rate-row confidence on the contract detail page: `confidence_score >= 0.900` shows a **Verified** pill, anything lower shows **Needs review**; both show the score in JetBrains Mono. The 0.900 cut-off is a display convention only (no model or business rule uses it).
 
-Role chips: `badge-role-admin` (Deep Hull fill) and `badge-role-encoder` (Tide tint). Counters: `badge-count`, `badge-neutral`.
+Role chips: `badge-role-admin` (Deep Hull fill) and `badge-role-encoder` (Tide tint). Counters: `badge-neutral`.
 
 ### Data Grid & Rate Table Conventions
 
