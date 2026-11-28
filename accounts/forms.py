@@ -5,8 +5,11 @@ from django.contrib.auth.forms import (
     PasswordChangeForm,
     UserCreationForm,
 )
+from django.core.files.uploadedfile import UploadedFile
 
-from .models import CustomUser
+from .models import APIToken, CustomUser
+
+MAX_PROFILE_PHOTO_BYTES = 5 * 1024 * 1024  # 5 MB
 
 
 class BootstrapFormMixin:
@@ -306,6 +309,16 @@ class UserProfileUpdateForm(BootstrapFormMixin, forms.ModelForm):
     def clean_department(self):
         return (self.cleaned_data.get("department") or "").strip()
 
+    def clean_profile_photo(self):
+        # ImageField already verifies the upload is a real image (Pillow); this
+        # adds a server-side size cap so the browser `accept` hint is not the only guard.
+        photo = self.cleaned_data.get("profile_photo")
+        if isinstance(photo, UploadedFile) and photo.size > MAX_PROFILE_PHOTO_BYTES:
+            raise forms.ValidationError(
+                "Profile photo must be 5 MB or smaller."
+            )
+        return photo
+
 
 
 class CustomPasswordChangeForm(BootstrapFormMixin, PasswordChangeForm):
@@ -325,3 +338,18 @@ class CustomPasswordChangeForm(BootstrapFormMixin, PasswordChangeForm):
         self.fields["new_password2"].widget.attrs.update(
             {"placeholder": "Confirm your new password"}
         )
+
+
+class APITokenCreateForm(BootstrapFormMixin, forms.Form):
+    """Optional label for a new local loopback API token (F-11)."""
+
+    name = forms.CharField(
+        max_length=100,
+        required=False,
+        label="Token Label",
+        help_text="Optional. Helps you tell tokens apart, e.g. the script or machine using it.",
+        widget=forms.TextInput(attrs={"placeholder": APIToken.DEFAULT_NAME}),
+    )
+
+    def clean_name(self):
+        return (self.cleaned_data.get("name") or "").strip() or APIToken.DEFAULT_NAME

@@ -6,6 +6,7 @@ automatic SQLite fallback for local development and optional PostgreSQL via DATA
 """
 
 import os
+import sys
 from pathlib import Path
 
 try:
@@ -26,13 +27,40 @@ load_dotenv(BASE_DIR / '.env')
 # Core Security Settings
 # ==============================================================================
 
-SECRET_KEY = (
-    os.environ.get('SECRET_KEY')
-    or os.environ.get('DJANGO_SECRET_KEY')
-    or 'django-insecure-shake-dev-fallback-key-replace-in-production'
-)
+def env_bool(name: str, default: bool = False) -> bool:
+    """Parse a boolean environment variable; unset or blank values use `default`."""
+    raw = os.environ.get(name, '')
+    if not raw.strip():
+        return default
+    return raw.strip().lower() in ('1', 'true', 'yes', 'on')
 
-DEBUG = os.environ.get('DEBUG', 'True').strip().lower() in ('1', 'true', 'yes', 'on')
+
+RUNNING_TESTS = len(sys.argv) > 1 and sys.argv[1] == 'test'
+
+# PD3 hardening: DEBUG is opt-in. It is False unless `.env` (or the process
+# environment) explicitly sets DEBUG=True, so a missing `.env` never exposes
+# Django's technical error pages.
+DEBUG = env_bool('DEBUG', default=False)
+
+# SECRET_KEY comes only from the environment. No key is hardcoded in source:
+# DEBUG and test runs fall back to a random per-process key (sessions reset on
+# restart); any other run refuses to start without SECRET_KEY.
+SECRET_KEY = (
+    os.environ.get('SECRET_KEY', '').strip()
+    or os.environ.get('DJANGO_SECRET_KEY', '').strip()
+)
+if not SECRET_KEY:
+    if DEBUG or RUNNING_TESTS:
+        from django.core.management.utils import get_random_secret_key
+
+        SECRET_KEY = get_random_secret_key()
+    else:
+        from django.core.exceptions import ImproperlyConfigured
+
+        raise ImproperlyConfigured(
+            'SECRET_KEY is not set. Copy .env.example to .env and set SECRET_KEY '
+            '(or set DEBUG=True for local development).'
+        )
 
 ALLOWED_HOSTS = [
     host.strip()
@@ -109,7 +137,7 @@ if DATABASE_URL:
         'default': dj_database_url.parse(
             DATABASE_URL,
             conn_max_age=600,
-            ssl_require=os.environ.get('DB_SSL_REQUIRE', 'True').strip().lower() in ('1', 'true', 'yes', 'on'),
+            ssl_require=env_bool('DB_SSL_REQUIRE', default=True),
         )
     }
 else:
@@ -188,3 +216,34 @@ MESSAGE_TAGS = {
 }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# ==============================================================================
+# Browser Security Headers & Cookies (PD3 hardening)
+# ==============================================================================
+# Explicit values (several match Django's defaults) so the security posture is
+# visible here and cannot silently change. HTTPS-only cookie flags stay opt-in
+# because SHAKE runs on http://127.0.0.1 by default.
+
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SECURE = env_bool('SESSION_COOKIE_SECURE', default=False)
+CSRF_COOKIE_SECURE = env_bool('CSRF_COOKIE_SECURE', default=False)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = 'same-origin'
+X_FRAME_OPTIONS = 'DENY'
+
+
+# ==============================================================================
+# Local Loopback REST API (F-11)
+# ==============================================================================
+# /api/v1/* only answers clients whose REMOTE_ADDR is a loopback address, even
+# when runserver is bound to 0.0.0.0. Proxy headers (X-Forwarded-For) are never
+# trusted. "testserver" is accepted only in DEBUG or under `manage.py test` so
+# Django's test client can exercise the API; it is never a real socket address.
+
+SHAKE_API_LOOPBACK_ONLY = True
+SHAKE_API_LOOPBACK_ADDRESSES = ['127.0.0.1', '::1']
+if DEBUG or RUNNING_TESTS:
+    SHAKE_API_LOOPBACK_ADDRESSES.append('testserver')

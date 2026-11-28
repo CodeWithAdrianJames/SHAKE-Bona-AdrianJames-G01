@@ -1,0 +1,9 @@
+{% comment %}
+SHAKE "Settle" mark, inline SVG on the official 64 x 64 grid (stroke 6, round caps, strokes 14 units apart).
+Top: rough wave (raw carrier PDF) · Middle: calmer wave (extraction) · Bottom: divided row (field | value).
+Usage: {% include "partials/shake_mark.html" with tone="light" size=32 %}
+  tone:  light (Deep Hull + Tide) | hull (Paper + Sea Glass, dark surfaces only) | tide (all Paper)
+  crop:  set to trim the clear space (viewBox 9 12 46 39) for lockups
+  label: accessible name; omit for decorative use
+Never rotate, stretch, or animate the strokes upward: data always settles downward.
+{% endcomment %}<svg class="shake-mark shake-on-{{ tone|default:'light' }}{% if extra_class %} {{ extra_class }}{% endif %}" xmlns="http://www.w3.org/2000/svg" viewBox="{% if crop %}9 12 46 39{% else %}0 0 64 64{% endif %}"{% if size %} width="{{ size }}" height="{{ size }}"{% endif %}{% if label %} role="img" aria-label="{{ label }}"{% else %} aria-hidden="true" focusable="false"{% endif %}><path class="shake-mark__wave" d="M12 20C17.33 13.33 26.67 13.33 32 20S46.67 26.67 52 20"/><path class="shake-mark__wave" d="M12 34C17.33 30.67 26.67 30.67 32 34S46.67 37.33 52 34"/><path class="shake-mark__row" d="M12 48H22M31 48H52"/></svg>

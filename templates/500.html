@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#0E2A3B">
+    <title>500 Server Error — SHAKE</title>
+    {% comment %}
+        Fully standalone error page. Django's server_error handler renders it
+        with an empty context: it must not extend base.html, reverse URLs, read
+        user / messages / request, load static files, or touch the database, so
+        it still renders when the error is a database or template failure.
+        Styles and the SHAKE "Settle" mark are inline. Links are hardcoded paths.
+        No exception details or stack traces are shown.
+    {% endcomment %}
+    <style>
+        :root {
+            --shake-paper: #F6F3EC;
+            --shake-deep-hull: #0E2A3B;
+            --shake-tide: #0E7482;
+            --shake-tide-deep: #0B5E69;
+            --shake-slate: #55666E;
+            --shake-mist: #E4E8E6;
+            --shake-rejected: #B23E37;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--shake-paper);
+            color: var(--shake-deep-hull);
+            font: 400 15px/23px "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
+        .card {
+            width: 100%;
+            max-width: 30rem;
+            background: #FFFFFF;
+            border: 1px solid var(--shake-mist);
+            border-radius: 0.75rem;
+            padding: 2.5rem 2rem;
+        }
+        .lockup { display: inline-flex; align-items: center; gap: 0.75rem; color: var(--shake-deep-hull); text-decoration: none; margin-bottom: 2rem; }
+        .mark { display: block; width: auto; height: 1.9rem; }
+        .mark path { fill: none; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+        .wordmark { font-family: "Manrope", "Inter", system-ui, sans-serif; font-weight: 800; font-size: 1.6rem; line-height: 1; letter-spacing: 0.08em; text-transform: uppercase; }
+        .code { font-weight: 600; color: var(--shake-deep-hull); }
+        h1 { font-family: "Manrope", "Inter", system-ui, sans-serif; font-weight: 800; font-size: 28px; line-height: 34px; margin: 0 0 0.75rem; }
+        p { color: var(--shake-slate); margin: 0 0 1.75rem; }
+        .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+        .btn { display: inline-block; padding: 0.55rem 1.15rem; border-radius: 0.5rem; font-weight: 600; text-decoration: none; border: 1px solid var(--shake-tide); }
+        .btn-primary { background: var(--shake-tide); color: #FFFFFF; }
+        .btn-primary:hover { background: var(--shake-tide-deep); border-color: var(--shake-tide-deep); }
+        .btn-outline { background: #FFFFFF; color: var(--shake-tide); border-color: var(--shake-mist); }
+        .btn-outline:hover { background: var(--shake-paper); }
+        .btn:focus-visible { outline: 2px solid var(--shake-tide); outline-offset: 2px; }
+        footer { border-top: 1px solid var(--shake-mist); color: var(--shake-slate); font-size: 13px; padding: 0.9rem 1.5rem; text-align: center; }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="card" role="alert">
+            <span class="lockup" aria-label="SHAKE"><svg class="mark" xmlns="http://www.w3.org/2000/svg" viewBox="9 12 46 39" aria-hidden="true" focusable="false"><path stroke="#0E2A3B" d="M12 20C17.33 13.33 26.67 13.33 32 20S46.67 26.67 52 20"/><path stroke="#0E2A3B" d="M12 34C17.33 30.67 26.67 30.67 32 34S46.67 37.33 52 34"/><path stroke="#0E7482" d="M12 48H22M31 48H52"/></svg><span class="wordmark" aria-hidden="true">SHAKE</span></span>
+            <h1>Something went wrong on our side</h1>
+            <p>
+                <span class="code">Error 500.</span> SHAKE could not complete your request. Your data has not been
+                shared outside this workstation. Please try again, and contact
+                your administrator if the problem continues.
+            </p>
+            <div class="actions">
+                <a class="btn btn-primary" href="/dashboard/">Go to Dashboard</a>
+                <a class="btn btn-outline" href="/accounts/login/">Log in</a>
+            </div>
+        </div>
+    </main>
+    <footer>contract in &middot; structured data out &middot; nothing leaves the device</footer>
+</body>
+</html>

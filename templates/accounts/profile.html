@@ -3,204 +3,222 @@
 {% block title %}SHAKE — My Profile{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center py-2">
-    <div class="col-12 col-lg-9 col-xl-8">
-        <!-- Profile Header Card -->
-        <div class="card shadow-sm overflow-hidden mb-4">
-            <div class="card-header border-0 p-4" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff;">
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                    <div class="d-flex align-items-center gap-3">
-                        {% if user.profile_photo %}
-                            <img src="{{ user.profile_photo.url }}"
-                                 alt="{{ user.full_name_or_username }}"
-                                 class="rounded-circle object-fit-cover border border-3 border-info shadow-sm"
-                                 style="width: 84px; height: 84px;">
-                        {% else %}
-                            <div class="rounded-circle d-inline-flex align-items-center justify-content-center fw-bold border border-3 border-light border-opacity-25 shadow-sm"
-                                 style="width: 84px; height: 84px; background-color: #0284c7; color: #ffffff; font-size: 1.75rem;">
-                                {{ user.initials }}
-                            </div>
-                        {% endif %}
+<!-- Page header -->
+<div class="shake-page-head">
+    <div class="shake-page-head-main">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">Account</li>
+                <li class="breadcrumb-item active" aria-current="page">Profile</li>
+            </ol>
+        </nav>
+        <h1>My Profile</h1>
+        <p class="shake-page-head-sub">Self-only account details, password, and local API tokens for this workstation.</p>
+    </div>
+    <div class="shake-page-head-actions">
+        <a href="{% url 'password_change' %}" class="btn btn-outline-secondary">
+            <i class="ti ti-key me-1"></i>Change Password
+        </a>
+        <a href="{% url 'profile_edit' %}" class="btn btn-primary">
+            <i class="ti ti-edit me-1"></i>Edit Profile
+        </a>
+    </div>
+</div>
 
-                        <div>
-                            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
-                                <span class="badge {% if user.role == 'ADMIN' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} fw-semibold">
-                                    {% if user.role == 'ADMIN' %}
-                                        <i class="bi bi-shield-lock-fill me-1"></i>
-                                    {% else %}
-                                        <i class="bi bi-person-workspace me-1"></i>
-                                    {% endif %}
-                                    {{ user.get_role_display }}
-                                </span>
-                                <span class="badge bg-success-subtle text-success border border-success-subtle">
-                                    <i class="bi bi-check-circle-fill me-1"></i>Active Account
-                                </span>
-                            </div>
-                            <h1 class="h3 fw-bold mb-1">{{ user.full_name_or_username }}</h1>
-                            <div class="small text-light opacity-75">
-                                <i class="bi bi-at"></i>{{ user.username }}
-                                {% if user.department %}
-                                    &bull; {{ user.department }}
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="d-flex flex-wrap gap-2">
-                        <a href="{% url 'profile_edit' %}" class="btn btn-info text-dark fw-semibold">
-                            <i class="bi bi-pencil-square me-1"></i>Edit Profile
-                        </a>
-                        <a href="{% url 'password_change' %}" class="btn btn-outline-info fw-semibold">
-                            <i class="bi bi-key me-1"></i>Change Password
-                        </a>
-                        <a href="{% if user.role == 'ADMIN' %}{% url 'admin_dashboard' %}{% else %}{% url 'encoder_dashboard' %}{% endif %}"
-                           class="btn btn-outline-light">
-                            <i class="bi bi-arrow-left me-1"></i>Back to Workspace
-                        </a>
-                    </div>
+<div class="row g-4 mb-4">
+    <!-- Identity card (Deep Hull) -->
+    <div class="col-12 col-lg-4">
+        <div class="card shake-hero h-100">
+            {% include "partials/shake_mark.html" with tone="hull" extra_class="shake-hero-mark" %}
+            <div class="card-body p-4 d-flex flex-column gap-3">
+                {% if user.profile_photo %}
+                    <img src="{{ user.profile_photo.url }}" alt="{{ user.full_name_or_username }}" class="shake-avatar shake-avatar-xl">
+                {% else %}
+                    <span class="shake-avatar-fallback shake-avatar-xl">{{ user.initials }}</span>
+                {% endif %}
+                <div>
+                    <h2 class="mb-1">{{ user.full_name_or_username }}</h2>
+                    <div class="shake-hero-sub small">@{{ user.username }}{% if user.department %} &middot; {{ user.department }}{% endif %}</div>
+                </div>
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="badge {% if user.role == 'ADMIN' %}badge-role-admin{% else %}badge-role-encoder{% endif %}">{{ user.get_role_display }}</span>
+                    <span class="shake-pill shake-pill-neutral">Active account</span>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Profile Details Body -->
+    <!-- Sectioned account details -->
+    <div class="col-12 col-lg-8">
+        <div class="card h-100">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <h2 class="mb-0">Account &amp; Operational Profile Details</h2>
+                    <p class="shake-card-sub">Only you can view or change these details</p>
+                </div>
+                <span class="badge badge-neutral"><i class="ti ti-user me-1"></i>Self-Only Access</span>
+            </div>
             <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
-                    <div>
-                        <h2 class="h5 fw-bold mb-0">
-                            <i class="bi bi-person-vcard me-2 text-primary"></i>Account &amp; Operational Profile Details
-                        </h2>
-                        <p class="text-muted small mb-0">
-                            Personal details, operational department, and workspace role for your SHAKE session
-                        </p>
-                    </div>
-                    <span class="badge bg-light text-secondary border">
-                        <i class="bi bi-lock-fill me-1"></i>Self-Only Access
-                    </span>
-                </div>
-
-                <div class="row g-4">
-                    <div class="col-12 col-sm-6">
-                        <div class="p-3 rounded-3 bg-light border h-100">
-                            <div class="text-muted small fw-semibold text-uppercase mb-1">
-                                <i class="bi bi-person me-1"></i>Full Name
-                            </div>
-                            <div class="fw-semibold fs-6 text-dark">
-                                {{ user.full_name_or_username }}
-                            </div>
-                            <div class="text-muted small mt-1">
-                                First: {{ user.first_name|default:"—" }} &bull; Last: {{ user.last_name|default:"—" }}
-                            </div>
+                <div class="shake-form-block">
+                    <span class="shake-form-block-title">Identity</span>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <span class="shake-meta-key">Full name</span>
+                            <div class="shake-field-value">{{ user.full_name_or_username }}</div>
+                            <div class="shake-secondary">First: {{ user.first_name|default:"—" }} &middot; Last: {{ user.last_name|default:"—" }}</div>
                         </div>
-                    </div>
-
-                    <div class="col-12 col-sm-6">
-                        <div class="p-3 rounded-3 bg-light border h-100">
-                            <div class="text-muted small fw-semibold text-uppercase mb-1">
-                                <i class="bi bi-person-badge me-1"></i>Username
-                            </div>
-                            <div class="fw-semibold fs-6 text-dark font-monospace">
-                                {{ user.username }}
-                            </div>
-                            <div class="text-muted small mt-1">
-                                Unique SHAKE account identifier
-                            </div>
+                        <div class="col-12 col-md-6">
+                            <span class="shake-meta-key">Username</span>
+                            <div class="shake-field-value">{{ user.username }}</div>
+                            <div class="shake-secondary">Unique SHAKE account identifier</div>
                         </div>
-                    </div>
-
-                    <div class="col-12 col-sm-6">
-                        <div class="p-3 rounded-3 bg-light border h-100">
-                            <div class="text-muted small fw-semibold text-uppercase mb-1">
-                                <i class="bi bi-envelope me-1"></i>Work Email Address
-                            </div>
-                            <div class="fw-semibold fs-6 text-dark">
-                                {{ user.email|default:"Not provided" }}
-                            </div>
-                            <div class="text-muted small mt-1">
-                                Primary contact &amp; unique notification address
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-12 col-sm-6">
-                        <div class="p-3 rounded-3 bg-light border h-100">
-                            <div class="text-muted small fw-semibold text-uppercase mb-1">
-                                <i class="bi bi-shield-check me-1"></i>Workspace Role
-                            </div>
-                            <div class="mt-1">
-                                <span class="badge {% if user.role == 'ADMIN' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} fs-6 fw-semibold">
-                                    {{ user.get_role_display }}
-                                </span>
-                            </div>
-                            <div class="text-muted small mt-1">
-                                Role Code: <code>{{ user.role }}</code>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-12 col-sm-6">
-                        <div class="p-3 rounded-3 bg-light border h-100">
-                            <div class="text-muted small fw-semibold text-uppercase mb-1">
-                                <i class="bi bi-building me-1"></i>Operational Department
-                            </div>
-                            <div class="fw-semibold fs-6 text-dark">
-                                {{ user.department|default:"Not specified" }}
-                            </div>
-                            <div class="text-muted small mt-1">
-                                Assigned logistics or tariff team
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-12 col-sm-6">
-                        <div class="p-3 rounded-3 bg-light border h-100">
-                            <div class="text-muted small fw-semibold text-uppercase mb-1">
-                                <i class="bi bi-telephone me-1"></i>Contact Number
-                            </div>
-                            <div class="fw-semibold fs-6 text-dark">
-                                {{ user.contact_number|default:"Not specified" }}
-                            </div>
-                            <div class="text-muted small mt-1">
-                                Operational phone / mobile contact
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-12">
-                        <div class="p-3 rounded-3 bg-light border d-flex flex-wrap justify-content-between align-items-center gap-2">
-                            <div>
-                                <span class="text-muted small fw-semibold text-uppercase me-2">
-                                    <i class="bi bi-calendar-check me-1"></i>Member Since:
-                                </span>
-                                <span class="fw-semibold text-dark">
-                                    {{ user.date_joined|date:"F j, Y" }}
-                                </span>
-                            </div>
-                            <div class="small text-muted">
-                                {% if user.last_login %}
-                                    Last signed in: <strong>{{ user.last_login|date:"M j, Y H:i" }}</strong>
-                                {% else %}
-                                    Active session
-                                {% endif %}
-                            </div>
+                        <div class="col-12">
+                            <span class="shake-meta-key">Work email address</span>
+                            <div class="shake-field-value">{{ user.email|default:"Not provided" }}</div>
+                            <div class="shake-secondary">Primary contact &amp; unique sign-in address</div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="card-footer bg-white py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
-                <div class="small text-muted">
-                    <i class="bi bi-shield-lock me-1 text-primary"></i>
-                    Need to update your name, email, department, contact number, avatar, or password?
+                <div class="shake-form-block">
+                    <span class="shake-form-block-title">Operations</span>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <span class="shake-meta-key">Workspace role</span>
+                            <span class="badge {% if user.role == 'ADMIN' %}badge-role-admin{% else %}badge-role-encoder{% endif %}">{{ user.get_role_display }}</span>
+                            <div class="shake-secondary mt-1">Role code: <code>{{ user.role }}</code></div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <span class="shake-meta-key">Operational department</span>
+                            <div class="shake-field-value">{{ user.department|default:"Not specified" }}</div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <span class="shake-meta-key">Contact number</span>
+                            <div class="shake-field-value">{{ user.contact_number|default:"Not specified" }}</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="d-flex flex-wrap gap-2">
-                    <a href="{% url 'password_change' %}" class="btn btn-outline-primary btn-sm fw-semibold px-3">
-                        <i class="bi bi-key me-1"></i>Change Password
-                    </a>
-                    <a href="{% url 'profile_edit' %}" class="btn btn-primary btn-sm fw-semibold px-3">
-                        <i class="bi bi-pencil-square me-1"></i>Edit Profile Details
-                    </a>
+                <div class="shake-form-block">
+                    <span class="shake-form-block-title">Activity</span>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <span class="shake-meta-key">Member since</span>
+                            <div class="shake-field-value">{{ user.date_joined|date:"F j, Y" }}</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <span class="shake-meta-key">Last signed in</span>
+                            <div class="shake-field-value shake-num">{% if user.last_login %}{{ user.last_login|date:"M j, Y H:i" }}{% else %}Active session{% endif %}</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Local API Tokens (F-11) -->
+<section class="card mb-4" id="api-tokens" aria-labelledby="tokens-heading">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+            <h2 class="mb-0" id="tokens-heading">Local API Tokens</h2>
+            <p class="shake-card-sub">
+                Bearer tokens for scripts on this workstation calling
+                <code>/api/v1/ingest</code> and <code>/api/v1/contracts/&lt;id&gt;</code>.
+                The API only answers loopback (<code>127.0.0.1</code> / <code>::1</code>) connections.
+            </p>
+        </div>
+        <span class="badge badge-neutral"><i class="ti ti-device-desktop me-1"></i>Localhost Only</span>
+    </div>
+    <div class="card-body p-4">
+        {% if new_api_token %}
+            <div class="alert alert-warning" role="alert">
+                <div class="fw-semibold mb-1">
+                    <i class="ti ti-alert-triangle shake-alert-icon me-1"></i>Copy your new token now
+                </div>
+                <div class="small mb-2">It is shown only once. Store it somewhere safe; revoke it if it leaks.</div>
+                <div class="d-flex gap-2 align-items-center">
+                    <input type="text" class="form-control font-monospace" value="{{ new_api_token }}"
+                           readonly aria-label="New API token" onfocus="this.select();"
+                           data-testid="new-api-token">
+                    <button type="button" class="shake-copy" data-shake-copy="{{ new_api_token }}" aria-label="Copy new API token">
+                        <i class="ti ti-copy" aria-hidden="true"></i><span data-shake-copy-label>Copy</span>
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="shake-form-block">
+            <span class="shake-form-block-title">Generate a token</span>
+            <form method="post" action="{% url 'api_token_create' %}" class="row g-2 align-items-start">
+                {% csrf_token %}
+                <div class="col-12 col-md">
+                    <label for="{{ api_token_form.name.id_for_label }}" class="form-label mb-1">
+                        {{ api_token_form.name.label }}
+                    </label>
+                    {{ api_token_form.name }}
+                    {% for error in api_token_form.name.errors %}
+                        <div class="invalid-feedback d-block text-danger small mt-1"><i class="ti ti-alert-circle me-1"></i>{{ error }}</div>
+                    {% endfor %}
+                    <div class="form-text small">{{ api_token_form.name.help_text }}</div>
+                </div>
+                <div class="col-12 col-md-auto shake-token-submit">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ti ti-circle-plus me-1"></i>Generate Token
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="shake-form-block">
+            <span class="shake-form-block-title">Your tokens</span>
+            {% if api_tokens %}
+                <div class="table-responsive border rounded-3">
+                    <table class="table table-vcenter card-table mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col">Label</th>
+                                <th scope="col">Token</th>
+                                <th scope="col">Created</th>
+                                <th scope="col">Last used</th>
+                                <th scope="col">Status</th>
+                                <th scope="col" class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for token in api_tokens %}
+                                <tr>
+                                    <td class="fw-semibold">{{ token.name }}</td>
+                                    <td><code>{{ token.masked_key }}</code></td>
+                                    <td class="small text-secondary shake-num">{{ token.created_at|date:"M j, Y H:i" }}</td>
+                                    <td class="small text-secondary shake-num">{{ token.last_used_at|date:"M j, Y H:i"|default:"Never" }}</td>
+                                    <td>
+                                        {% if token.is_active %}
+                                            <span class="shake-pill shake-pill-verified">Active</span>
+                                        {% else %}
+                                            <span class="shake-pill shake-pill-neutral">Revoked</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if token.is_active %}
+                                            <form method="post" action="{% url 'api_token_revoke' token.pk %}" class="d-inline"
+                                                  data-confirm="Revoke API token '{{ token.name }}'? Scripts using it will stop working immediately.">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" aria-label="Revoke token {{ token.name }}">
+                                                    <i class="ti ti-circle-x me-1"></i>Revoke
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <span class="text-secondary small">—</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                {% include "partials/empty_state.html" with title="No API tokens yet" message="No API tokens yet. Generate one to call the local API from a script." %}
+            {% endif %}
+        </div>
+    </div>
+</section>
 {% endblock %}

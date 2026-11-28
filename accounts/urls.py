@@ -1,6 +1,8 @@
 from django.urls import path
 
 from .views import (
+    APITokenCreateView,
+    APITokenRevokeView,
     CustomLoginView,
     CustomLogoutView,
     ProfilePasswordChangeView,
@@ -17,5 +19,11 @@ urlpatterns = [
     path("profile/", ProfileDetailView.as_view(), name="profile"),
     path("profile/edit/", ProfileUpdateView.as_view(), name="profile_edit"),
     path("password/", ProfilePasswordChangeView.as_view(), name="password_change"),
+    path("profile/api-tokens/", APITokenCreateView.as_view(), name="api_token_create"),
+    path(
+        "profile/api-tokens/<int:pk>/revoke/",
+        APITokenRevokeView.as_view(),
+        name="api_token_revoke",
+    ),
 ]
 

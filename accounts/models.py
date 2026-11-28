@@ -1,3 +1,6 @@
+import secrets
+
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 
@@ -98,3 +101,50 @@ class CustomUser(AbstractUser):
         if self.first_name:
             return self.first_name[:2].upper()
         return self.username[:2].upper() if self.username else "SH"
+
+
+def generate_api_token_key() -> str:
+    """Return a cryptographically secure 64-character hex token (F-11)."""
+    return secrets.token_hex(32)
+
+
+class APIToken(models.Model):
+    """
+    Per-user Bearer token for the localhost loopback REST API (F-11).
+
+    The raw key is shown to its owner once, right after it is generated; the
+    profile page afterwards only shows a masked prefix. Revoking a token sets
+    `is_active = False` so the row stays as an audit trail.
+    """
+
+    DEFAULT_NAME = "Local CLI Token"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="api_tokens",
+    )
+    name = models.CharField(max_length=100, default=DEFAULT_NAME)
+    key = models.CharField(
+        max_length=64,
+        unique=True,
+        default=generate_api_token_key,
+        editable=False,
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Local API Token"
+        verbose_name_plural = "Local API Tokens"
+        ordering = ["-created_at", "-pk"]
+
+    def __str__(self):
+        state = "active" if self.is_active else "revoked"
+        return f"{self.name} ({self.masked_key}, {state})"
+
+    @property
+    def masked_key(self) -> str:
+        """Return the first 8 characters of the key followed by an ellipsis."""
+        return f"{self.key[:8]}…"

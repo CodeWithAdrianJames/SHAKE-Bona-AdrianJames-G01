@@ -13,27 +13,38 @@
 - Protect all authenticated web views with `LoginRequiredMixin`.
 - Enforce resource ownership on every contract, rate, document, and export view via `ContractOwnershipMixin` (`ENCODER` scoped to own `BatchUpload.user`; `ADMIN` unrestricted) to prevent Insecure Direct Object Reference (IDOR).
 - Enforce administrative routes (`/contracts/carriers/*`, `/dashboard/admin/`) with `RoleRequiredMixin(allowed_roles=[CustomUser.Role.ADMIN])`.
-- Keep state-mutating actions without dedicated confirmation pages (`rate_delete`, `document_delete`, `contract_archive`, `carrier_toggle`) strictly `POST`-only (`http_method_names = ["post"]` or `@require_POST`) with CSRF protection.
+- Keep state-mutating actions (`rate_delete`, `document_delete`, `contract_archive`, `carrier_toggle`, `api_token_create`, `api_token_revoke`, `logout`) strictly `POST`-only (`http_method_names = ["post"]` or `@require_POST`) with CSRF protection.
+- Give every destructive form a `data-confirm="..."` message (handled by the shared listener in `static/js/shake-ui.js`); the prompt is a UX guard, never a replacement for server-side checks.
+- Resolve every object lookup with `get_object_or_404` on a user-scoped queryset; resolve child rows (`FreightRate`, `ArbitraryCharge`) through their scoped parent contract.
+- Wrap multi-step writes (read-then-insert, delete-plus-file-cleanup) in `transaction.atomic()`; defer filesystem side effects to `transaction.on_commit`.
+- Log unexpected exceptions with `logger.exception`; never `except Exception: pass`, and never show raw exception or database text to users.
+- Never build SQL from user input (no `.raw()`, `.extra()`, or `cursor.execute` with request data) and never apply `|safe` to user-supplied values.
 
 ## Forms and Validation
 
 - Every Django `Form` and `ModelForm` must inherit `BootstrapFormMixin` so fields automatically render Bootstrap 5 styling and `is-invalid` error feedback.
 - Normalize string codes (`carrier_code`, `origin_port_code`, `destination_port_code`, `currency_code`, `equipment_type`) to stripped uppercase inside form `clean_*` methods.
 - Never let public or self-service forms set privileged fields (`role`, `is_staff`, `is_superuser`, `is_active`); assign `role` server-side (`ENCODER` for public registration).
-- Enforce critical business rules (`BR-01`–`BR-13`) at both the Django form layer (clear user-facing validation errors) and database constraint layer (`UniqueConstraint`, `CheckConstraint`, `ForeignKey(on_delete=...)`).
+- Enforce critical business rules (`BR-01`–`BR-13`) at both the Django validation layer (field validators and `Model.clean()`, which ModelForms always run, plus form `clean_*` normalization) and the database constraint layer (`UniqueConstraint`, `CheckConstraint`, `ForeignKey(on_delete=...)`). Put cross-field rules in `Model.clean()` instead of repeating them in the form.
 
 ## Templates and Styling
 
 - Render forms through `templates/includes/form_fields.html` so label, help text, checkbox, and validation error markup stay uniform.
-- Format contract numbers, UN/LOCODE port codes, SHA-256 hashes, and monetary amounts using `font-monospace` (and `text-end` for numeric columns).
+- Use JetBrains Mono only for extracted/structured values: `.font-mono-data` (contract and batch numbers, SHA-256 hashes), `.shake-chip-*` (UN/LOCODE ports, ISO equipment, carrier codes, export formats), and `.shake-amount` (right-aligned rates with a `.shake-currency` prefix). Tables and counters use `tabular-nums`. Inline technical text (API paths, tokens) uses `<code>`.
+- Load front-end assets only through `{% static %}` from `static/vendor/tabler/`, `static/css/shake-theme.css`, `static/fonts/`, and `static/img/`; never add CDN `<link>`/`<script>` tags, Google Fonts, or remote fonts. Use Tabler Icons (`ti ti-*`), the `--shake-*` tokens, and the brand classes in `shake-theme.css` instead of inline colors or inline styles.
+- Render the brand mark only through `templates/partials/shake_mark.html` / `shake_lockup.html` / `shake_state.html` (inline SVG). Never place Sea Glass (`#7FD8C3`) on a light surface, never add symbols (anchors, ships, padlocks, sparkles, stars) to the mark, and never rotate, stretch, or animate its strokes upward.
+- Put front-end behavior in `static/js/shake-ui.js` (no inline `<script>` blocks, no CDN libraries) and wire it with `data-shake-*` attributes. Scripts are progressive enhancement: they must never be required to submit a form, must not rename or drop form fields, and must insert user-controlled text with `textContent`, never `innerHTML`.
+- Start every signed-in page with the two-part `.shake-page-head` (breadcrumb + H1 + one-line `.shake-page-head-sub` | `.shake-page-head-actions`). Sectioned forms render fields one by one with `includes/form_field.html` inside `<fieldset class="shake-form-block">` groups (plus `includes/form_errors.html` for non-field errors) and must render every field of the form.
+- Render `DocumentFile`/`ProcessingJob` status pills with `{% include "includes/status_badge.html" with status=... %}`.
 - Keep templates self-contained and offline-safe without external runtime dependencies that fail without internet access.
+- `templates/404.html` and `templates/500.html` must stay standalone (inline CSS and the inline SVG Settle mark, no `{% extends %}`, no `{% static %}`). `500.html` must not reverse URLs or read `user`/`request`/`messages`, because Django renders it with an empty context.
 
 ## API Routes (Loopback REST API — F-11)
 
-- Expose local programmatic endpoints under `/api/v1/` (`ingest/`, `contracts/<int:pk>/`) intended strictly for localhost / private LAN use.
-- Validate authentication credentials and enforce `ContractOwnershipMixin` permissions before processing uploads or returning contract JSON payloads.
+- Expose local programmatic endpoints under `/api/v1/` (`ingest`, `contracts/<int:pk>`, no trailing slash) intended strictly for localhost loopback use; subclass `LoopbackAPIView` (`contracts/api_views.py`) so the loopback guard, authentication, CSRF rule, and JSON `405` apply uniformly.
+- Validate authentication credentials and enforce ownership through `scope_contracts_to_user()` (the helper behind `ContractOwnershipMixin`) before processing uploads or returning contract JSON payloads.
 - Validate uploaded PDFs through the exact same ingestion/deduplication pipeline (`BR-06`–`BR-08`) used by the web UI.
-- Return consistent, predictable JSON response structures with explicit HTTP status codes (`200`, `201`, `400`, `401`, `403`, `404`, `409`).
+- Return consistent, predictable JSON response structures with explicit HTTP status codes (`200`, `201`, `400`, `401`, `403`, `404`, `405`, `409`, `422`); errors always carry a `detail` field.
 
 ## Data and Storage
 

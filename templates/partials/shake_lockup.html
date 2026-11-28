@@ -1,0 +1,9 @@
+{% comment %}
+Horizontal SHAKE lockup (Board 02): Settle mark + Manrope ExtraBold wordmark, uppercase, +8% tracking.
+Usage: {% include "partials/shake_lockup.html" with tone="light" scale="lg" href=some_url %}
+  tone:  light  -> Primary on light (#F6F3EC / #FFFFFF): Deep Hull waves + wordmark, Tide settled row
+         hull   -> Primary on Deep Hull (#0E2A3B): Paper waves + wordmark, Sea Glass settled row
+         tide   -> Reversed on Tide (#0E7482): everything Paper
+  scale: sm | lg (default is the sidebar size)
+Sea Glass never appears on a light surface.
+{% endcomment %}{% if href %}<a class="shake-lockup shake-on-{{ tone|default:'light' }}{% if scale %} shake-lockup-{{ scale }}{% endif %}" href="{{ href }}" aria-label="SHAKE home">{% else %}<span class="shake-lockup shake-on-{{ tone|default:'light' }}{% if scale %} shake-lockup-{{ scale }}{% endif %}" role="img" aria-label="SHAKE">{% endif %}<svg class="shake-mark" xmlns="http://www.w3.org/2000/svg" viewBox="9 12 46 39" width="38" height="32" aria-hidden="true" focusable="false"><path class="shake-mark__wave" d="M12 20C17.33 13.33 26.67 13.33 32 20S46.67 26.67 52 20"/><path class="shake-mark__wave" d="M12 34C17.33 30.67 26.67 30.67 32 34S46.67 37.33 52 34"/><path class="shake-mark__row" d="M12 48H22M31 48H52"/></svg><span class="shake-wordmark" aria-hidden="true">SHAKE</span>{% if href %}</a>{% else %}</span>{% endif %}

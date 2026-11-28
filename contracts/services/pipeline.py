@@ -107,6 +107,9 @@ class BatchIngestionOutcome:
     succeeded: list[ContractMetadata] = field(default_factory=list)
     failed_documents: list[tuple[str, str]] = field(default_factory=list)
     rejected_files: list[tuple[str, str]] = field(default_factory=list)
+    # The exceptions behind rejected_files, in the same order, so callers such as
+    # the REST API can tell a BR-06 duplicate from a BR-07/BR-08 validation error.
+    rejected_errors: list[ShakeError] = field(default_factory=list)
 
 
 def ensure_default_carriers() -> None:
@@ -669,6 +672,7 @@ def ingest_uploaded_files(
             validated_payloads.append(payload)
         except ShakeError as exc:
             outcome.rejected_files.append((name, str(exc)))
+            outcome.rejected_errors.append(exc)
 
     if not validated_payloads:
         return outcome
@@ -725,9 +729,16 @@ def ingest_uploaded_files(
                     # Roll back partial ContractMetadata/rates via savepoint if needed,
                     # then record FAILED status cleanly outside the inner atomic block.
                     raise RuntimeError(str(inner_exc)) from inner_exc
-        except IntegrityError as exc:
+        except IntegrityError:
+            # Log the database detail; show the user a message without schema internals.
+            logger.exception(
+                "Integrity error while persisting %s", payload.original_name
+            )
             outcome.failed_documents.append(
-                (payload.original_name, f"Database integrity error: {exc}")
+                (
+                    payload.original_name,
+                    "The extracted data violated a database rule and was not saved.",
+                )
             )
         except Exception as exc:
             # Record clean FAILED DocumentFile + ProcessingJob diagnostic without orphaned ContractMetadata
@@ -752,7 +763,9 @@ def ingest_uploaded_files(
                         completed_at=timezone.now(),
                     )
             except Exception:
-                pass
+                logger.exception(
+                    "Could not record FAILED diagnostics for %s", payload.original_name
+                )
             outcome.failed_documents.append((payload.original_name, str(exc)))
 
     batch.status = (
