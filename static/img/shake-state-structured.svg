@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="3 · Structured">
+  <title>3 · Structured — clean rows</title>
+  <g fill="none" stroke="#0E7482" stroke-width="6" stroke-linecap="round">
+    <path d="M12 18H22M31 18H52"/>
+    <path d="M12 32H22M31 32H52"/>
+    <path d="M12 46H22M31 46H52"/>
+  </g>
+</svg>

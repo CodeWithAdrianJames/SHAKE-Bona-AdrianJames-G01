@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="SHAKE">
+  <title>SHAKE</title>
+  <!-- <= 32 px rule: middle stroke dropped, remaining strokes thickened (9 units) for 16/32 px legibility. -->
+  <rect width="64" height="64" rx="14" fill="#0E2A3B"/>
+  <g fill="none" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke="#F6F3EC" d="M14 24C20 17 26 17 32 24S44 31 50 24"/>
+    <path stroke="#7FD8C3" d="M14.5 45H23.5M33.5 45H49.5"/>
+  </g>
+</svg>

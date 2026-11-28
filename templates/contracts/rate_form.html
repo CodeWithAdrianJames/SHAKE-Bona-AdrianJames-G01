@@ -4,42 +4,59 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-12 col-lg-8 col-xl-7">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0 small">
-                    <li class="breadcrumb-item"><a href="{% url 'contract_list' %}">Contracts</a></li>
-                    <li class="breadcrumb-item"><a href="{% url 'contract_detail' contract.pk %}">{{ contract.contract_number }}</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">
-                        {% if is_edit %}Edit Rate #{{ rate.line_item_sequence }}{% else %}Add Rate Row{% endif %}
-                    </li>
-                </ol>
-            </nav>
-            <a href="{% url 'contract_detail' contract.pk %}" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-arrow-left me-1"></i>Back to Contract
-            </a>
+    <div class="col-12 col-lg-10 col-xl-8">
+        <div class="shake-page-head">
+            <div class="shake-page-head-main">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'contract_list' %}">Contracts</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'contract_detail' contract.pk %}">{{ contract.contract_number }}</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">
+                            {% if is_edit %}Edit Rate #{{ rate.line_item_sequence }}{% else %}Add Rate Row{% endif %}
+                        </li>
+                    </ol>
+                </nav>
+                <h1>{% if is_edit %}Edit Base Freight Rate #{{ rate.line_item_sequence }}{% else %}Add Base Freight Rate Row{% endif %}</h1>
+                <p class="shake-page-head-sub">Contract <span class="font-mono-data">{{ contract.contract_number }}</span> ({{ contract.carrier.carrier_code }}) &middot; enforces BR-12 positive rates and BR-13 distinct ports.</p>
+            </div>
+            <div class="shake-page-head-actions">
+                <a href="{% url 'contract_detail' contract.pk %}" class="btn btn-outline-secondary">
+                    <i class="ti ti-arrow-left me-1"></i>Back to Contract
+                </a>
+            </div>
         </div>
 
-        <div class="card shadow-sm">
-            <div class="card-header bg-white py-3">
-                <h1 class="h5 fw-bold mb-0">
-                    <i class="bi bi-table me-2 text-primary"></i>
-                    {% if is_edit %}Edit Base Freight Rate #{{ rate.line_item_sequence }}{% else %}Add Base Freight Rate Row{% endif %}
-                </h1>
-                <p class="text-muted small mb-0">
-                    Contract <strong>{{ contract.contract_number }}</strong> ({{ contract.carrier.carrier_code }}) &mdash; enforces BR-12 &amp; BR-13
-                </p>
-            </div>
-            <div class="card-body p-4">
+        <div class="card shake-form-card">
+            <div class="card-body">
                 <form method="post" novalidate>
                     {% csrf_token %}
-                    {% include "includes/form_fields.html" %}
+                    {% include "includes/form_errors.html" %}
 
-                    <div class="d-flex justify-content-end gap-2 pt-3 border-top">
-                        <a href="{% url 'contract_detail' contract.pk %}" class="btn btn-light border">Cancel</a>
-                        <button type="submit" class="btn btn-primary fw-semibold px-4">
-                            <i class="bi bi-check-lg me-1"></i>
-                            {% if is_edit %}Save Changes{% else %}Add Rate Row{% endif %}
+                    <fieldset class="shake-form-block">
+                        <legend class="shake-form-block-title">Lane</legend>
+                        <p class="shake-form-block-hint">UN/LOCODE port codes; origin and destination must differ (BR-13).</p>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">{% include "includes/form_field.html" with field=form.origin_port_code %}</div>
+                            <div class="col-12 col-md-6">{% include "includes/form_field.html" with field=form.destination_port_code %}</div>
+                            <div class="col-12 col-md-6">{% include "includes/form_field.html" with field=form.origin_port_name %}</div>
+                            <div class="col-12 col-md-6">{% include "includes/form_field.html" with field=form.destination_port_name %}</div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="shake-form-block">
+                        <legend class="shake-form-block-title">Equipment &amp; rate</legend>
+                        <p class="shake-form-block-hint">ISO container code and a base rate of at least 0.01 (BR-12).</p>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">{% include "includes/form_field.html" with field=form.equipment_type %}</div>
+                            <div class="col-12 col-md-6">{% include "includes/form_field.html" with field=form.rate_amount %}</div>
+                            <div class="col-12 col-md-6">{% include "includes/form_field.html" with field=form.currency_code %}</div>
+                        </div>
+                    </fieldset>
+
+                    <div class="shake-form-actions">
+                        <a href="{% url 'contract_detail' contract.pk %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="ti ti-check me-1"></i>{% if is_edit %}Save Changes{% else %}Add Rate Row{% endif %}
                         </button>
                     </div>
                 </form>

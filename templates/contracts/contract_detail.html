@@ -3,343 +3,339 @@
 {% block title %}SHAKE — Contract {{ contract.contract_number }}{% endblock %}
 
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb mb-0 small">
-            <li class="breadcrumb-item"><a href="{% url 'contract_list' %}">Contracts</a></li>
-            <li class="breadcrumb-item active" aria-current="page">{{ contract.contract_number }}</li>
-        </ol>
-    </nav>
-    <div class="d-flex gap-2">
-        <a href="{% url 'contract_list' %}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-left me-1"></i>Back to Contracts
-        </a>
-        <a href="{% url 'contract_upload' %}" class="btn btn-primary btn-sm">
-            <i class="bi bi-cloud-arrow-up me-1"></i>Upload Another PDF
-        </a>
-    </div>
-</div>
-
-<!-- Contract Metadata Summary Card -->
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-dark font-monospace fs-6">{{ contract.carrier.carrier_code }}</span>
-            <div>
-                <h1 class="h4 fw-bold mb-0">Contract {{ contract.contract_number }}</h1>
-                <div class="text-muted small">{{ contract.carrier.carrier_name }}</div>
-            </div>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-light text-dark border font-monospace">
-                {{ contract.document.batch.batch_number }}
-            </span>
+<!-- Zone 1: header + export / action toolbar -->
+<div class="shake-page-head">
+    <div class="shake-page-head-main">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'contract_list' %}">Contracts</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ contract.contract_number }}</li>
+            </ol>
+        </nav>
+        <h1>
+            <span class="font-mono-data">{{ contract.contract_number }}</span>
+            <span class="shake-chip shake-chip-carrier" title="{{ contract.carrier.carrier_name }}">{{ contract.carrier.carrier_code }}</span>
             {% with doc_status=contract.document.status %}
-                {% if doc_status == 'EXTRACTED' %}
-                    <span class="badge bg-success">EXTRACTED</span>
-                {% elif doc_status == 'ARCHIVED' %}
-                    <span class="badge bg-secondary">ARCHIVED</span>
-                {% elif doc_status == 'FAILED' %}
-                    <span class="badge bg-danger">FAILED</span>
-                {% else %}
-                    <span class="badge bg-warning text-dark">{{ doc_status }}</span>
-                {% endif %}
+                {% include "includes/status_badge.html" with status=doc_status %}
             {% endwith %}
-        </div>
+        </h1>
+        <p class="shake-page-head-sub">{{ contract.carrier.carrier_name }} &middot; {{ contract.trade_scope }}</p>
     </div>
-
-    <div class="card-body">
-        <div class="row g-3">
-            <div class="col-12 col-md-4">
-                <div class="text-muted small text-uppercase fw-semibold">Trade Scope</div>
-                <div class="fw-semibold">{{ contract.trade_scope }}</div>
-            </div>
-            <div class="col-12 col-md-4">
-                <div class="text-muted small text-uppercase fw-semibold">Validity Window</div>
-                <div class="fw-semibold">
-                    {{ contract.effective_date|date:"Y-m-d" }} &rarr; {{ contract.expiration_date|date:"Y-m-d" }}
-                </div>
-            </div>
-            <div class="col-12 col-md-4">
-                <div class="text-muted small text-uppercase fw-semibold">Source PDF &amp; SHA-256</div>
-                <div class="small fw-semibold">
-                    <i class="bi bi-file-earmark-pdf text-danger me-1"></i>{{ contract.document.original_file_name }}
-                    ({{ contract.document.page_count }} pg)
-                </div>
-                <div class="font-monospace small text-muted" title="{{ contract.document.file_hash_sha256 }}">
-                    sha256:{{ contract.document.file_hash_sha256|slice:":16" }}...
-                </div>
-            </div>
-            <div class="col-12">
-                <div class="text-muted small text-uppercase fw-semibold">Commodity Description</div>
-                <div class="small bg-light border rounded p-2 mt-1">{{ contract.commodity_desc }}</div>
-            </div>
-        </div>
-    </div>
-    <div class="card-footer bg-light py-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <div class="d-flex flex-wrap gap-2">
-            <a href="{% url 'contract_edit' contract.pk %}" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-pencil-square me-1"></i>Edit Metadata
+    <div class="shake-page-head-actions shake-toolbar">
+        <div class="btn-group" role="group" aria-label="Export contract">
+            <a href="{% url 'contract_export' contract.pk 'xlsx' %}" class="btn btn-primary" aria-label="Export Excel (.xlsx)">
+                <i class="ti ti-file-spreadsheet me-1"></i>Export XLSX
             </a>
-            <a href="{% url 'contract_export' contract.pk 'json' %}" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-filetype-json me-1"></i>Export JSON
+            <a href="{% url 'contract_export' contract.pk 'csv' %}" class="btn btn-outline-primary" aria-label="Export CSV">
+                <i class="ti ti-file-type-csv me-1"></i>CSV
             </a>
-            <a href="{% url 'contract_export' contract.pk 'xlsx' %}" class="btn btn-sm btn-outline-success">
-                <i class="bi bi-file-earmark-excel me-1"></i>Export Excel (.xlsx)
-            </a>
-            <a href="{% url 'contract_export' contract.pk 'csv' %}" class="btn btn-sm btn-outline-info text-dark">
-                <i class="bi bi-filetype-csv me-1"></i>Export CSV
+            <a href="{% url 'contract_export' contract.pk 'json' %}" class="btn btn-outline-primary" aria-label="Export JSON">
+                <i class="ti ti-braces me-1"></i>JSON
             </a>
         </div>
-        <div>
-            {% if contract.document.status != 'ARCHIVED' %}
-                <form method="post" action="{% url 'contract_archive' contract.pk %}" class="d-inline m-0"
-                      data-confirm="Archive contract {{ contract.contract_number }}? Archived contracts stay readable but cannot be un-archived from the UI (BR-09).">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline-dark">
-                        <i class="bi bi-archive me-1"></i>Archive Contract
-                    </button>
-                </form>
-            {% else %}
-                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
-                    <i class="bi bi-archive-fill me-1"></i>Non-Destructive Archive Active (BR-09)
-                </span>
-            {% endif %}
-        </div>
+        <span class="shake-toolbar-sep d-none d-md-block" aria-hidden="true"></span>
+        <a href="{% url 'contract_edit' contract.pk %}" class="btn btn-outline-secondary">
+            <i class="ti ti-edit me-1"></i>Edit Metadata
+        </a>
+        {% if contract.document.status != 'ARCHIVED' %}
+            <form method="post" action="{% url 'contract_archive' contract.pk %}" class="d-inline m-0"
+                  data-confirm="Archive contract {{ contract.contract_number }}? Archived contracts stay readable but cannot be un-archived from the UI (BR-09).">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-review">
+                    <i class="ti ti-archive me-1"></i>Archive
+                </button>
+            </form>
+        {% else %}
+            <span class="shake-pill shake-pill-review">Non-Destructive Archive Active (BR-09)</span>
+        {% endif %}
     </div>
 </div>
 
-<!-- Base Freight Rates Grid -->
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <div>
-            <h2 class="h5 fw-bold mb-0">
-                <i class="bi bi-table me-2 text-primary"></i>Base Ocean Freight Rates
-            </h2>
-            <p class="text-muted small mb-0">Normalized ISO container equipment rate rows</p>
+<!-- Zone 2: 4-cell contract metadata strip -->
+<section class="card shake-meta-strip" aria-label="Contract metadata">
+    <div class="shake-meta-cell">
+        <span class="shake-meta-key"><i class="ti ti-building-warehouse" aria-hidden="true"></i>Carrier &amp; Code</span>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="shake-chip shake-chip-carrier">{{ contract.carrier.carrier_code }}</span>
+            <span class="shake-meta-primary">{{ contract.carrier.carrier_name }}</span>
         </div>
-        <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
-                {{ rate_count }} Rate Row{{ rate_count|pluralize }}
-            </span>
-            <a href="{% url 'rate_create' contract.pk %}" class="btn btn-sm btn-primary">
-                <i class="bi bi-plus-lg me-1"></i>Add Rate Row
-            </a>
+        <div class="shake-meta-secondary">Batch <span class="font-mono-data small">{{ contract.document.batch.batch_number }}</span></div>
+    </div>
+    <div class="shake-meta-cell">
+        <span class="shake-meta-key"><i class="ti ti-calendar-event" aria-hidden="true"></i>Validity Window</span>
+        <div class="shake-meta-primary shake-meta-range">
+            <span>{{ contract.effective_date|date:"Y-m-d" }}</span>
+            <i class="ti ti-arrow-right" aria-label="to"></i>
+            <span>{{ contract.expiration_date|date:"Y-m-d" }}</span>
+        </div>
+        <div class="shake-meta-secondary">Effective &rarr; Expiration (BR-10)</div>
+    </div>
+    <div class="shake-meta-cell">
+        <span class="shake-meta-key"><i class="ti ti-list-details" aria-hidden="true"></i>Extracted Line Items</span>
+        <div class="shake-meta-counts">
+            <div>
+                <div class="shake-kpi-figure">{{ rate_count }}</div>
+                <div class="shake-meta-secondary mt-0">Freight rate{{ rate_count|pluralize }}</div>
+            </div>
+            <div>
+                <div class="shake-kpi-figure">{{ arb_count }}</div>
+                <div class="shake-meta-secondary mt-0">Arbitrary charge{{ arb_count|pluralize }}</div>
+            </div>
         </div>
     </div>
-    <div class="table-responsive">
-        <table class="table table-hover table-sm align-middle mb-0">
-            <thead class="table-light">
+    <div class="shake-meta-cell">
+        <span class="shake-meta-key"><i class="ti ti-file-type-pdf" aria-hidden="true"></i>Source File &amp; SHA-256</span>
+        <div class="shake-meta-primary shake-meta-file" title="{{ contract.document.original_file_name }}">{{ contract.document.original_file_name }}</div>
+        <div class="shake-meta-secondary shake-num">{{ contract.document.page_count }} page{{ contract.document.page_count|pluralize }} &middot; {{ contract.document.file_size_bytes|filesizeformat }}</div>
+        <div class="shake-hash-row">
+            <span class="shake-hash-short" title="{{ contract.document.file_hash_sha256 }}">{{ contract.document.file_hash_sha256|slice:":12" }}&hellip;{{ contract.document.file_hash_sha256|slice:"-6:" }}</span>
+            <button type="button" class="shake-copy" data-shake-copy="{{ contract.document.file_hash_sha256 }}" aria-label="Copy full SHA-256 hash">
+                <i class="ti ti-copy" aria-hidden="true"></i><span data-shake-copy-label>Copy</span>
+            </button>
+        </div>
+    </div>
+    <div class="shake-meta-cell shake-meta-cell-wide">
+        <span class="shake-meta-key"><i class="ti ti-route" aria-hidden="true"></i>Trade Scope &amp; Commodity</span>
+        <div class="shake-meta-secondary mt-0"><span class="shake-field-value">{{ contract.trade_scope }}</span> &middot; {{ contract.commodity_desc }}</div>
+    </div>
+</section>
+
+<!-- Zone 3: primary freight-rate ledger -->
+<section class="card shake-ledger-card mb-4" data-shake-ledger aria-labelledby="rates-heading">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+            <h2 class="mb-0" id="rates-heading">Base Ocean Freight Rates</h2>
+            <p class="shake-card-sub">Port-to-port base rates &middot; Verified &ge; 0.900 confidence</p>
+        </div>
+        <a href="{% url 'rate_create' contract.pk %}" class="btn btn-sm btn-primary">
+            <i class="ti ti-plus me-1"></i>Add Rate Row
+        </a>
+    </div>
+    {% if freight_rates %}
+    <div class="shake-table-toolbar" role="search" aria-label="Filter freight rates">
+        <span class="shake-count" aria-live="polite">Showing <strong data-shake-visible-count>{{ rate_count }}</strong> of {{ rate_count }} rate{{ rate_count|pluralize }}</span>
+        <div class="shake-search shake-js-only">
+            <i class="ti ti-search" aria-hidden="true"></i>
+            <input type="search" class="form-control form-control-sm" placeholder="Search port, code, or amount" aria-label="Search rates by port or keyword" data-shake-filter-search data-shake-search-shortcut autocomplete="off">
+            <span class="shake-kbd" aria-hidden="true">/</span>
+        </div>
+        <div class="shake-seg shake-js-only" role="group" aria-label="Filter by equipment">
+            <button type="button" class="shake-seg-btn is-active" data-shake-pill="equipment" data-value="ALL" aria-pressed="true">All</button>
+            <button type="button" class="shake-seg-btn" data-shake-pill="equipment" data-value="20GP" aria-pressed="false">20GP</button>
+            <button type="button" class="shake-seg-btn" data-shake-pill="equipment" data-value="40GP" aria-pressed="false">40GP</button>
+            <button type="button" class="shake-seg-btn" data-shake-pill="equipment" data-value="40HC" aria-pressed="false">40HC</button>
+            <button type="button" class="shake-seg-btn" data-shake-pill="equipment" data-value="45HC" aria-pressed="false">45HC</button>
+        </div>
+        <select class="form-select form-select-sm shake-js-only" aria-label="Filter by confidence" data-shake-filter-select="confidence">
+            <option value="ALL">All confidence</option>
+            <option value="verified">Verified only</option>
+            <option value="review">Needs review only</option>
+        </select>
+        <button type="button" class="btn btn-sm btn-quiet shake-js-only" data-shake-filter-reset hidden>
+            <i class="ti ti-x me-1"></i>Clear filters
+        </button>
+    </div>
+    <div class="table-responsive shake-table-scroll">
+        <table class="table table-vcenter card-table table-hover shake-rate-table shake-table-sticky">
+            <thead>
                 <tr>
-                    <th class="ps-4">#</th>
-                    <th>Origin (POL)</th>
-                    <th>Destination (POD)</th>
-                    <th>Equipment</th>
-                    <th>Currency</th>
-                    <th class="text-end">Rate Amount</th>
-                    <th class="text-center">Pages</th>
-                    <th class="text-end">Confidence</th>
-                    <th class="pe-4 text-end">Actions</th>
+                    <th scope="col">Lane (Origin &rarr; Destination)</th>
+                    <th scope="col">Equipment</th>
+                    <th scope="col" class="text-end">Rate &amp; Currency</th>
+                    <th scope="col">Source &middot; Notes</th>
+                    <th scope="col">Confidence</th>
+                    <th scope="col" class="text-end">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for rate in freight_rates %}
-                <tr>
-                    <td class="ps-4 text-muted small">{{ rate.line_item_sequence }}</td>
+                <tr data-filter-row
+                    data-equipment="{{ rate.equipment_type }}"
+                    data-confidence="{% if rate.confidence_score >= 0.9 %}verified{% else %}review{% endif %}"
+                    data-search="{{ rate.origin_port_code|lower }} {{ rate.origin_port_name|lower }} {{ rate.destination_port_code|lower }} {{ rate.destination_port_name|lower }} {{ rate.equipment_type|lower }} {{ rate.currency_code|lower }} {{ rate.rate_amount }}">
                     <td>
-                        <span class="badge bg-light text-dark border font-monospace">{{ rate.origin_port_code }}</span>
-                        <span class="small ms-1">{{ rate.origin_port_name }}</span>
+                        <div class="shake-lane">
+                            <span class="shake-lane-codes">
+                                <span class="shake-chip shake-chip-port">{{ rate.origin_port_code }}</span>
+                                <i class="ti ti-arrow-right" aria-label="to"></i>
+                                <span class="shake-chip shake-chip-port">{{ rate.destination_port_code }}</span>
+                            </span>
+                            <button type="button" class="shake-copy shake-copy-icon-only" data-shake-copy="{{ rate.origin_port_code }} → {{ rate.destination_port_code }}" aria-label="Copy route {{ rate.origin_port_code }} to {{ rate.destination_port_code }}" title="Copy route">
+                                <i class="ti ti-copy" aria-hidden="true"></i><span class="shake-visually-hidden" data-shake-copy-label>Copy route</span>
+                            </button>
+                        </div>
+                        <span class="shake-lane-names">{{ rate.origin_port_name }} &rarr; {{ rate.destination_port_name }}</span>
                     </td>
-                    <td>
-                        <span class="badge bg-light text-dark border font-monospace">{{ rate.destination_port_code }}</span>
-                        <span class="small ms-1">{{ rate.destination_port_name }}</span>
-                    </td>
-                    <td>
-                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle font-monospace">
-                            {{ rate.equipment_type }}
-                        </span>
-                    </td>
-                    <td class="font-monospace small">{{ rate.currency_code }}</td>
-                    <td class="text-end fw-bold font-monospace">{{ rate.rate_amount }}</td>
-                    <td class="text-center small text-muted">
+                    <td><span class="shake-chip shake-chip-equipment">{{ rate.equipment_type }}</span></td>
+                    <td class="text-end shake-amount"><span class="shake-currency">{{ rate.currency_code }}</span>{{ rate.rate_amount|floatformat:"2g" }}</td>
+                    <td class="shake-secondary shake-num">
+                        Row #{{ rate.line_item_sequence }} &middot;
                         {% if rate.source_page_start == rate.source_page_end %}
                             p. {{ rate.source_page_start }}
                         {% else %}
-                            p. {{ rate.source_page_start }}–{{ rate.source_page_end }}
+                            p. {{ rate.source_page_start }}–{{ rate.source_page_end }} <span class="text-nowrap">&middot; stitched across pages</span>
                         {% endif %}
                     </td>
-                    <td class="text-end small text-muted font-monospace">{{ rate.confidence_score }}</td>
-                    <td class="pe-4 text-end text-nowrap">
-                        <a href="{% url 'rate_edit' contract.pk rate.pk %}" class="btn btn-sm btn-outline-secondary" title="Edit rate row">
-                            <i class="bi bi-pencil"></i>
+                    <td>
+                        {% if rate.confidence_score >= 0.9 %}
+                            <span class="shake-pill shake-pill-verified" title="Confidence {{ rate.confidence_score }}">Verified <span class="font-mono-data small">{{ rate.confidence_score }}</span></span>
+                        {% else %}
+                            <span class="shake-pill shake-pill-review" title="Confidence {{ rate.confidence_score }}">Needs review <span class="font-mono-data small">{{ rate.confidence_score }}</span></span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end text-nowrap">
+                        <a href="{% url 'rate_edit' contract.pk rate.pk %}" class="btn btn-sm btn-outline-secondary btn-icon" title="Edit rate row #{{ rate.line_item_sequence }}" aria-label="Edit rate row #{{ rate.line_item_sequence }}">
+                            <i class="ti ti-pencil"></i>
                         </a>
                         <form method="post" action="{% url 'rate_delete' contract.pk rate.pk %}" class="d-inline m-0"
                               data-confirm="Permanently delete rate row #{{ rate.line_item_sequence }} ({{ rate.origin_port_code }} -> {{ rate.destination_port_code }} {{ rate.equipment_type }})? This cannot be undone.">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete rate row">
-                                <i class="bi bi-trash"></i>
+                            <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" title="Delete rate row #{{ rate.line_item_sequence }}" aria-label="Delete rate row #{{ rate.line_item_sequence }}">
+                                <i class="ti ti-trash"></i>
                             </button>
                         </form>
                     </td>
                 </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="9" class="text-center py-4 text-muted">
-                        No base freight rate rows were extracted from this document.
+                {% endfor %}
+                <tr class="shake-no-match" data-shake-no-match hidden>
+                    <td colspan="6">
+                        {% include "partials/empty_state.html" with title="No rates match these filters" message="Try another port, keyword, equipment type, or confidence level." %}
                     </td>
                 </tr>
-                {% endfor %}
             </tbody>
         </table>
     </div>
-</div>
+    {% else %}
+        {% url 'rate_create' contract.pk as rate_create_url %}
+        {% include "partials/empty_state.html" with title="No base freight rates" message="No base freight rate rows were extracted from this document." action_url=rate_create_url action_label="Add Rate Row" action_icon="ti-plus" %}
+    {% endif %}
+</section>
 
-<!-- Arbitrary Charges Grid -->
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+<!-- Zone 4: surcharges and audit, kept apart from base rates -->
+<div class="shake-section-label"><span class="shake-label">Surcharges &amp; audit trail</span></div>
+
+<section class="card mb-4" aria-labelledby="arb-heading">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
-            <h2 class="h5 fw-bold mb-0">
-                <i class="bi bi-signpost-split me-2 text-primary"></i>Origin &amp; Destination Arbitrary Charges
-            </h2>
-            <p class="text-muted small mb-0">Inland gateway surcharges and transport mode fees</p>
+            <h2 class="mb-0" id="arb-heading">Origin &amp; Destination Arbitrary Charges</h2>
+            <p class="shake-card-sub">Inland gateway surcharges and transport mode fees, billed on top of base rates</p>
         </div>
-        <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">
-            {{ arb_count }} Charge Row{{ arb_count|pluralize }}
-        </span>
+        <span class="badge badge-neutral shake-num">{{ arb_count }} Charge Row{{ arb_count|pluralize }}</span>
     </div>
-    <div class="table-responsive">
-        <table class="table table-hover table-sm align-middle mb-0">
-            <thead class="table-light">
+    {% if arbitrary_charges %}
+    <div class="table-responsive shake-table-scroll">
+        <table class="table table-vcenter card-table table-hover shake-rate-table shake-table-sticky">
+            <thead>
                 <tr>
-                    <th class="ps-4">#</th>
-                    <th>Leg Type</th>
-                    <th>Location</th>
-                    <th>Via Gateway</th>
-                    <th>Equipment</th>
-                    <th>Mode</th>
-                    <th class="text-end">Amount</th>
-                    <th class="pe-4 text-center">Page</th>
+                    <th scope="col">Leg</th>
+                    <th scope="col">Location</th>
+                    <th scope="col">Via gateway</th>
+                    <th scope="col">Equipment</th>
+                    <th scope="col">Mode</th>
+                    <th scope="col" class="text-end">Amount</th>
+                    <th scope="col">Source</th>
                 </tr>
             </thead>
             <tbody>
                 {% for charge in arbitrary_charges %}
                 <tr>
-                    <td class="ps-4 text-muted small">{{ charge.line_item_sequence }}</td>
                     <td>
                         {% if charge.charge_type == 'ORIGIN' %}
-                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">ORIGIN</span>
+                            <span class="shake-pill shake-pill-info">ORIGIN</span>
                         {% else %}
-                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">DESTINATION</span>
+                            <span class="shake-pill shake-pill-neutral">DESTINATION</span>
                         {% endif %}
                     </td>
                     <td>
-                        <span class="badge bg-light text-dark border font-monospace">{{ charge.location_code }}</span>
-                        <span class="small ms-1">{{ charge.location_name }}</span>
+                        <span class="shake-chip shake-chip-port">{{ charge.location_code }}</span>
+                        <span class="small ms-1 text-secondary">{{ charge.location_name }}</span>
                     </td>
-                    <td class="small">{{ charge.via_gateway_port }}</td>
-                    <td>
-                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle font-monospace">
-                            {{ charge.equipment_type }}
-                        </span>
-                    </td>
-                    <td><span class="badge bg-light text-dark border">{{ charge.transport_mode }}</span></td>
-                    <td class="text-end fw-semibold font-monospace">{{ charge.currency_code }} {{ charge.charge_amount }}</td>
-                    <td class="pe-4 text-center small text-muted">p. {{ charge.source_page_num }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="8" class="text-center py-4 text-muted">
-                        No origin or destination arbitrary charges were extracted from this document.
-                    </td>
+                    <td>{% if charge.via_gateway_port %}<span class="shake-chip shake-chip-port">{{ charge.via_gateway_port }}</span>{% else %}<span class="text-secondary">—</span>{% endif %}</td>
+                    <td><span class="shake-chip shake-chip-equipment">{{ charge.equipment_type }}</span></td>
+                    <td class="small">{{ charge.transport_mode }}</td>
+                    <td class="text-end shake-amount"><span class="shake-currency">{{ charge.currency_code }}</span>{{ charge.charge_amount|floatformat:"2g" }}</td>
+                    <td class="shake-secondary shake-num">Row #{{ charge.line_item_sequence }} &middot; p. {{ charge.source_page_num }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-</div>
+    {% else %}
+        {% include "partials/empty_state.html" with title="No arbitrary charges" message="No origin or destination arbitrary charges were extracted from this document." %}
+    {% endif %}
+</section>
 
-<!-- Processing Job Audit Trail -->
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-white py-3">
-        <h2 class="h6 fw-bold mb-0">
-            <i class="bi bi-clock-history me-2 text-primary"></i>Processing Job History
-        </h2>
+<div class="row g-4">
+    <!-- Processing job history -->
+    <div class="col-12 col-xxl-6">
+        <section class="card h-100" aria-labelledby="jobs-heading">
+            <div class="card-header">
+                <h2 class="mb-0" id="jobs-heading">Processing Job History</h2>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Job</th>
+                            <th scope="col">Type</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Started</th>
+                            <th scope="col">Completed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in processing_jobs %}
+                        <tr>
+                            <td class="shake-num small">#{{ job.job_id }}</td>
+                            <td class="small">{{ job.get_job_type_display }}</td>
+                            <td>{% include "includes/status_badge.html" with status=job.status %}</td>
+                            <td class="small text-secondary shake-num text-nowrap">{{ job.started_at|date:"Y-m-d H:i:s" }}</td>
+                            <td class="small text-secondary shake-num text-nowrap">{{ job.completed_at|date:"Y-m-d H:i:s"|default:"—" }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="5" class="small text-secondary pt-0">{{ job.error_message|default:"Pipeline completed without errors." }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5">{% include "partials/empty_state.html" with title="No processing jobs recorded." %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
-    <div class="table-responsive">
-        <table class="table table-sm align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th class="ps-4">Job ID</th>
-                    <th>Job Type</th>
-                    <th>Status</th>
-                    <th>Started</th>
-                    <th>Completed</th>
-                    <th class="pe-4">Notes / Error</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for job in processing_jobs %}
-                <tr>
-                    <td class="ps-4 font-monospace small">#{{ job.job_id }}</td>
-                    <td class="small">{{ job.get_job_type_display }}</td>
-                    <td>
-                        {% if job.status == 'COMPLETED' %}
-                            <span class="badge bg-success">COMPLETED</span>
-                        {% elif job.status == 'FAILED' %}
-                            <span class="badge bg-danger">FAILED</span>
-                        {% else %}
-                            <span class="badge bg-warning text-dark">{{ job.status }}</span>
-                        {% endif %}
-                    </td>
-                    <td class="small text-muted">{{ job.started_at|date:"Y-m-d H:i:s" }}</td>
-                    <td class="small text-muted">{{ job.completed_at|date:"Y-m-d H:i:s"|default:"—" }}</td>
-                    <td class="pe-4 small text-muted">{{ job.error_message|default:"Pipeline completed without errors." }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6" class="text-center py-3 text-muted">No processing jobs recorded.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
 
-<!-- Export Audit Log -->
-<div class="card shadow-sm">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h2 class="h6 fw-bold mb-0">
-            <i class="bi bi-journal-check me-2 text-primary"></i>Export Audit Log
-        </h2>
-        <span class="badge bg-light text-dark border">{{ export_records|length }} Export{{ export_records|length|pluralize }}</span>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-sm align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th class="ps-4">Export ID</th>
-                    <th>Format</th>
-                    <th>Exported By</th>
-                    <th>Artifact Path</th>
-                    <th class="pe-4">Exported At</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for exp in export_records %}
-                <tr>
-                    <td class="ps-4 font-monospace small">#{{ exp.export_id }}</td>
-                    <td><span class="badge bg-dark font-monospace">{{ exp.export_format }}</span></td>
-                    <td class="small">{{ exp.user.username }}</td>
-                    <td class="small font-monospace text-muted">{{ exp.file_path }}</td>
-                    <td class="pe-4 small text-muted">{{ exp.exported_at|date:"Y-m-d H:i:s" }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5" class="text-center py-3 text-muted">No export downloads recorded yet for this contract.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Export audit log -->
+    <div class="col-12 col-xxl-6">
+        <section class="card h-100" aria-labelledby="exports-heading">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 class="mb-0" id="exports-heading">Export Audit Log</h2>
+                <span class="badge badge-neutral shake-num">{{ export_records|length }} Export{{ export_records|length|pluralize }}</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Export</th>
+                            <th scope="col">Format</th>
+                            <th scope="col">Exported by</th>
+                            <th scope="col">Exported at</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exp in export_records %}
+                        <tr>
+                            <td class="shake-num small" title="{{ exp.file_path }}">#{{ exp.export_id }}</td>
+                            <td><span class="shake-chip shake-chip-format">{{ exp.export_format }}</span></td>
+                            <td class="small">{{ exp.user.username }}</td>
+                            <td class="small text-secondary shake-num text-nowrap">{{ exp.exported_at|date:"Y-m-d H:i:s" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4">{% include "partials/empty_state.html" with title="No exports yet" message="No export downloads recorded yet for this contract." %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
 </div>
 {% endblock %}

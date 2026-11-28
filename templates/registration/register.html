@@ -3,27 +3,25 @@
 {% block title %}SHAKE — Create Account{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center py-2">
-    <div class="col-12 col-lg-8 col-xl-7">
-        <div class="card shadow-sm overflow-hidden">
-            <div class="card-header bg-dark text-white p-4 border-0">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                    <span class="badge bg-info text-dark fw-bold">SHAKE</span>
-                    <span class="small text-light opacity-75">Account Onboarding</span>
-                </div>
-                <h1 class="h4 fw-bold mb-1">Create your SHAKE account</h1>
-                <p class="small text-light opacity-75 mb-0">
+<div class="row justify-content-center shake-auth-wrap">
+    <div class="col-12 shake-auth-card-wide">
+        <div class="card">
+            <div class="shake-auth-head">
+                {% include "partials/shake_lockup.html" with tone="light" scale="lg" %}
+                <span class="shake-label d-block mb-1">Account onboarding</span>
+                <h1 class="mb-0">Create your SHAKE account</h1>
+                <p>
                     Register as a <strong>Freight Analyst / Encoder</strong> to start processing carrier rate contracts. Operations Admin access is granted by an existing administrator.
                 </p>
             </div>
 
-            <div class="card-body p-4">
+            <div class="card-body">
                 <form method="post" novalidate>
                     {% csrf_token %}
 
                     {% if form.non_field_errors %}
                         <div class="alert alert-danger d-flex align-items-start gap-2" role="alert">
-                            <i class="bi bi-exclamation-octagon-fill mt-1"></i>
+                            <i class="ti ti-alert-octagon mt-1"></i>
                             <div>
                                 {% for error in form.non_field_errors %}
                                     <div>{{ error }}</div>
@@ -33,6 +31,7 @@
                     {% endif %}
 
                     <div class="row g-3">
+                        <div class="col-12"><div class="shake-label shake-form-section mb-0">Identity</div></div>
                         <!-- First Name & Last Name -->
                         <div class="col-12 col-md-6">
                             <label for="{{ form.first_name.id_for_label }}" class="form-label fw-semibold small text-secondary mb-1">
@@ -41,7 +40,7 @@
                             {{ form.first_name }}
                             {% for error in form.first_name.errors %}
                                 <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
                                 </div>
                             {% endfor %}
                         </div>
@@ -53,7 +52,7 @@
                             {{ form.last_name }}
                             {% for error in form.last_name.errors %}
                                 <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
                                 </div>
                             {% endfor %}
                         </div>
@@ -66,7 +65,7 @@
                             {{ form.username }}
                             {% for error in form.username.errors %}
                                 <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
                                 </div>
                             {% endfor %}
                             {% if form.username.help_text %}
@@ -81,11 +80,12 @@
                             {{ form.email }}
                             {% for error in form.email.errors %}
                                 <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
                                 </div>
                             {% endfor %}
                         </div>
 
+                        <div class="col-12 mt-4"><div class="shake-label shake-form-section mb-0">Operations</div></div>
                         <!-- Department -->
                         <div class="col-12">
                             <label for="{{ form.department.id_for_label }}" class="form-label fw-semibold small text-secondary mb-1">
@@ -101,7 +101,7 @@
                             </datalist>
                             {% for error in form.department.errors %}
                                 <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
                                 </div>
                             {% endfor %}
                         </div>
@@ -114,11 +114,12 @@
                             {{ form.contact_number }}
                             {% for error in form.contact_number.errors %}
                                 <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
                                 </div>
                             {% endfor %}
                         </div>
 
+                        <div class="col-12 mt-4"><div class="shake-label shake-form-section mb-0">Security</div></div>
                         <!-- Password & Confirm Password -->
                         <div class="col-12 col-md-6">
                             <label for="{{ form.password1.id_for_label }}" class="form-label fw-semibold small text-secondary mb-1">
@@ -127,7 +128,7 @@
                             {{ form.password1 }}
                             {% for error in form.password1.errors %}
                                 <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
                                 </div>
                             {% endfor %}
                             {% if form.password1.help_text %}
@@ -142,7 +143,7 @@
                             {{ form.password2 }}
                             {% for error in form.password2.errors %}
                                 <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
                                 </div>
                             {% endfor %}
                             {% if form.password2.help_text %}
@@ -151,19 +152,23 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold mt-4">
-                        <i class="bi bi-person-check-fill me-1"></i>Create SHAKE Account
+                    <button type="submit" class="btn btn-primary w-100 py-2 mt-4">
+                        <i class="ti ti-user-check me-1"></i>Create SHAKE Account
                     </button>
                 </form>
             </div>
 
-            <div class="card-footer text-center bg-light py-3">
-                <span class="text-muted small">Already have a SHAKE account?</span>
+            <div class="card-footer text-center py-3">
+                <span class="text-secondary small">Already have a SHAKE account?</span>
                 <a href="{% url 'login' %}" class="fw-semibold text-decoration-none ms-1">
                     Sign In
                 </a>
             </div>
         </div>
+        <p class="shake-privacy-note">
+            {% include "partials/shake_mark.html" with tone="light" %}
+            Runs locally &mdash; contract data never leaves this device.
+        </p>
     </div>
 </div>
 {% endblock %}

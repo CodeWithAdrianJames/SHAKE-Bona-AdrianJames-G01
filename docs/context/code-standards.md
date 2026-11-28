@@ -14,7 +14,7 @@
 - Enforce resource ownership on every contract, rate, document, and export view via `ContractOwnershipMixin` (`ENCODER` scoped to own `BatchUpload.user`; `ADMIN` unrestricted) to prevent Insecure Direct Object Reference (IDOR).
 - Enforce administrative routes (`/contracts/carriers/*`, `/dashboard/admin/`) with `RoleRequiredMixin(allowed_roles=[CustomUser.Role.ADMIN])`.
 - Keep state-mutating actions (`rate_delete`, `document_delete`, `contract_archive`, `carrier_toggle`, `api_token_create`, `api_token_revoke`, `logout`) strictly `POST`-only (`http_method_names = ["post"]` or `@require_POST`) with CSRF protection.
-- Give every destructive form a `data-confirm="..."` message (handled by the shared listener in `templates/base.html`); the prompt is a UX guard, never a replacement for server-side checks.
+- Give every destructive form a `data-confirm="..."` message (handled by the shared listener in `static/js/shake-ui.js`); the prompt is a UX guard, never a replacement for server-side checks.
 - Resolve every object lookup with `get_object_or_404` on a user-scoped queryset; resolve child rows (`FreightRate`, `ArbitraryCharge`) through their scoped parent contract.
 - Wrap multi-step writes (read-then-insert, delete-plus-file-cleanup) in `transaction.atomic()`; defer filesystem side effects to `transaction.on_commit`.
 - Log unexpected exceptions with `logger.exception`; never `except Exception: pass`, and never show raw exception or database text to users.
@@ -30,9 +30,14 @@
 ## Templates and Styling
 
 - Render forms through `templates/includes/form_fields.html` so label, help text, checkbox, and validation error markup stay uniform.
-- Format contract numbers, UN/LOCODE port codes, SHA-256 hashes, and monetary amounts using `font-monospace` (and `text-end` for numeric columns).
+- Use JetBrains Mono only for extracted/structured values: `.font-mono-data` (contract and batch numbers, SHA-256 hashes), `.shake-chip-*` (UN/LOCODE ports, ISO equipment, carrier codes, export formats), and `.shake-amount` (right-aligned rates with a `.shake-currency` prefix). Tables and counters use `tabular-nums`. Inline technical text (API paths, tokens) uses `<code>`.
+- Load front-end assets only through `{% static %}` from `static/vendor/tabler/`, `static/css/shake-theme.css`, `static/fonts/`, and `static/img/`; never add CDN `<link>`/`<script>` tags, Google Fonts, or remote fonts. Use Tabler Icons (`ti ti-*`), the `--shake-*` tokens, and the brand classes in `shake-theme.css` instead of inline colors or inline styles.
+- Render the brand mark only through `templates/partials/shake_mark.html` / `shake_lockup.html` / `shake_state.html` (inline SVG). Never place Sea Glass (`#7FD8C3`) on a light surface, never add symbols (anchors, ships, padlocks, sparkles, stars) to the mark, and never rotate, stretch, or animate its strokes upward.
+- Put front-end behavior in `static/js/shake-ui.js` (no inline `<script>` blocks, no CDN libraries) and wire it with `data-shake-*` attributes. Scripts are progressive enhancement: they must never be required to submit a form, must not rename or drop form fields, and must insert user-controlled text with `textContent`, never `innerHTML`.
+- Start every signed-in page with the two-part `.shake-page-head` (breadcrumb + H1 + one-line `.shake-page-head-sub` | `.shake-page-head-actions`). Sectioned forms render fields one by one with `includes/form_field.html` inside `<fieldset class="shake-form-block">` groups (plus `includes/form_errors.html` for non-field errors) and must render every field of the form.
+- Render `DocumentFile`/`ProcessingJob` status pills with `{% include "includes/status_badge.html" with status=... %}`.
 - Keep templates self-contained and offline-safe without external runtime dependencies that fail without internet access.
-- `templates/404.html` and `templates/500.html` must stay standalone (inline CSS, no `{% extends %}`). `500.html` must not reverse URLs or read `user`/`request`/`messages`, because Django renders it with an empty context.
+- `templates/404.html` and `templates/500.html` must stay standalone (inline CSS and the inline SVG Settle mark, no `{% extends %}`, no `{% static %}`). `500.html` must not reverse URLs or read `user`/`request`/`messages`, because Django renders it with an empty context.
 
 ## API Routes (Loopback REST API — F-11)
 

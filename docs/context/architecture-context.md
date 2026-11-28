@@ -5,7 +5,7 @@
 | Layer | Technology | Role |
 | --- | --- | --- |
 | Framework | Django (Python 3.x) | Server-rendered full-stack web application, ORM, and REST endpoints |
-| UI | Bootstrap 5 + Django Templates | Responsive local workspace, forms, and interactive inspection tables |
+| UI | Tabler 1.7.5 (Bootstrap 5) + Tabler Icons 3.53.0 + Django Templates | Offline-bundled responsive workspace (`static/vendor/tabler/`) themed by the SHAKE "Settle" identity in `static/css/shake-theme.css` with locally bundled Manrope / Inter / JetBrains Mono WOFF2 fonts (`static/fonts/`); forms and data-dense inspection tables |
 | Auth | Custom Django Auth (`accounts.CustomUser`) | Email-based login, role assignment (`ADMIN`, `ENCODER`), and session/token guards |
 | Database | PostgreSQL (`DATABASE_URL`) / SQLite (`db.sqlite3`) | Normalized 3NF persistence with native `UNIQUE`, `CHECK`, and `FK` constraints |
 | PDF Engine | PyMuPDF (`fitz`) + OpenDataLoader Java AST | 100% offline vector text/coordinate extraction and cross-page table stitching |
@@ -21,7 +21,9 @@
   - `contracts/engine/` — Pure offline document processing modules (`ingestion.py`, `extraction.py`, `mapping.py`, `exporter.py`, `models.py`, `errors.py`) decoupled from HTTP request/response objects.
   - `contracts/services/` — Transactional ORM pipeline orchestration (`pipeline.py`), export artifact + `ExportRecord` audit logging, and the API contract payload builder (`exporter.py`).
   - `contracts/api_views.py`, `contracts/api_urls.py` — Local loopback REST API (`F-11`): loopback guard, Bearer/session authentication, `POST /api/v1/ingest`, `GET /api/v1/contracts/<pk>`.
-- `templates/` — Bootstrap 5 HTML templates (`base.html`, `accounts/`, `contracts/`, `dashboard/`, `includes/`) plus the error pages `403.html`, `404.html`, and `500.html`.
+- `templates/` — Tabler (Bootstrap 5) HTML templates (`base.html`, `accounts/`, `registration/`, `contracts/`, `dashboard/`, `includes/` incl. the `status_badge.html` partial and the sectioned-form partials `form_field.html` / `form_errors.html`) plus the error pages `403.html`, `404.html`, and `500.html`.
+- `static/` — Local front-end assets served by `django.contrib.staticfiles` (`STATICFILES_DIRS`): `vendor/tabler/` (Tabler `css/tabler.min.css`, `js/tabler.min.js` with the bundled Bootstrap JS, and `icons/tabler-icons.min.css` + `icons/fonts/*.woff2`; MIT), `css/shake-theme.css` (the official SHAKE "Settle" brand theme: color tokens, type scale, `@font-face` rules, the navigation rail, and the page/ledger/upload layout components), `js/shake-ui.js` (the only first-party script: rail pin + mobile drawer, `data-confirm` prompts, clipboard copy, `/` search shortcut, live table filters, upload dropzone; dependency-free, no network requests), `fonts/` (SIL OFL 1.1 WOFF2 subsets, latin + latin-ext, of Manrope 500/700/800, Inter 400/500/600, and JetBrains Mono 400/500 from Fontsource 5.3.0, with their `OFL-*.txt` licenses), and `img/` (the Settle mark on the 64-unit grid: `shake-mark.svg` on light, `shake-mark-hull.svg` on Deep Hull, `shake-mark-tide.svg` reversed on Tide, `favicon.svg` with the <= 32 px two-stroke simplification, and the `shake-state-raw.svg` / `shake-state-structured.svg` extraction-state glyphs). No template references a CDN, Google Fonts, or any remote font.
+- `templates/partials/` — Inline-SVG brand partials: `shake_mark.html` (the mark, `tone` light/hull/tide), `shake_lockup.html` (horizontal mark + Manrope 800 wordmark), `shake_state.html` (`1 · Raw` / `2 · SHAKE` / `3 · Structured` glyphs), and `empty_state.html` (empty state on the Structured glyph).
 - `media/` — Runtime directory for local uploaded PDFs and exported files (git-ignored). Only `media/profile_photos/` is ever served as static files (and only when `DEBUG=True`); uploaded contract PDFs and export files are never URL-addressable.
 
 ## Storage Model
@@ -60,8 +62,8 @@
 
 ### Error Pages
 
-- `templates/404.html`: standalone page (inline CSS, no `base.html`, no CDN assets) rendered by Django's default `page_not_found` handler whenever `DEBUG=False`. Every `get_object_or_404` miss, including out-of-scope IDs, lands here. It never echoes the requested path or the exception text. Links: `/dashboard/`, `/contracts/` (signed in) or `/accounts/login/` (anonymous).
-- `templates/500.html`: fully standalone. Django's `server_error` handler renders it with an empty context, so it uses no context processors, no `user`/`messages`/`request`, no URL reversing, and runs zero database queries. Hardcoded links to `/dashboard/` and `/accounts/login/`; no exception details.
+- `templates/404.html`: standalone page (inline CSS and the inline light-surface Settle mark, no `base.html`, no static files, no CDN assets) rendered by Django's default `page_not_found` handler whenever `DEBUG=False`. Every `get_object_or_404` miss, including out-of-scope IDs, lands here. It never echoes the requested path or the exception text. Links: `/dashboard/`, `/contracts/` (signed in) or `/accounts/login/` (anonymous).
+- `templates/500.html`: fully standalone. Django's `server_error` handler renders it with an empty context, so it uses no context processors, no `user`/`messages`/`request`, no URL reversing, no `{% static %}` (the Settle mark is inline SVG), and runs zero database queries. Hardcoded links to `/dashboard/` and `/accounts/login/`; no exception details.
 
 ### Server-Side Validation
 
@@ -75,7 +77,7 @@
 - Every core view is `LoginRequiredMixin` (via `ContractOwnershipMixin` / `RoleRequiredMixin`); `/contracts/carriers/*` and `/dashboard/admin/` require `ADMIN`.
 - IDOR: parent contracts resolve through `get_scoped_contract()` (`get_object_or_404` on the user-scoped queryset), and child `FreightRate` rows resolve with `contract=<scoped contract>`, so a foreign contract ID or a foreign rate ID under the user's own contract returns `404`. This applies to detail, edit, rate add/edit/delete, archive, export, and document delete. No web UI edits or deletes `ArbitraryCharge` rows; they are read-only through detail, export, and the API, all of which use the same scope.
 - State-changing views are POST-only (`http_method_names = ["post", "options"]`) with CSRF: `rate_delete`, `document_delete`, `contract_archive`, `carrier_toggle`, `api_token_create`, `api_token_revoke`, and `logout`. GET returns `405`.
-- Destructive forms (rate delete, failed-document delete, archive, API token revoke) carry a `data-confirm` message. One delegated `submit` listener in `base.html` shows a confirmation prompt; the server-side POST, CSRF, and ownership checks still apply when JavaScript is disabled.
+- Destructive forms (rate delete, failed-document delete, archive, API token revoke) carry a `data-confirm` message. One delegated `submit` listener in `static/js/shake-ui.js` (loaded by `base.html` via `{% static %}`) shows a confirmation prompt; the server-side POST, CSRF, and ownership checks still apply when JavaScript is disabled.
 - No raw SQL (`.raw()`, `.extra()`, `cursor.execute`) anywhere in the apps. `|safe` is used only on developer-defined `help_text` (Django's password rules list), never on user-supplied strings. `contracts/test_hardening.py` scans templates statically for both rules.
 - Unexpected failures are logged with `logger.exception` instead of being swallowed. Users see a plain message without database internals (for example, an ingestion `IntegrityError`).
 
@@ -85,6 +87,12 @@
 - `DocumentFileDeleteView` deletes the row and its `ProcessingJob`s atomically, then removes the PDF from disk in `transaction.on_commit`.
 - `ContractDetailView` serves rates, arbitraries, jobs, and export records (with users) from `prefetch_related`; `ContractListView` uses `select_related` + annotations. Tests assert both pages keep a constant query count as rows grow.
 - All POST handlers redirect on success (Post/Redirect/Get).
+
+## UI Shell & Client-Side Enhancements (presentation only)
+
+- **Navigation rail (`templates/base.html`, `.shake-rail` in `shake-theme.css`):** at `>= 992px` the Deep Hull rail is a fixed 72px column and the workspace keeps a constant 72px left margin, so wide rate tables never reflow when it opens. `:hover` / `:focus-within` widens it over the canvas to 252px (`width 220ms cubic-bezier(0.22, 1, 0.36, 1)`, shadow `12px 0 32px rgba(9, 27, 38, 0.24)`) and fades in the wordmark, group headings (Workspace / Administration [ADMIN] / Account), labels, and the Abyss tagline. A pin button stores `shake.sidebar.pinned` (`"1"`/`"0"`) in `localStorage`; `shake-ui.js` runs in `<head>` and sets `html.shake-rail-pinned` before first paint, which keeps the rail open and reserves 252px. Below `992px` the rail is a slide-over drawer (top-bar toggle, backdrop, Escape to close). Sign Out is the `POST` logout form inside the rail.
+- **`static/js/shake-ui.js`:** progressive enhancement only; every link and form works without it, and the server still enforces `POST`, CSRF, and ownership. Hooks are data attributes: `data-shake-rail` / `data-shake-pin` / `data-shake-drawer-open|close`, `form[data-confirm]`, `data-shake-copy` (1.5 s Tide `Copied` state; Clipboard API with `execCommand` fallback), `data-shake-search-shortcut` (`/` focuses the field unless the user is typing), `data-shake-ledger` (client-side filtering of already-rendered rows: `data-filter-row` + `data-search`, `data-shake-filter-select="<attr>"`, `data-shake-pill="<attr>"`, live `data-shake-visible-count`), and `data-shake-upload` (drag-and-drop, selected-file cards rendered with `textContent`, per-file removal via `DataTransfer`, step highlight). It makes no network requests and never changes form field names.
+- The contract list's server-side `q` / `status` `GET` filters are unchanged; the rate-ledger and carrier-directory filters work only on rows already on the page.
 
 ## Local Loopback REST API (`F-11`)
 
@@ -128,7 +136,7 @@
 
 ## Invariants
 
-1. **Zero Cloud Egress:** All PDF parsing, table stitching, database storage, and exports run 100% locally; never invoke external cloud OCR or third-party LLM APIs.
+1. **Zero Cloud Egress:** All PDF parsing, table stitching, database storage, and exports run 100% locally; never invoke external cloud OCR or third-party LLM APIs. The UI is offline too: CSS, JS, icon fonts, the bundled WOFF2 text fonts, and brand images load only from `static/` (no CDN `<link>`/`<script>` tags, no Google Fonts, no remote fonts).
 2. **Identity & Role Integrity (`BR-01`, `BR-02`):** Unique email addresses and strict role enforcement (`ADMIN`, `ENCODER`) across web views and API endpoints.
 3. **Unique Carrier Definitions (`BR-03`):** `carrier_code` and `carrier_name` must remain unique at both form validation and database constraint levels.
 4. **Batch & Document Integrity (`BR-04`–`BR-08`):** Batch file counts `>= 1`, positive `file_size_bytes` and `page_count`, strict lifecycle status states, and SHA-256 duplicate rejection.
