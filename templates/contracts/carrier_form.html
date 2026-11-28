@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}SHAKE — {% if is_edit %}Edit Carrier {{ carrier.carrier_code }}{% else %}Create Carrier Profile{% endif %}{% endblock %}
+{% block title %}SHAKE — {% if is_edit %}Edit carrier {{ carrier.carrier_code }}{% else %}Create carrier profile{% endif %}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -12,16 +12,16 @@
                         <li class="breadcrumb-item">Administration</li>
                         <li class="breadcrumb-item"><a href="{% url 'carrier_list' %}">Carriers</a></li>
                         <li class="breadcrumb-item active" aria-current="page">
-                            {% if is_edit %}Edit {{ carrier.carrier_code }}{% else %}New Carrier{% endif %}
+                            {% if is_edit %}Edit {{ carrier.carrier_code }}{% else %}New carrier{% endif %}
                         </li>
                     </ol>
                 </nav>
-                <h1>{% if is_edit %}Edit Carrier Profile <span class="shake-chip shake-chip-carrier">{{ carrier.carrier_code }}</span>{% else %}Create Shipping Carrier Profile{% endif %}</h1>
+                <h1>{% if is_edit %}Edit carrier profile <span class="shake-chip shake-chip-carrier">{{ carrier.carrier_code }}</span>{% else %}Create shipping carrier profile{% endif %}</h1>
                 <p class="shake-page-head-sub">Carrier codes and registered names stay unique across all contracts (BR-03).</p>
             </div>
             <div class="shake-page-head-actions">
                 <a href="{% url 'carrier_list' %}" class="btn btn-outline-secondary">
-                    <i class="ti ti-arrow-left me-1"></i>Back to Carriers
+                    <i class="ti ti-arrow-left me-1"></i>Back to carriers
                 </a>
             </div>
         </div>
@@ -51,7 +51,7 @@
                     <div class="shake-form-actions">
                         <a href="{% url 'carrier_list' %}" class="btn btn-outline-secondary">Cancel</a>
                         <button type="submit" class="btn btn-primary px-4">
-                            <i class="ti ti-check me-1"></i>{% if is_edit %}Save Changes{% else %}Create Carrier{% endif %}
+                            <i class="ti ti-check me-1"></i>{% if is_edit %}Save changes{% else %}Create carrier{% endif %}
                         </button>
                     </div>
                 </form>

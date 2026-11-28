@@ -46,14 +46,14 @@ class ContractUploadForm(BootstrapFormMixin, forms.Form):
     carrier_profile = forms.ChoiceField(
         required=False,
         initial="AUTO",
-        label="Carrier Template Hint",
+        label="Carrier template hint",
         help_text=(
             "Auto-detect carrier from PDF header text, or force a specific active carrier profile."
         ),
     )
     pdf_files = MultiplePdfField(
         required=True,
-        label="Contract PDF File(s)",
+        label="Contract PDF file(s)",
         help_text=(
             "Digital vector-text .pdf files only (max 100 MB per file). "
             "Scanned PDFs and duplicate SHA-256 files are automatically rejected."
@@ -114,12 +114,12 @@ class ContractMetadataForm(BootstrapFormMixin, forms.ModelForm):
             "expiration_date",
         )
         labels = {
-            "contract_number": "Contract Number",
-            "carrier": "Carrier Profile",
-            "trade_scope": "Trade Scope",
-            "commodity_desc": "Commodity Description",
-            "effective_date": "Effective Date",
-            "expiration_date": "Expiration Date",
+            "contract_number": "Contract number",
+            "carrier": "Carrier profile",
+            "trade_scope": "Trade scope",
+            "commodity_desc": "Commodity description",
+            "effective_date": "Effective date",
+            "expiration_date": "Expiration date",
         }
         widgets = {
             "contract_number": forms.TextInput(attrs={"placeholder": "e.g., ATL0347N25"}),
@@ -181,25 +181,25 @@ class FreightRateForm(BootstrapFormMixin, forms.ModelForm):
             "rate_amount",
         )
         labels = {
-            "origin_port_code": "Origin Port Code (POL)",
-            "origin_port_name": "Origin Port Name",
-            "destination_port_code": "Destination Port Code (POD)",
-            "destination_port_name": "Destination Port Name",
-            "equipment_type": "Equipment Type",
-            "currency_code": "Currency Code",
-            "rate_amount": "Base Freight Rate Amount",
+            "origin_port_code": "Origin port code (POL)",
+            "origin_port_name": "Origin port name",
+            "destination_port_code": "Destination port code (POD)",
+            "destination_port_name": "Destination port name",
+            "equipment_type": "Equipment type",
+            "currency_code": "Currency code",
+            "rate_amount": "Base freight rate amount",
         }
         widgets = {
             "origin_port_code": forms.TextInput(
-                attrs={"placeholder": "e.g., USCHS", "style": "text-transform:uppercase;"}
+                attrs={"placeholder": "e.g., USCHS", "class": "shake-input-code"}
             ),
             "origin_port_name": forms.TextInput(attrs={"placeholder": "e.g., Charleston"}),
             "destination_port_code": forms.TextInput(
-                attrs={"placeholder": "e.g., CNDLC", "style": "text-transform:uppercase;"}
+                attrs={"placeholder": "e.g., CNDLC", "class": "shake-input-code"}
             ),
             "destination_port_name": forms.TextInput(attrs={"placeholder": "e.g., Dalian"}),
             "currency_code": forms.TextInput(
-                attrs={"placeholder": "USD", "maxlength": "3", "style": "text-transform:uppercase;"}
+                attrs={"placeholder": "USD", "maxlength": "3", "class": "shake-input-code"}
             ),
             "rate_amount": forms.NumberInput(
                 attrs={"step": "0.01", "min": "0.01", "placeholder": "0.00"}
@@ -263,14 +263,14 @@ class CarrierProfileForm(BootstrapFormMixin, forms.ModelForm):
             "is_active",
         )
         labels = {
-            "carrier_code": "Carrier SCAC / Code",
-            "carrier_name": "Registered Carrier Name",
-            "template_version": "Parser Template Version",
-            "is_active": "Active Profile",
+            "carrier_code": "Carrier SCAC / code",
+            "carrier_name": "Registered carrier name",
+            "template_version": "Parser template version",
+            "is_active": "Active profile",
         }
         widgets = {
             "carrier_code": forms.TextInput(
-                attrs={"placeholder": "e.g., ONE1", "style": "text-transform:uppercase;"}
+                attrs={"placeholder": "e.g., ONE1", "class": "shake-input-code"}
             ),
             "carrier_name": forms.TextInput(
                 attrs={"placeholder": "e.g., Ocean Network Express"}

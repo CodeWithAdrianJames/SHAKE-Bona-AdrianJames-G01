@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}SHAKE — Operations Admin Dashboard{% endblock %}
+{% block title %}SHAKE — Operations admin dashboard{% endblock %}
 
 {% block content %}
 <!-- Page header -->
@@ -9,16 +9,13 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item">Administration</li>
-                <li class="breadcrumb-item active" aria-current="page">Admin Overview</li>
+                <li class="breadcrumb-item active" aria-current="page">Admin overview</li>
             </ol>
         </nav>
         <h1>Operations Admin Control Center</h1>
         <p class="shake-page-head-sub">{{ user.department|default:"Operations Administration" }} &middot; system-wide contracts, users, and carriers on this workstation.</p>
     </div>
     <div class="shake-page-head-actions">
-        <a href="{% url 'carrier_list' %}" class="btn btn-outline-secondary">
-            <i class="ti ti-building-warehouse me-1"></i>Manage Carriers
-        </a>
         <a href="{% url 'contract_upload' %}" class="btn btn-primary">
             <i class="ti ti-file-upload me-1"></i>Upload PDF
         </a>
@@ -37,21 +34,21 @@
     </div>
     <div class="card shake-kpi">
         <div class="card-body">
-            <span class="shake-label">Total Users</span>
+            <span class="shake-label">Total users</span>
             <span class="shake-kpi-figure">{{ total_users_count }}</span>
             <span class="shake-kpi-caption">{{ admin_users_count }} Admin &middot; {{ encoder_users_count }} Encoder</span>
         </div>
     </div>
     <div class="card shake-kpi">
         <div class="card-body">
-            <span class="shake-label">Extracted Contracts</span>
+            <span class="shake-label">Extracted contracts</span>
             <span class="shake-kpi-figure">{{ extracted_contracts_count }}</span>
             <span class="shake-kpi-caption">from {{ total_batches_count }} ingestion batch{{ total_batches_count|pluralize:"es" }}</span>
         </div>
     </div>
     <div class="card shake-kpi">
         <div class="card-body">
-            <span class="shake-label">Active Carriers</span>
+            <span class="shake-label">Active carriers</span>
             <span class="shake-kpi-figure">{{ active_carriers_count }}</span>
             <span class="shake-kpi-caption">of {{ carrier_profiles|length }} registered profile{{ carrier_profiles|length|pluralize }}</span>
         </div>
@@ -66,12 +63,10 @@
             <div class="card">
                 <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
                     <div>
-                        <h2 class="mb-0">Recent Contracts</h2>
+                        <h2 class="mb-0">Recent contracts</h2>
                         <p class="shake-card-sub">Latest processing jobs across every operator</p>
                     </div>
-                    <a href="{% url 'contract_list' %}" class="btn btn-sm btn-outline-primary">
-                        <i class="ti ti-table me-1"></i>All Contracts
-                    </a>
+                    <a href="{% url 'contract_list' %}" class="shake-card-link">All contracts<i class="ti ti-arrow-right" aria-hidden="true"></i></a>
                 </div>
                 {% if recent_jobs %}
                 <div class="table-responsive">
@@ -92,7 +87,7 @@
                                     {% if job.document.contract_metadata %}
                                         <a href="{% url 'contract_detail' job.document.contract_metadata.pk %}" class="font-mono-data text-decoration-none">{{ job.document.contract_metadata.contract_number }}</a>
                                     {% else %}
-                                        <span class="text-secondary small">Not extracted</span>
+                                        <span class="shake-secondary">Not extracted</span>
                                     {% endif %}
                                     <div class="shake-secondary text-truncate shake-truncate" title="{{ job.document.original_file_name }}">{{ job.document.original_file_name }}</div>
                                 </td>
@@ -100,7 +95,7 @@
                                     {% if job.document.contract_metadata %}
                                         <span class="shake-chip shake-chip-carrier">{{ job.document.contract_metadata.carrier.carrier_code }}</span>
                                     {% else %}
-                                        <span class="text-secondary small">—</span>
+                                        <span class="shake-secondary">—</span>
                                     {% endif %}
                                 </td>
                                 <td class="shake-secondary">{{ job.document.batch.user.username }}</td>
@@ -112,7 +107,7 @@
                     </table>
                 </div>
                 {% else %}
-                    {% include "partials/empty_state.html" with title="No processing jobs recorded yet." message="Contracts appear here as soon as an operator uploads a PDF." %}
+                    {% include "partials/empty_state.html" with title="No processing jobs yet" message="Contracts appear here as soon as an operator uploads a PDF." compact=True %}
                 {% endif %}
             </div>
 
@@ -120,10 +115,10 @@
             <div id="user-roster" class="card">
                 <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
                     <div>
-                        <h2 class="mb-0">Registered SHAKE Users</h2>
+                        <h2 class="mb-0">Registered SHAKE users</h2>
                         <p class="shake-card-sub">Operations Admins and Freight Analysts / Encoders on this workstation</p>
                     </div>
-                    <span class="badge badge-neutral shake-num">{{ total_users_count }} Account{{ total_users_count|pluralize }}</span>
+                    <span class="shake-count"><strong>{{ total_users_count }}</strong> account{{ total_users_count|pluralize }}</span>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-vcenter card-table table-hover">
@@ -168,7 +163,7 @@
                                 </td>
                             </tr>
                             {% empty %}
-                            <tr><td colspan="6">{% include "partials/empty_state.html" with title="No registered users found." %}</td></tr>
+                            <tr><td colspan="6">{% include "partials/empty_state.html" with title="No registered users" compact=True %}</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -180,67 +175,26 @@
     <!-- Side rail: quick actions, engine health, carriers, exports -->
     <div class="col-12 col-lg-4">
         <div class="shake-side-stack">
-            <div class="card shake-side-card">
-                <div class="card-header"><h2 class="mb-0">Quick Actions</h2></div>
-                <ul class="shake-action-list">
-                    <li>
-                        <a class="shake-action" href="{% url 'contract_upload' %}">
-                            <span class="shake-action-icon"><i class="ti ti-file-upload"></i></span>
-                            <span><span class="shake-action-title">Upload contract PDF</span><span class="shake-action-sub">Single or batch, parsed locally</span></span>
-                            <i class="ti ti-chevron-right" aria-hidden="true"></i>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="shake-action" href="{% url 'carrier_create' %}">
-                            <span class="shake-action-icon"><i class="ti ti-circle-plus"></i></span>
-                            <span><span class="shake-action-title">Add carrier profile</span><span class="shake-action-sub">Unique code and name (BR-03)</span></span>
-                            <i class="ti ti-chevron-right" aria-hidden="true"></i>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="shake-action" href="{% url 'contract_list' %}">
-                            <span class="shake-action-icon"><i class="ti ti-file-text"></i></span>
-                            <span><span class="shake-action-title">Review all contracts</span><span class="shake-action-sub">Every operator's extractions</span></span>
-                            <i class="ti ti-chevron-right" aria-hidden="true"></i>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-
             <div id="engine-health" class="card shake-side-card">
-                <div class="card-header d-flex justify-content-between align-items-center gap-2">
-                    <h2 class="mb-0">Offline Engine</h2>
-                    <span class="shake-pill shake-pill-verified">Healthy</span>
+                <div class="card-header">
+                    <h2 class="mb-0">Offline engine</h2>
                 </div>
-                <div class="card-body">
-                    <div class="shake-hero shake-hero-callout mb-3">
-                        <div class="d-flex align-items-center gap-2">
-                            {% include "partials/shake_mark.html" with tone="hull" size=26 %}
-                            <span class="fw-semibold">{{ engine_status.name }}</span>
-                        </div>
-                        <div class="small shake-hero-sub mt-1">{{ engine_status.mode }} &mdash; zero external LLM or cloud OCR calls.</div>
-                    </div>
-                    <ol class="shake-steps" aria-label="Extraction pipeline">
-                        <li class="shake-steps-item">
-                            {% include "partials/shake_state.html" with state="raw" %}
-                            <div><div class="shake-steps-title">1 &middot; Raw</div><p>Carrier PDF in.</p></div>
-                        </li>
-                        <li class="shake-steps-item is-dark">
-                            {% include "partials/shake_state.html" with state="shake" %}
-                            <div><div class="shake-steps-title">2 &middot; SHAKE</div><p>{{ engine_status.status_label }}</p></div>
-                        </li>
-                        <li class="shake-steps-item">
-                            {% include "partials/shake_state.html" with state="structured" %}
-                            <div><div class="shake-steps-title">3 &middot; Structured</div><p>.xlsx / .csv / .json out.</p></div>
-                        </li>
-                    </ol>
-                </div>
+                <ul class="shake-mini-list">
+                    <li>
+                        <span class="shake-mini-main">
+                            <span class="shake-mini-title">{{ engine_status.name }}</span>
+                            <span class="shake-secondary d-block">{{ engine_status.mode }}; no external LLM or cloud OCR calls</span>
+                        </span>
+                    </li>
+                    <li><span class="shake-mini-main shake-secondary">Status</span><span class="shake-mini-end">{{ engine_status.status_label }}</span></li>
+                    <li><span class="shake-mini-main shake-secondary">Latency target</span><span class="shake-mini-end">{{ engine_status.latency_target }}</span></li>
+                </ul>
             </div>
 
             <div id="carrier-parsers" class="card shake-side-card">
                 <div class="card-header d-flex justify-content-between align-items-center gap-2">
-                    <h2 class="mb-0">Carrier Registry</h2>
-                    <a href="{% url 'carrier_list' %}" class="small fw-semibold text-decoration-none">Manage &rarr;</a>
+                    <h2 class="mb-0">Carrier registry</h2>
+                    <a href="{% url 'carrier_list' %}" class="shake-card-link">Manage carriers<i class="ti ti-arrow-right" aria-hidden="true"></i></a>
                 </div>
                 {% if carrier_profiles %}
                 <ul class="shake-mini-list">
@@ -256,14 +210,14 @@
                     {% endfor %}
                 </ul>
                 {% else %}
-                    {% include "partials/empty_state.html" with title="No carrier profiles found." %}
+                    {% include "partials/empty_state.html" with title="No carrier profiles" compact=True %}
                 {% endif %}
             </div>
 
             <div class="card shake-side-card">
                 <div class="card-header d-flex justify-content-between align-items-center gap-2">
-                    <h2 class="mb-0">Recent Exports</h2>
-                    <span class="badge badge-neutral shake-num">{{ total_exports_count }} Total</span>
+                    <h2 class="mb-0">Recent exports</h2>
+                    <span class="shake-count"><strong>{{ total_exports_count }}</strong> logged</span>
                 </div>
                 {% if recent_exports %}
                 <ul class="shake-mini-list">
@@ -279,7 +233,7 @@
                     {% endfor %}
                 </ul>
                 {% else %}
-                    {% include "partials/empty_state.html" with title="No export downloads recorded yet." %}
+                    {% include "partials/empty_state.html" with title="No exports yet" compact=True %}
                 {% endif %}
             </div>
         </div>

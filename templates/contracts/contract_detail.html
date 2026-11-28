@@ -35,18 +35,18 @@
         </div>
         <span class="shake-toolbar-sep d-none d-md-block" aria-hidden="true"></span>
         <a href="{% url 'contract_edit' contract.pk %}" class="btn btn-outline-secondary">
-            <i class="ti ti-edit me-1"></i>Edit Metadata
+            <i class="ti ti-edit me-1"></i>Edit metadata
         </a>
         {% if contract.document.status != 'ARCHIVED' %}
             <form method="post" action="{% url 'contract_archive' contract.pk %}" class="d-inline m-0"
                   data-confirm="Archive contract {{ contract.contract_number }}? Archived contracts stay readable but cannot be un-archived from the UI (BR-09).">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-outline-review">
+                <button type="submit" class="btn btn-outline-secondary">
                     <i class="ti ti-archive me-1"></i>Archive
                 </button>
             </form>
         {% else %}
-            <span class="shake-pill shake-pill-review">Non-Destructive Archive Active (BR-09)</span>
+            <span class="shake-secondary d-inline-flex align-items-center gap-1"><i class="ti ti-archive" aria-hidden="true"></i>Archived, read-only (BR-09)</span>
         {% endif %}
     </div>
 </div>
@@ -54,24 +54,24 @@
 <!-- Zone 2: 4-cell contract metadata strip -->
 <section class="card shake-meta-strip" aria-label="Contract metadata">
     <div class="shake-meta-cell">
-        <span class="shake-meta-key"><i class="ti ti-building-warehouse" aria-hidden="true"></i>Carrier &amp; Code</span>
+        <span class="shake-meta-key"><i class="ti ti-building-warehouse" aria-hidden="true"></i>Carrier &amp; code</span>
         <div class="d-flex align-items-center gap-2 flex-wrap">
             <span class="shake-chip shake-chip-carrier">{{ contract.carrier.carrier_code }}</span>
             <span class="shake-meta-primary">{{ contract.carrier.carrier_name }}</span>
         </div>
-        <div class="shake-meta-secondary">Batch <span class="font-mono-data small">{{ contract.document.batch.batch_number }}</span></div>
+        <div class="shake-meta-secondary">Batch <span class="font-mono-data">{{ contract.document.batch.batch_number }}</span></div>
     </div>
     <div class="shake-meta-cell">
-        <span class="shake-meta-key"><i class="ti ti-calendar-event" aria-hidden="true"></i>Validity Window</span>
+        <span class="shake-meta-key"><i class="ti ti-calendar-event" aria-hidden="true"></i>Validity window</span>
         <div class="shake-meta-primary shake-meta-range">
             <span>{{ contract.effective_date|date:"Y-m-d" }}</span>
             <i class="ti ti-arrow-right" aria-label="to"></i>
             <span>{{ contract.expiration_date|date:"Y-m-d" }}</span>
         </div>
-        <div class="shake-meta-secondary">Effective &rarr; Expiration (BR-10)</div>
+        <div class="shake-meta-secondary">Effective &rarr; expiration (BR-10)</div>
     </div>
     <div class="shake-meta-cell">
-        <span class="shake-meta-key"><i class="ti ti-list-details" aria-hidden="true"></i>Extracted Line Items</span>
+        <span class="shake-meta-key"><i class="ti ti-list-details" aria-hidden="true"></i>Extracted line items</span>
         <div class="shake-meta-counts">
             <div>
                 <div class="shake-kpi-figure">{{ rate_count }}</div>
@@ -84,7 +84,7 @@
         </div>
     </div>
     <div class="shake-meta-cell">
-        <span class="shake-meta-key"><i class="ti ti-file-type-pdf" aria-hidden="true"></i>Source File &amp; SHA-256</span>
+        <span class="shake-meta-key"><i class="ti ti-file-type-pdf" aria-hidden="true"></i>Source file &amp; SHA-256</span>
         <div class="shake-meta-primary shake-meta-file" title="{{ contract.document.original_file_name }}">{{ contract.document.original_file_name }}</div>
         <div class="shake-meta-secondary shake-num">{{ contract.document.page_count }} page{{ contract.document.page_count|pluralize }} &middot; {{ contract.document.file_size_bytes|filesizeformat }}</div>
         <div class="shake-hash-row">
@@ -95,7 +95,7 @@
         </div>
     </div>
     <div class="shake-meta-cell shake-meta-cell-wide">
-        <span class="shake-meta-key"><i class="ti ti-route" aria-hidden="true"></i>Trade Scope &amp; Commodity</span>
+        <span class="shake-meta-key"><i class="ti ti-route" aria-hidden="true"></i>Trade scope &amp; commodity</span>
         <div class="shake-meta-secondary mt-0"><span class="shake-field-value">{{ contract.trade_scope }}</span> &middot; {{ contract.commodity_desc }}</div>
     </div>
 </section>
@@ -104,11 +104,11 @@
 <section class="card shake-ledger-card mb-4" data-shake-ledger aria-labelledby="rates-heading">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
-            <h2 class="mb-0" id="rates-heading">Base Ocean Freight Rates</h2>
+            <h2 class="mb-0" id="rates-heading">Base ocean freight rates</h2>
             <p class="shake-card-sub">Port-to-port base rates &middot; Verified &ge; 0.900 confidence</p>
         </div>
         <a href="{% url 'rate_create' contract.pk %}" class="btn btn-sm btn-primary">
-            <i class="ti ti-plus me-1"></i>Add Rate Row
+            <i class="ti ti-plus me-1"></i>Add rate row
         </a>
     </div>
     {% if freight_rates %}
@@ -139,10 +139,10 @@
         <table class="table table-vcenter card-table table-hover shake-rate-table shake-table-sticky">
             <thead>
                 <tr>
-                    <th scope="col">Lane (Origin &rarr; Destination)</th>
+                    <th scope="col">Lane (origin &rarr; destination)</th>
                     <th scope="col">Equipment</th>
-                    <th scope="col" class="text-end">Rate &amp; Currency</th>
-                    <th scope="col">Source &middot; Notes</th>
+                    <th scope="col" class="text-end">Rate &amp; currency</th>
+                    <th scope="col">Source &middot; notes</th>
                     <th scope="col">Confidence</th>
                     <th scope="col" class="text-end">Actions</th>
                 </tr>
@@ -178,9 +178,9 @@
                     </td>
                     <td>
                         {% if rate.confidence_score >= 0.9 %}
-                            <span class="shake-pill shake-pill-verified" title="Confidence {{ rate.confidence_score }}">Verified <span class="font-mono-data small">{{ rate.confidence_score }}</span></span>
+                            <span class="shake-pill shake-pill-verified" title="Confidence {{ rate.confidence_score }}">Verified <span class="font-mono-data">{{ rate.confidence_score }}</span></span>
                         {% else %}
-                            <span class="shake-pill shake-pill-review" title="Confidence {{ rate.confidence_score }}">Needs review <span class="font-mono-data small">{{ rate.confidence_score }}</span></span>
+                            <span class="shake-pill shake-pill-review" title="Confidence {{ rate.confidence_score }}">Needs review <span class="font-mono-data">{{ rate.confidence_score }}</span></span>
                         {% endif %}
                     </td>
                     <td class="text-end text-nowrap">
@@ -206,8 +206,7 @@
         </table>
     </div>
     {% else %}
-        {% url 'rate_create' contract.pk as rate_create_url %}
-        {% include "partials/empty_state.html" with title="No base freight rates" message="No base freight rate rows were extracted from this document." action_url=rate_create_url action_label="Add Rate Row" action_icon="ti-plus" %}
+        {% include "partials/empty_state.html" with title="No base freight rates" message="None were extracted from this document. Add rows by hand if the PDF lists rates." %}
     {% endif %}
 </section>
 
@@ -217,10 +216,10 @@
 <section class="card mb-4" aria-labelledby="arb-heading">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
-            <h2 class="mb-0" id="arb-heading">Origin &amp; Destination Arbitrary Charges</h2>
+            <h2 class="mb-0" id="arb-heading">Origin and destination arbitrary charges</h2>
             <p class="shake-card-sub">Inland gateway surcharges and transport mode fees, billed on top of base rates</p>
         </div>
-        <span class="badge badge-neutral shake-num">{{ arb_count }} Charge Row{{ arb_count|pluralize }}</span>
+        <span class="shake-count"><strong>{{ arb_count }}</strong> charge row{{ arb_count|pluralize }}</span>
     </div>
     {% if arbitrary_charges %}
     <div class="table-responsive shake-table-scroll">
@@ -240,19 +239,15 @@
                 {% for charge in arbitrary_charges %}
                 <tr>
                     <td>
-                        {% if charge.charge_type == 'ORIGIN' %}
-                            <span class="shake-pill shake-pill-info">ORIGIN</span>
-                        {% else %}
-                            <span class="shake-pill shake-pill-neutral">DESTINATION</span>
-                        {% endif %}
+                        <span class="shake-chip shake-chip-format">{{ charge.charge_type }}</span>
                     </td>
                     <td>
                         <span class="shake-chip shake-chip-port">{{ charge.location_code }}</span>
-                        <span class="small ms-1 text-secondary">{{ charge.location_name }}</span>
+                        <span class="shake-secondary ms-1">{{ charge.location_name }}</span>
                     </td>
                     <td>{% if charge.via_gateway_port %}<span class="shake-chip shake-chip-port">{{ charge.via_gateway_port }}</span>{% else %}<span class="text-secondary">—</span>{% endif %}</td>
                     <td><span class="shake-chip shake-chip-equipment">{{ charge.equipment_type }}</span></td>
-                    <td class="small">{{ charge.transport_mode }}</td>
+                    <td>{{ charge.transport_mode }}</td>
                     <td class="text-end shake-amount"><span class="shake-currency">{{ charge.currency_code }}</span>{{ charge.charge_amount|floatformat:"2g" }}</td>
                     <td class="shake-secondary shake-num">Row #{{ charge.line_item_sequence }} &middot; p. {{ charge.source_page_num }}</td>
                 </tr>
@@ -261,16 +256,16 @@
         </table>
     </div>
     {% else %}
-        {% include "partials/empty_state.html" with title="No arbitrary charges" message="No origin or destination arbitrary charges were extracted from this document." %}
+        {% include "partials/empty_state.html" with title="No arbitrary charges" message="This document lists no origin or destination arbitraries." compact=True %}
     {% endif %}
 </section>
 
 <div class="row g-4">
     <!-- Processing job history -->
-    <div class="col-12 col-xxl-6">
-        <section class="card h-100" aria-labelledby="jobs-heading">
+    <div class="col-12">
+        <section class="card" aria-labelledby="jobs-heading">
             <div class="card-header">
-                <h2 class="mb-0" id="jobs-heading">Processing Job History</h2>
+                <h2 class="mb-0" id="jobs-heading">Processing job history</h2>
             </div>
             <div class="table-responsive">
                 <table class="table table-vcenter card-table">
@@ -285,18 +280,20 @@
                     </thead>
                     <tbody>
                         {% for job in processing_jobs %}
-                        <tr>
-                            <td class="shake-num small">#{{ job.job_id }}</td>
-                            <td class="small">{{ job.get_job_type_display }}</td>
+                        <tr{% if job.error_message %} class="has-detail"{% endif %}>
+                            <td class="shake-num">#{{ job.job_id }}</td>
+                            <td>{{ job.get_job_type_display }}</td>
                             <td>{% include "includes/status_badge.html" with status=job.status %}</td>
-                            <td class="small text-secondary shake-num text-nowrap">{{ job.started_at|date:"Y-m-d H:i:s" }}</td>
-                            <td class="small text-secondary shake-num text-nowrap">{{ job.completed_at|date:"Y-m-d H:i:s"|default:"—" }}</td>
+                            <td class="shake-secondary shake-num text-nowrap">{{ job.started_at|date:"Y-m-d H:i:s" }}</td>
+                            <td class="shake-secondary shake-num text-nowrap">{{ job.completed_at|date:"Y-m-d H:i:s"|default:"—" }}</td>
                         </tr>
-                        <tr>
-                            <td colspan="5" class="small text-secondary pt-0">{{ job.error_message|default:"Pipeline completed without errors." }}</td>
+                        {% if job.error_message %}
+                        <tr class="shake-detail-row">
+                            <td colspan="5"><span class="{% if job.status == 'FAILED' %}shake-diagnostic{% else %}shake-secondary{% endif %}">{{ job.error_message }}</span></td>
                         </tr>
+                        {% endif %}
                         {% empty %}
-                        <tr><td colspan="5">{% include "partials/empty_state.html" with title="No processing jobs recorded." %}</td></tr>
+                        <tr><td colspan="5">{% include "partials/empty_state.html" with title="No processing jobs recorded" compact=True %}</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -305,11 +302,11 @@
     </div>
 
     <!-- Export audit log -->
-    <div class="col-12 col-xxl-6">
-        <section class="card h-100" aria-labelledby="exports-heading">
+    <div class="col-12">
+        <section class="card" aria-labelledby="exports-heading">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h2 class="mb-0" id="exports-heading">Export Audit Log</h2>
-                <span class="badge badge-neutral shake-num">{{ export_records|length }} Export{{ export_records|length|pluralize }}</span>
+                <span class="shake-count"><strong>{{ export_records|length }}</strong> export{{ export_records|length|pluralize }}</span>
             </div>
             <div class="table-responsive">
                 <table class="table table-vcenter card-table">
@@ -324,13 +321,13 @@
                     <tbody>
                         {% for exp in export_records %}
                         <tr>
-                            <td class="shake-num small" title="{{ exp.file_path }}">#{{ exp.export_id }}</td>
+                            <td class="shake-num" title="{{ exp.file_path }}">#{{ exp.export_id }}</td>
                             <td><span class="shake-chip shake-chip-format">{{ exp.export_format }}</span></td>
-                            <td class="small">{{ exp.user.username }}</td>
-                            <td class="small text-secondary shake-num text-nowrap">{{ exp.exported_at|date:"Y-m-d H:i:s" }}</td>
+                            <td>{{ exp.user.username }}</td>
+                            <td class="shake-secondary shake-num text-nowrap">{{ exp.exported_at|date:"Y-m-d H:i:s" }}</td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="4">{% include "partials/empty_state.html" with title="No exports yet" message="No export downloads recorded yet for this contract." %}</td></tr>
+                        <tr><td colspan="4">{% include "partials/empty_state.html" with title="No exports yet" message="Each XLSX, CSV, or JSON download is logged here." compact=True %}</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

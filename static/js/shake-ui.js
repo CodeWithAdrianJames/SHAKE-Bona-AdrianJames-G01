@@ -10,6 +10,7 @@
  *   4. "/" keyboard shortcut that focuses a list search input ([data-shake-search-shortcut]).
  *   5. Live client-side filtering of the contract rate ledger ([data-shake-ledger]).
  *   6. Upload dropzone: drag-and-drop, selected-file cards, and the downward step highlight.
+ *   7. Read-only values marked [data-shake-select-on-focus] select their text on focus (one-time API token).
  */
 (function () {
     "use strict";
@@ -49,6 +50,7 @@
         var rail = document.querySelector("[data-shake-rail]");
         if (!rail) { return; }
         var backdrop = document.querySelector(".shake-rail-backdrop");
+        var workspace = document.querySelector(".page-wrapper");
         var openers = document.querySelectorAll("[data-shake-drawer-open]");
         var pin = rail.querySelector("[data-shake-pin]");
         var lastOpener = null;
@@ -83,6 +85,10 @@
             rail.classList.toggle("is-open", open);
             root.classList.toggle("shake-drawer-open", open);
             if (backdrop) { backdrop.hidden = !open; }
+            // Keep Tab inside the open drawer: the workspace behind the backdrop is inert until it closes.
+            if (workspace) {
+                if (open) { workspace.setAttribute("inert", ""); } else { workspace.removeAttribute("inert"); }
+            }
             Array.prototype.forEach.call(openers, function (btn) { btn.setAttribute("aria-expanded", open ? "true" : "false"); });
             if (open) {
                 var first = rail.querySelector(".shake-rail-link");
@@ -167,6 +173,16 @@
         if (!el) { return false; }
         var tag = (el.tagName || "").toLowerCase();
         return tag === "input" || tag === "textarea" || tag === "select" || el.isContentEditable;
+    }
+
+    // ------------------------------------------------------------------
+    // 7. Select a read-only value on focus (replaces the inline onfocus handler on the new API token).
+    // ------------------------------------------------------------------
+    function initSelectOnFocus() {
+        document.addEventListener("focusin", function (event) {
+            var el = event.target;
+            if (el && el.matches && el.matches("[data-shake-select-on-focus]") && el.select) { el.select(); }
+        });
     }
 
     function initSearchShortcut() {
@@ -378,6 +394,7 @@
         initRail();
         initCopy();
         initSearchShortcut();
+        initSelectOnFocus();
         initLedger();
         initUpload();
     });

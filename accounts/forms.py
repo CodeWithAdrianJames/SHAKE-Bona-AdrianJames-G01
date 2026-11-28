@@ -57,7 +57,7 @@ class CustomLoginForm(BootstrapFormMixin, AuthenticationForm):
 
     email = forms.EmailField(
         max_length=254,
-        label="Work Email Address",
+        label="Work email address",
         widget=forms.EmailInput(
             attrs={
                 "placeholder": "name@logistics-company.com",
@@ -119,19 +119,19 @@ class CustomUserCreationForm(BootstrapFormMixin, UserCreationForm):
     first_name = forms.CharField(
         max_length=150,
         required=True,
-        label="First Name",
+        label="First name",
         widget=forms.TextInput(attrs={"placeholder": "e.g., Adrian James"}),
     )
     last_name = forms.CharField(
         max_length=150,
         required=True,
-        label="Last Name",
+        label="Last name",
         widget=forms.TextInput(attrs={"placeholder": "e.g., Bona"}),
     )
     email = forms.EmailField(
         max_length=254,
         required=True,
-        label="Work Email Address",
+        label="Work email address",
         widget=forms.EmailInput(
             attrs={"placeholder": "name@logistics-company.com", "autocomplete": "email"}
         ),
@@ -150,7 +150,7 @@ class CustomUserCreationForm(BootstrapFormMixin, UserCreationForm):
     contact_number = forms.CharField(
         max_length=30,
         required=False,
-        label="Contact Number",
+        label="Contact number",
         widget=forms.TextInput(attrs={"placeholder": "e.g., +63 917 123 4567"}),
     )
 
@@ -225,19 +225,19 @@ class UserProfileUpdateForm(BootstrapFormMixin, forms.ModelForm):
     first_name = forms.CharField(
         max_length=150,
         required=True,
-        label="First Name",
+        label="First name",
         widget=forms.TextInput(attrs={"placeholder": "e.g., Adrian James"}),
     )
     last_name = forms.CharField(
         max_length=150,
         required=True,
-        label="Last Name",
+        label="Last name",
         widget=forms.TextInput(attrs={"placeholder": "e.g., Bona"}),
     )
     email = forms.EmailField(
         max_length=254,
         required=True,
-        label="Work Email Address",
+        label="Work email address",
         widget=forms.EmailInput(
             attrs={"placeholder": "name@logistics-company.com", "autocomplete": "email"}
         ),
@@ -256,12 +256,12 @@ class UserProfileUpdateForm(BootstrapFormMixin, forms.ModelForm):
     contact_number = forms.CharField(
         max_length=30,
         required=False,
-        label="Contact Number",
+        label="Contact number",
         widget=forms.TextInput(attrs={"placeholder": "e.g., +63 917 123 4567"}),
     )
     profile_photo = forms.ImageField(
         required=False,
-        label="Profile Photo",
+        label="Profile photo",
         help_text="Upload a PNG, JPG, or WEBP avatar image (optional).",
         widget=forms.ClearableFileInput(attrs={"accept": "image/*"}),
     )
@@ -346,7 +346,7 @@ class APITokenCreateForm(BootstrapFormMixin, forms.Form):
     name = forms.CharField(
         max_length=100,
         required=False,
-        label="Token Label",
+        label="Token label",
         help_text="Optional. Helps you tell tokens apart, e.g. the script or machine using it.",
         widget=forms.TextInput(attrs={"placeholder": APIToken.DEFAULT_NAME}),
     )

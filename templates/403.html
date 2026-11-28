@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}403 Forbidden — SHAKE Access Control{% endblock %}
+{% block title %}SHAKE — Access denied{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center py-5">
@@ -10,13 +10,13 @@
                 <div class="d-flex justify-content-center mb-3">
                     {% include "partials/shake_mark.html" with tone="light" size=56 %}
                 </div>
-                <span class="shake-pill shake-pill-rejected mb-3">HTTP 403 &mdash; Role Access Denied</span>
-                <h1 class="mb-2">Restricted SHAKE Workspace</h1>
+                <span class="shake-pill shake-pill-rejected mb-3">HTTP 403 &mdash; role access denied</span>
+                <h1 class="mb-2">Restricted SHAKE workspace</h1>
                 <p class="text-secondary mb-4">
                     {{ error_message|default:"Unauthorized access: you do not have permission to view that dashboard." }}
                 </p>
                 <a href="{{ fallback_dashboard_url|default:'/' }}" class="btn btn-primary px-4">
-                    <i class="ti ti-arrow-left me-1"></i>Return to Your Role Dashboard
+                    <i class="ti ti-arrow-left me-1"></i>Return to your dashboard
                 </a>
             </div>
         </div>
