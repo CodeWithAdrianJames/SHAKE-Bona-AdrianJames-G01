@@ -41,12 +41,12 @@
             <form method="post" action="{% url 'contract_archive' contract.pk %}" class="d-inline m-0"
                   data-confirm="Archive contract {{ contract.contract_number }}? Archived contracts stay readable but cannot be un-archived from the UI (BR-09).">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-outline-review">
+                <button type="submit" class="btn btn-outline-secondary">
                     <i class="ti ti-archive me-1"></i>Archive
                 </button>
             </form>
         {% else %}
-            <span class="shake-pill shake-pill-review">Non-Destructive Archive Active (BR-09)</span>
+            <span class="shake-secondary d-inline-flex align-items-center gap-1"><i class="ti ti-archive" aria-hidden="true"></i>Archived, read-only (BR-09)</span>
         {% endif %}
     </div>
 </div>
@@ -220,7 +220,7 @@
             <h2 class="mb-0" id="arb-heading">Origin &amp; Destination Arbitrary Charges</h2>
             <p class="shake-card-sub">Inland gateway surcharges and transport mode fees, billed on top of base rates</p>
         </div>
-        <span class="badge badge-neutral shake-num">{{ arb_count }} Charge Row{{ arb_count|pluralize }}</span>
+        <span class="shake-count"><strong>{{ arb_count }}</strong> charge row{{ arb_count|pluralize }}</span>
     </div>
     {% if arbitrary_charges %}
     <div class="table-responsive shake-table-scroll">
@@ -240,11 +240,7 @@
                 {% for charge in arbitrary_charges %}
                 <tr>
                     <td>
-                        {% if charge.charge_type == 'ORIGIN' %}
-                            <span class="shake-pill shake-pill-info">ORIGIN</span>
-                        {% else %}
-                            <span class="shake-pill shake-pill-neutral">DESTINATION</span>
-                        {% endif %}
+                        <span class="shake-chip shake-chip-format">{{ charge.charge_type }}</span>
                     </td>
                     <td>
                         <span class="shake-chip shake-chip-port">{{ charge.location_code }}</span>
@@ -309,7 +305,7 @@
         <section class="card h-100" aria-labelledby="exports-heading">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h2 class="mb-0" id="exports-heading">Export Audit Log</h2>
-                <span class="badge badge-neutral shake-num">{{ export_records|length }} Export{{ export_records|length|pluralize }}</span>
+                <span class="shake-count"><strong>{{ export_records|length }}</strong> export{{ export_records|length|pluralize }}</span>
             </div>
             <div class="table-responsive">
                 <table class="table table-vcenter card-table">

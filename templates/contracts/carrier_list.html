@@ -81,7 +81,7 @@
                         <form method="post" action="{% url 'carrier_toggle' carrier.pk %}" class="d-inline m-0">
                             {% csrf_token %}
                             {% if carrier.is_active %}
-                                <button type="submit" class="btn btn-sm btn-outline-review" aria-label="Deactivate carrier {{ carrier.carrier_code }}">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" aria-label="Deactivate carrier {{ carrier.carrier_code }}">
                                     <i class="ti ti-player-pause me-1"></i>Deactivate
                                 </button>
                             {% else %}

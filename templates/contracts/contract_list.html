@@ -127,7 +127,7 @@
                                       data-confirm="Archive contract {{ contract.contract_number }}? Archived contracts stay readable but cannot be un-archived from the UI (BR-09).">
                                     {% csrf_token %}
                                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-review btn-icon" title="Archive contract (BR-09)" aria-label="Archive contract {{ contract.contract_number }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary btn-icon" title="Archive contract (BR-09)" aria-label="Archive contract {{ contract.contract_number }}">
                                         <i class="ti ti-archive"></i>
                                     </button>
                                 </form>
@@ -173,7 +173,6 @@
             <h2 class="mb-0" id="failed-heading">Recent Failed Ingestion Documents</h2>
             <p class="shake-card-sub">PDFs that produced no contract; they can be deleted safely</p>
         </div>
-        <span class="shake-pill shake-pill-rejected">Parse error</span>
     </div>
     <div class="table-responsive">
         <table class="table table-vcenter card-table">

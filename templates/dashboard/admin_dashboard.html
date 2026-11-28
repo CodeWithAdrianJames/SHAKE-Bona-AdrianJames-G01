@@ -123,7 +123,7 @@
                         <h2 class="mb-0">Registered SHAKE Users</h2>
                         <p class="shake-card-sub">Operations Admins and Freight Analysts / Encoders on this workstation</p>
                     </div>
-                    <span class="badge badge-neutral shake-num">{{ total_users_count }} Account{{ total_users_count|pluralize }}</span>
+                    <span class="shake-count"><strong>{{ total_users_count }}</strong> account{{ total_users_count|pluralize }}</span>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-vcenter card-table table-hover">
@@ -210,7 +210,6 @@
             <div id="engine-health" class="card shake-side-card">
                 <div class="card-header d-flex justify-content-between align-items-center gap-2">
                     <h2 class="mb-0">Offline Engine</h2>
-                    <span class="shake-pill shake-pill-verified">Healthy</span>
                 </div>
                 <div class="card-body">
                     <div class="shake-hero shake-hero-callout mb-3">
@@ -263,7 +262,7 @@
             <div class="card shake-side-card">
                 <div class="card-header d-flex justify-content-between align-items-center gap-2">
                     <h2 class="mb-0">Recent Exports</h2>
-                    <span class="badge badge-neutral shake-num">{{ total_exports_count }} Total</span>
+                    <span class="shake-count"><strong>{{ total_exports_count }}</strong> logged</span>
                 </div>
                 {% if recent_exports %}
                 <ul class="shake-mini-list">

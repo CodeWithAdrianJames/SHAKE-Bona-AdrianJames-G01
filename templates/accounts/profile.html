@@ -40,9 +40,8 @@
                     <h2 class="mb-1">{{ user.full_name_or_username }}</h2>
                     <div class="shake-hero-sub small">@{{ user.username }}{% if user.department %} &middot; {{ user.department }}{% endif %}</div>
                 </div>
-                <div class="d-flex flex-wrap align-items-center gap-2">
+                <div>
                     <span class="badge {% if user.role == 'ADMIN' %}badge-role-admin{% else %}badge-role-encoder{% endif %}">{{ user.get_role_display }}</span>
-                    <span class="shake-pill shake-pill-neutral">Active account</span>
                 </div>
             </div>
         </div>
@@ -56,7 +55,6 @@
                     <h2 class="mb-0">Account &amp; Operational Profile Details</h2>
                     <p class="shake-card-sub">Only you can view or change these details</p>
                 </div>
-                <span class="badge badge-neutral"><i class="ti ti-user me-1"></i>Self-Only Access</span>
             </div>
             <div class="card-body">
                 <div class="shake-form-block">
@@ -126,7 +124,6 @@
                 The API only answers loopback (<code>127.0.0.1</code> / <code>::1</code>) connections.
             </p>
         </div>
-        <span class="badge badge-neutral"><i class="ti ti-device-desktop me-1"></i>Localhost Only</span>
     </div>
     <div class="card-body">
         {% if new_api_token %}

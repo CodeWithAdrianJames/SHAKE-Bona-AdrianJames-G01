@@ -745,9 +745,8 @@ html.shake-drawer-open { overflow: hidden; }
 .shake-pill-review   { color: var(--shake-review);   border-color: var(--shake-review-line);   background: var(--shake-review-tint); }
 .shake-pill-rejected { color: var(--shake-rejected); border-color: var(--shake-rejected-line); background: var(--shake-rejected-tint); }
 .shake-pill-info     { color: var(--shake-tide);     border-color: var(--shake-tide-line);     background: var(--shake-tide-tint); }
-.shake-pill-neutral  { color: var(--shake-slate);    border-color: var(--shake-mist); background: var(--shake-paper); }
-.shake-pill-neutral::before { display: none; }
-.shake-hero .shake-pill-neutral { color: var(--shake-paper); border-color: var(--shake-on-dark-line-strong); background: var(--shake-on-dark-fill); }
+/* Neutral state (ARCHIVED, inactive, revoked): Slate with its dot, like every other state pill. */
+.shake-pill-neutral  { color: var(--shake-slate);    border-color: var(--shake-line-strong); background: var(--shake-paper); }
 
 /* Role chips */
 .badge-role-admin {
@@ -762,16 +761,6 @@ html.shake-drawer-open { overflow: hidden; }
 }
 .shake-hero .badge-role-admin,
 .shake-hero .badge-role-encoder {
-    background-color: var(--shake-on-dark-fill) !important;
-    color: var(--shake-paper) !important;
-    border-color: var(--shake-on-dark-line-strong);
-}
-.badge-neutral {
-    background-color: var(--shake-paper) !important;
-    color: var(--shake-slate) !important;
-    border: 1px solid var(--shake-mist);
-}
-.shake-hero .badge-neutral {
     background-color: var(--shake-on-dark-fill) !important;
     color: var(--shake-paper) !important;
     border-color: var(--shake-on-dark-line-strong);
@@ -918,14 +907,6 @@ html.shake-drawer-open { overflow: hidden; }
     --tblr-btn-hover-color: var(--shake-on-tide);
     --tblr-btn-hover-bg: var(--shake-rejected);
     --tblr-btn-hover-border-color: var(--shake-rejected);
-}
-.btn-outline-review {
-    --tblr-btn-color: var(--shake-review);
-    --tblr-btn-bg: var(--shake-surface);
-    --tblr-btn-border-color: var(--shake-review-line);
-    --tblr-btn-hover-color: var(--shake-on-tide);
-    --tblr-btn-hover-bg: var(--shake-review);
-    --tblr-btn-hover-border-color: var(--shake-review);
 }
 .btn-outline-verified {
     --tblr-btn-color: var(--shake-verified);

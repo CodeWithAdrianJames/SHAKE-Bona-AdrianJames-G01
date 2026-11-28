@@ -18,7 +18,7 @@ Brand tokens are CSS custom properties in `shake-theme.css`, which also maps the
 | `--shake-slate` (Slate) | `#55666E` | Secondary text | — |
 | `--shake-mist` (Mist) | `#E4E8E6` | 1px borders and dividers | — |
 | `--shake-verified` | `#2F7D4F` | Confirmed / Extracted | semantic |
-| `--shake-review` | `#9A6312` | Needs review / Archived | semantic |
+| `--shake-review` | `#9A6312` | Needs review (rate confidence below 0.900) only; also the `alert-warning` tint | semantic |
 | `--shake-rejected` | `#B23E37` | Parse error / validation alert | semantic |
 
 `--shake-tide-deep` (`#0B5E69`) is the pressed/hover shade of Tide.
@@ -89,19 +89,21 @@ Every card header, card body, toolbar, list row, and table edge shares one inlin
 | State | Pill | Meaning |
 | --- | --- | --- |
 | `EXTRACTED` / `COMPLETED` | `shake-pill-verified` (`#2F7D4F`) | Successfully parsed and persisted |
-| `ARCHIVED` | `shake-pill-review` (`#9A6312`) | Non-destructively archived per `BR-09` |
+| `ARCHIVED` | `shake-pill-neutral` (Slate) | Non-destructively archived per `BR-09`; neutral so Amber stays reserved for "Needs review" |
 | `PENDING` / `PARSING` / `STITCHING` / `RUNNING` | `shake-pill-info` (Tide) | Queued or processing |
 | `FAILED` / `CANCELLED` | `shake-pill-rejected` (`#B23E37`) | Validation or parser failure |
 
 Rate-row confidence on the contract detail page: `confidence_score >= 0.900` shows a **Verified** pill, anything lower shows **Needs review**; both show the score in JetBrains Mono. The 0.900 cut-off is a display convention only (no model or business rule uses it).
 
-Role chips: `badge-role-admin` (Deep Hull fill) and `badge-role-encoder` (Tide tint). Counters: `badge-neutral`.
+Role chips: `badge-role-admin` (Deep Hull fill) and `badge-role-encoder` (Tide tint).
+
+Pills are for record state only: document and job status, rate confidence, and the active / inactive / revoked state of carriers, users, and tokens. `shake-pill-neutral` (Slate, with its dot) marks archived, inactive, and revoked records. Card headers do not carry decorative pills or badges ("Healthy", "Localhost only", "Self-only access", "Parse error"): a card's subtitle carries that context, and row counts are `.shake-count` text (`<strong>3</strong> charge rows`). Archive and deactivate are neutral `btn-outline-secondary` actions; on an archived contract the toolbar shows "Archived, read-only (BR-09)" as Slate text beside the ARCHIVED pill.
 
 ### Data Grid & Rate Table Conventions
 
 - **Ports:** `shake-chip shake-chip-port` (Paper fill, Deep Hull text) beside the port name in Slate.
 - **Equipment:** `shake-chip shake-chip-equipment` (Tide tint) for `20GP`, `40GP`, `40HC`, `45HC`, `20RF`, `40RF`, `SPECIAL`.
-- **Carriers / formats:** `shake-chip-carrier` (Deep Hull fill), `shake-chip-format` (Deep Hull outline).
+- **Carriers / formats / arbitrary legs:** `shake-chip-carrier` (Deep Hull fill), `shake-chip-format` (Deep Hull outline) for export formats and the `ORIGIN` / `DESTINATION` leg of an arbitrary charge (both legs look the same).
 - **Amounts:** right-aligned `.shake-amount` with a Slate `.shake-currency` prefix, 2 decimals with thousands grouping (`floatformat:"2g"`, e.g. `USD 2,450.00`); the ungrouped value stays in the row's `data-search` so search by amount works.
 - **Tables:** Tabler `table table-vcenter card-table` inside cards with uppercase Label headers on Paper; rate grids add `shake-rate-table shake-table-sticky` inside a `.shake-table-scroll` wrapper (sticky header, scrolls within ~70vh).
 - **Empty states:** `partials/empty_state.html` (Structured glyph, title, message, optional Tide action), never a bare "no data" row.
