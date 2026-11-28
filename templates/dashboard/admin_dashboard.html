@@ -16,9 +16,6 @@
         <p class="shake-page-head-sub">{{ user.department|default:"Operations Administration" }} &middot; system-wide contracts, users, and carriers on this workstation.</p>
     </div>
     <div class="shake-page-head-actions">
-        <a href="{% url 'carrier_list' %}" class="btn btn-outline-secondary">
-            <i class="ti ti-building-warehouse me-1"></i>Manage Carriers
-        </a>
         <a href="{% url 'contract_upload' %}" class="btn btn-primary">
             <i class="ti ti-file-upload me-1"></i>Upload PDF
         </a>
@@ -69,9 +66,7 @@
                         <h2 class="mb-0">Recent Contracts</h2>
                         <p class="shake-card-sub">Latest processing jobs across every operator</p>
                     </div>
-                    <a href="{% url 'contract_list' %}" class="btn btn-sm btn-outline-primary">
-                        <i class="ti ti-table me-1"></i>All Contracts
-                    </a>
+                    <a href="{% url 'contract_list' %}" class="shake-card-link">All contracts<i class="ti ti-arrow-right" aria-hidden="true"></i></a>
                 </div>
                 {% if recent_jobs %}
                 <div class="table-responsive">
@@ -112,7 +107,7 @@
                     </table>
                 </div>
                 {% else %}
-                    {% include "partials/empty_state.html" with title="No processing jobs recorded yet." message="Contracts appear here as soon as an operator uploads a PDF." %}
+                    {% include "partials/empty_state.html" with title="No processing jobs yet" message="Contracts appear here as soon as an operator uploads a PDF." compact=True %}
                 {% endif %}
             </div>
 
@@ -168,7 +163,7 @@
                                 </td>
                             </tr>
                             {% empty %}
-                            <tr><td colspan="6">{% include "partials/empty_state.html" with title="No registered users found." %}</td></tr>
+                            <tr><td colspan="6">{% include "partials/empty_state.html" with title="No registered users" compact=True %}</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -180,66 +175,26 @@
     <!-- Side rail: quick actions, engine health, carriers, exports -->
     <div class="col-12 col-lg-4">
         <div class="shake-side-stack">
-            <div class="card shake-side-card">
-                <div class="card-header"><h2 class="mb-0">Quick Actions</h2></div>
-                <ul class="shake-action-list">
-                    <li>
-                        <a class="shake-action" href="{% url 'contract_upload' %}">
-                            <span class="shake-action-icon"><i class="ti ti-file-upload"></i></span>
-                            <span><span class="shake-action-title">Upload contract PDF</span><span class="shake-action-sub">Single or batch, parsed locally</span></span>
-                            <i class="ti ti-chevron-right" aria-hidden="true"></i>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="shake-action" href="{% url 'carrier_create' %}">
-                            <span class="shake-action-icon"><i class="ti ti-circle-plus"></i></span>
-                            <span><span class="shake-action-title">Add carrier profile</span><span class="shake-action-sub">Unique code and name (BR-03)</span></span>
-                            <i class="ti ti-chevron-right" aria-hidden="true"></i>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="shake-action" href="{% url 'contract_list' %}">
-                            <span class="shake-action-icon"><i class="ti ti-file-text"></i></span>
-                            <span><span class="shake-action-title">Review all contracts</span><span class="shake-action-sub">Every operator's extractions</span></span>
-                            <i class="ti ti-chevron-right" aria-hidden="true"></i>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-
             <div id="engine-health" class="card shake-side-card">
-                <div class="card-header d-flex justify-content-between align-items-center gap-2">
+                <div class="card-header">
                     <h2 class="mb-0">Offline Engine</h2>
                 </div>
-                <div class="card-body">
-                    <div class="shake-hero shake-hero-callout mb-3">
-                        <div class="d-flex align-items-center gap-2">
-                            {% include "partials/shake_mark.html" with tone="hull" size=26 %}
-                            <span class="fw-semibold">{{ engine_status.name }}</span>
-                        </div>
-                        <div class="small shake-hero-sub mt-1">{{ engine_status.mode }} &mdash; zero external LLM or cloud OCR calls.</div>
-                    </div>
-                    <ol class="shake-steps" aria-label="Extraction pipeline">
-                        <li class="shake-steps-item">
-                            {% include "partials/shake_state.html" with state="raw" %}
-                            <div><div class="shake-steps-title">1 &middot; Raw</div><p>Carrier PDF in.</p></div>
-                        </li>
-                        <li class="shake-steps-item is-dark">
-                            {% include "partials/shake_state.html" with state="shake" %}
-                            <div><div class="shake-steps-title">2 &middot; SHAKE</div><p>{{ engine_status.status_label }}</p></div>
-                        </li>
-                        <li class="shake-steps-item">
-                            {% include "partials/shake_state.html" with state="structured" %}
-                            <div><div class="shake-steps-title">3 &middot; Structured</div><p>.xlsx / .csv / .json out.</p></div>
-                        </li>
-                    </ol>
-                </div>
+                <ul class="shake-mini-list">
+                    <li>
+                        <span class="shake-mini-main">
+                            <span class="shake-mini-title">{{ engine_status.name }}</span>
+                            <span class="shake-secondary d-block">{{ engine_status.mode }}; no external LLM or cloud OCR calls</span>
+                        </span>
+                    </li>
+                    <li><span class="shake-mini-main shake-secondary">Status</span><span class="shake-mini-end">{{ engine_status.status_label }}</span></li>
+                    <li><span class="shake-mini-main shake-secondary">Latency target</span><span class="shake-mini-end">{{ engine_status.latency_target }}</span></li>
+                </ul>
             </div>
 
             <div id="carrier-parsers" class="card shake-side-card">
                 <div class="card-header d-flex justify-content-between align-items-center gap-2">
                     <h2 class="mb-0">Carrier Registry</h2>
-                    <a href="{% url 'carrier_list' %}" class="small fw-semibold text-decoration-none">Manage &rarr;</a>
+                    <a href="{% url 'carrier_list' %}" class="shake-card-link">Manage carriers<i class="ti ti-arrow-right" aria-hidden="true"></i></a>
                 </div>
                 {% if carrier_profiles %}
                 <ul class="shake-mini-list">
@@ -255,7 +210,7 @@
                     {% endfor %}
                 </ul>
                 {% else %}
-                    {% include "partials/empty_state.html" with title="No carrier profiles found." %}
+                    {% include "partials/empty_state.html" with title="No carrier profiles" compact=True %}
                 {% endif %}
             </div>
 
@@ -278,7 +233,7 @@
                     {% endfor %}
                 </ul>
                 {% else %}
-                    {% include "partials/empty_state.html" with title="No export downloads recorded yet." %}
+                    {% include "partials/empty_state.html" with title="No exports yet" compact=True %}
                 {% endif %}
             </div>
         </div>

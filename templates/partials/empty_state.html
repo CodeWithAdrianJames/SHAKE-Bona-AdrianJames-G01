@@ -1,9 +1,11 @@
 {% comment %}
 Empty state built on the "3 · Structured" divided-row glyph.
 Usage: {% include "partials/empty_state.html" with title="No contracts yet" message="..." %}
-Optional: action_url + action_label (+ action_icon) for a single Tide call to action.
-{% endcomment %}<div class="shake-empty">
-    {% include "partials/shake_state.html" with state="structured" large=True %}
+Optional: action_url + action_label (+ action_icon) for a single Tide call to action; omit it when the page
+header or card header already offers the same action. compact=True gives the small variant for side cards
+and secondary tables.
+{% endcomment %}<div class="shake-empty{% if compact %} shake-empty-sm{% endif %}">
+    {% if compact %}{% include "partials/shake_state.html" with state="structured" %}{% else %}{% include "partials/shake_state.html" with state="structured" large=True %}{% endif %}
     {% if title %}<div class="shake-empty-title">{{ title }}</div>{% endif %}
     {% if message %}<p>{{ message }}</p>{% endif %}
     {% if action_url %}<a href="{{ action_url }}" class="btn btn-primary btn-sm mt-1"><i class="ti {{ action_icon|default:'ti-file-upload' }} me-1"></i>{{ action_label }}</a>{% endif %}

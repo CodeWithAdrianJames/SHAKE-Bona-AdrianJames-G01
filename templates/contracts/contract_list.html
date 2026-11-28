@@ -139,10 +139,9 @@
         </table>
     </div>
     {% elif search_query or status_filter != 'ALL' %}
-        {% include "partials/empty_state.html" with title="No contracts match these filters" message="No extracted contracts found. Try a different search, or reset the filters." %}
+        {% include "partials/empty_state.html" with title="No contracts match these filters" message="Try another contract number, carrier, or status, or reset the filters." %}
     {% else %}
-        {% url 'contract_upload' as upload_url %}
-        {% include "partials/empty_state.html" with title="No contracts yet" message="No extracted contracts found. Upload a contract PDF to begin." action_url=upload_url action_label="Upload PDF" %}
+        {% include "partials/empty_state.html" with title="No contracts yet" message="Upload a carrier contract PDF and its extracted record will appear here." %}
     {% endif %}
     {% if is_paginated %}
     <div class="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2">

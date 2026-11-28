@@ -206,8 +206,7 @@
         </table>
     </div>
     {% else %}
-        {% url 'rate_create' contract.pk as rate_create_url %}
-        {% include "partials/empty_state.html" with title="No base freight rates" message="No base freight rate rows were extracted from this document." action_url=rate_create_url action_label="Add Rate Row" action_icon="ti-plus" %}
+        {% include "partials/empty_state.html" with title="No base freight rates" message="None were extracted from this document. Add rows by hand if the PDF lists rates." %}
     {% endif %}
 </section>
 
@@ -257,7 +256,7 @@
         </table>
     </div>
     {% else %}
-        {% include "partials/empty_state.html" with title="No arbitrary charges" message="No origin or destination arbitrary charges were extracted from this document." %}
+        {% include "partials/empty_state.html" with title="No arbitrary charges" message="This document lists no origin or destination arbitraries." compact=True %}
     {% endif %}
 </section>
 
@@ -294,7 +293,7 @@
                         </tr>
                         {% endif %}
                         {% empty %}
-                        <tr><td colspan="5">{% include "partials/empty_state.html" with title="No processing jobs recorded." %}</td></tr>
+                        <tr><td colspan="5">{% include "partials/empty_state.html" with title="No processing jobs recorded" compact=True %}</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -328,7 +327,7 @@
                             <td class="shake-secondary shake-num text-nowrap">{{ exp.exported_at|date:"Y-m-d H:i:s" }}</td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="4">{% include "partials/empty_state.html" with title="No exports yet" message="No export downloads recorded yet for this contract." %}</td></tr>
+                        <tr><td colspan="4">{% include "partials/empty_state.html" with title="No exports yet" message="Each XLSX, CSV, or JSON download is logged here." compact=True %}</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

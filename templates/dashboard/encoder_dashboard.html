@@ -15,10 +15,8 @@
         <h1>Freight Analyst &amp; Contract Encoder Workspace</h1>
         <p class="shake-page-head-sub">{{ user.department|default:"Pricing & Tariff Management" }} &middot; carrier PDFs in, structured rate rows out, all on this device.</p>
     </div>
-    <div class="shake-page-head-actions">
-        <a href="{% url 'contract_list' %}" class="btn btn-outline-secondary">
-            <i class="ti ti-file-text me-1"></i>View All My Contracts
-        </a>
+    {# The Tide upload card leads the side column at >= 992px; below that it stacks under the ledger, so the header carries the action. #}
+    <div class="shake-page-head-actions d-lg-none">
         <a href="{% url 'contract_upload' %}" class="btn btn-primary">
             <i class="ti ti-file-upload me-1"></i>Upload PDF
         </a>
@@ -67,9 +65,7 @@
                     <h2 class="mb-0">Recent Contracts</h2>
                     <p class="shake-card-sub">Latest uploaded contract PDFs and their normalized rate counts</p>
                 </div>
-                <a href="{% url 'contract_list' %}" class="btn btn-sm btn-outline-primary">
-                    <i class="ti ti-table me-1"></i>Manage Contracts
-                </a>
+                <a href="{% url 'contract_list' %}" class="shake-card-link">All contracts<i class="ti ti-arrow-right" aria-hidden="true"></i></a>
             </div>
             {% if recent_documents %}
             <div class="table-responsive">
@@ -93,12 +89,12 @@
                                 {% else %}
                                     <span class="shake-secondary">Not extracted</span>
                                 {% endif %}
-                                <div class="shake-secondary text-truncate shake-truncate" title="{{ doc.original_file_name }}">
+                                <div class="shake-secondary text-truncate shake-truncate-sm" title="{{ doc.original_file_name }}">
                                     {{ doc.original_file_name }} &middot; <span class="font-mono-data">{{ doc.batch.batch_number }}</span>
                                 </div>
                                 {% if not doc.contract_metadata %}
                                     {% with last_job=doc.jobs.all.0 %}
-                                        <div class="shake-diagnostic text-truncate shake-truncate" title="{{ last_job.error_message|default:'Ingestion failed' }}">{{ last_job.error_message|default:"Ingestion failed" }}</div>
+                                        <div class="shake-diagnostic text-truncate shake-truncate-sm" title="{{ last_job.error_message|default:'Ingestion failed' }}">{{ last_job.error_message|default:"Ingestion failed" }}</div>
                                     {% endwith %}
                                 {% endif %}
                             </td>
@@ -142,8 +138,7 @@
                 </table>
             </div>
             {% else %}
-                {% url 'contract_upload' as upload_url %}
-                {% include "partials/empty_state.html" with title="Nothing has settled yet" message="No contract PDFs uploaded yet. Upload a carrier contract and its rates will settle here as structured rows." action_url=upload_url action_label="Upload PDF" %}
+                {% include "partials/empty_state.html" with title="Nothing has settled yet" message="Upload a carrier contract PDF and its rates will settle here as structured rows." %}
             {% endif %}
         </div>
     </div>
@@ -163,53 +158,6 @@
                     <a href="{% url 'contract_upload' %}" class="btn btn-paper w-100">
                         <i class="ti ti-file-upload me-1"></i>Upload PDF
                     </a>
-                </div>
-            </div>
-
-            <div class="card shake-side-card">
-                <div class="card-header"><h2 class="mb-0">Quick Actions</h2></div>
-                <ul class="shake-action-list">
-                    <li>
-                        <a class="shake-action" href="{% url 'contract_list' %}">
-                            <span class="shake-action-icon"><i class="ti ti-file-text"></i></span>
-                            <span><span class="shake-action-title">Review contracts</span><span class="shake-action-sub">Search, inspect, edit rate rows</span></span>
-                            <i class="ti ti-chevron-right" aria-hidden="true"></i>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="shake-action" href="{% url 'profile' %}#api-tokens">
-                            <span class="shake-action-icon"><i class="ti ti-key"></i></span>
-                            <span><span class="shake-action-title">Local API tokens</span><span class="shake-action-sub">Script access over loopback</span></span>
-                            <i class="ti ti-chevron-right" aria-hidden="true"></i>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="shake-action" href="{% url 'profile' %}">
-                            <span class="shake-action-icon"><i class="ti ti-user-circle"></i></span>
-                            <span><span class="shake-action-title">My profile</span><span class="shake-action-sub">Details, password, avatar</span></span>
-                            <i class="ti ti-chevron-right" aria-hidden="true"></i>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-
-            <div class="card shake-side-card">
-                <div class="card-header"><h2 class="mb-0">How SHAKE settles a contract</h2></div>
-                <div class="card-body">
-                    <ol class="shake-steps" aria-label="Extraction pipeline">
-                        <li class="shake-steps-item">
-                            {% include "partials/shake_state.html" with state="raw" %}
-                            <div><div class="shake-steps-title">1 &middot; Raw</div><p>Carrier PDF, formatted its own way.</p></div>
-                        </li>
-                        <li class="shake-steps-item is-dark">
-                            {% include "partials/shake_state.html" with state="shake" %}
-                            <div><div class="shake-steps-title">2 &middot; SHAKE</div><p>Vector text, stitched tables, bound metadata.</p></div>
-                        </li>
-                        <li class="shake-steps-item">
-                            {% include "partials/shake_state.html" with state="structured" %}
-                            <div><div class="shake-steps-title">3 &middot; Structured</div><p>Rate rows ready to review and export.</p></div>
-                        </li>
-                    </ol>
                 </div>
             </div>
 

@@ -591,7 +591,6 @@ html.shake-drawer-open { overflow: hidden; }
     border-bottom: 1px solid var(--shake-mist);
     min-height: 3.75rem;
 }
-.shake-topbar .shake-page-context { color: var(--shake-slate); }
 .shake-topbar .shake-user-name { font-weight: 600; font-size: var(--shake-text-md); line-height: 1.2; color: var(--shake-deep-hull); }
 
 /* Avatars */
@@ -657,11 +656,6 @@ html.shake-drawer-open { overflow: hidden; }
 .shake-hero h1, .shake-hero h2, .shake-hero .h1, .shake-hero .h2 { color: var(--shake-paper); }
 .shake-hero .shake-label { color: var(--shake-on-dark-subtle); }
 .shake-hero-sub, .shake-hero .text-secondary, .shake-hero .text-muted { color: var(--shake-on-dark-muted) !important; }
-.shake-hero-callout {
-    background: var(--shake-abyss);
-    border-radius: 0.6rem;
-    padding: 0.9rem 1rem;
-}
 .shake-hero .shake-hero-mark {
     position: absolute;
     right: -2.75rem;
@@ -860,6 +854,14 @@ html.shake-drawer-open { overflow: hidden; }
 }
 .shake-empty .shake-empty-title { font-family: var(--shake-font-display); font-weight: 700; font-size: var(--shake-text-lg); color: var(--shake-deep-hull); }
 .shake-empty p { margin: 0; max-width: 28rem; font-size: var(--shake-text-md); }
+/* Compact empty state: side cards and secondary tables. */
+.shake-empty-sm { gap: 0.4rem; padding: 1.25rem 1rem; }
+.shake-empty-sm .shake-empty-title { font-size: var(--shake-text-base); }
+.shake-empty-sm p { font-size: var(--shake-text-sm); }
+
+/* Quiet "view all" link in a card header (replaces outline buttons that repeated the navigation). */
+.shake-card-link { display: inline-flex; align-items: center; gap: 0.3rem; font-size: var(--shake-text-sm); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.shake-card-link:hover { text-decoration: underline; }
 
 /* ==========================================================================
    9. Buttons, forms, alerts
@@ -1152,31 +1154,6 @@ h1 .font-mono-data, .h1 .font-mono-data { font-size: inherit; font-weight: 500; 
 
 .shake-side-card .card-header h2 { font-size: var(--shake-text-lg); line-height: 1.5rem; }
 
-
-.shake-action-list { list-style: none; margin: 0; padding: 0; }
-.shake-action-list li + li { border-top: 1px solid var(--shake-mist); }
-.shake-action {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: var(--shake-pad-y-compact) var(--shake-pad-x);
-    color: var(--shake-deep-hull);
-    text-decoration: none;
-    transition: background-color 0.15s ease;
-}
-.shake-action:hover { background: var(--shake-tide-wash); color: var(--shake-deep-hull); text-decoration: none; }
-.shake-action-icon {
-    flex: 0 0 2rem;
-    width: 2rem; height: 2rem;
-    display: inline-flex; align-items: center; justify-content: center;
-    border-radius: 0.5rem;
-    background: var(--shake-tide-tint);
-    color: var(--shake-tide);
-    font-size: 1.05rem;
-}
-.shake-action-title { display: block; font-weight: 600; font-size: var(--shake-text-md); line-height: 1.25rem; }
-.shake-action-sub { display: block; font-size: var(--shake-text-sm); line-height: 1.15rem; color: var(--shake-slate); }
-.shake-action .ti-chevron-right { margin-left: auto; color: var(--shake-slate); }
 
 /* Vertical 1 · Raw -> 2 · SHAKE -> 3 · Structured steps (side rail + upload) */
 .shake-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }

@@ -102,8 +102,7 @@
         </table>
     </div>
     {% else %}
-        {% url 'carrier_create' as carrier_create_url %}
-        {% include "partials/empty_state.html" with title="No carrier profiles registered yet." message="Add a carrier so extracted contracts can be bound to it." action_url=carrier_create_url action_label="Add Carrier Profile" action_icon="ti-circle-plus" %}
+        {% include "partials/empty_state.html" with title="No carrier profiles yet" message="Add a carrier so extracted contracts can be bound to it." %}
     {% endif %}
 </section>
 {% endblock %}
