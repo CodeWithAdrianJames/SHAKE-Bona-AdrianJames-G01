@@ -10,6 +10,7 @@
  *   4. "/" keyboard shortcut that focuses a list search input ([data-shake-search-shortcut]).
  *   5. Live client-side filtering of the contract rate ledger ([data-shake-ledger]).
  *   6. Upload dropzone: drag-and-drop, selected-file cards, and the downward step highlight.
+ *   7. Read-only values marked [data-shake-select-on-focus] select their text on focus (one-time API token).
  */
 (function () {
     "use strict";
@@ -167,6 +168,16 @@
         if (!el) { return false; }
         var tag = (el.tagName || "").toLowerCase();
         return tag === "input" || tag === "textarea" || tag === "select" || el.isContentEditable;
+    }
+
+    // ------------------------------------------------------------------
+    // 7. Select a read-only value on focus (replaces the inline onfocus handler on the new API token).
+    // ------------------------------------------------------------------
+    function initSelectOnFocus() {
+        document.addEventListener("focusin", function (event) {
+            var el = event.target;
+            if (el && el.matches && el.matches("[data-shake-select-on-focus]") && el.select) { el.select(); }
+        });
     }
 
     function initSearchShortcut() {
@@ -378,6 +389,7 @@
         initRail();
         initCopy();
         initSearchShortcut();
+        initSelectOnFocus();
         initLedger();
         initUpload();
     });

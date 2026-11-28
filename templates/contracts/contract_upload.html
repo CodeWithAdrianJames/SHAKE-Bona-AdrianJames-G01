@@ -37,45 +37,30 @@
             <div class="card-body">
                 <form method="post" enctype="multipart/form-data" novalidate id="shake-upload-form" data-shake-upload>
                     {% csrf_token %}
-                    {% if form.non_field_errors %}
-                        <div class="alert alert-danger d-flex align-items-start gap-2" role="alert">
-                            <i class="ti ti-alert-octagon shake-alert-icon"></i>
-                            <div>{% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}</div>
-                        </div>
-                    {% endif %}
+                    {% include "includes/form_errors.html" %}
 
                     <!-- Carrier template hint (carrier_profile) -->
-                    <div class="mb-4">
-                        <span class="shake-form-block-title">Carrier</span>
-                        <label for="{{ form.carrier_profile.id_for_label }}" class="form-label mb-1">{{ form.carrier_profile.label }}</label>
-                        {{ form.carrier_profile }}
-                        {% for error in form.carrier_profile.errors %}
-                            <div class="invalid-feedback d-block text-danger small mt-1">
-                                <i class="ti ti-alert-circle me-1"></i>{{ error }}
-                            </div>
-                        {% endfor %}
-                        <div class="form-text small">{{ form.carrier_profile.help_text }}</div>
-                    </div>
+                    <fieldset class="shake-form-block">
+                        <legend class="shake-form-block-title">Carrier</legend>
+                        {% include "includes/form_field.html" with field=form.carrier_profile %}
+                    </fieldset>
 
                     <!-- PDF dropzone (pdf_files) -->
-                    <span class="shake-form-block-title">Contract PDFs</span>
-                    <div class="shake-dropzone mb-4" id="shake-dropzone" data-shake-dropzone>
-                        <div class="d-flex justify-content-center mb-2">
-                            {% include "partials/shake_state.html" with state="raw" %}
-                        </div>
-                        <label for="{{ form.pdf_files.id_for_label }}" class="d-block fw-semibold mb-1">
-                            Drop contract PDFs here, or choose files <span class="text-danger" title="Required field">*</span>
-                        </label>
-                        <div class="shake-dropzone-summary mb-3" data-shake-file-summary aria-live="polite">No files selected yet.</div>
-                        <div class="shake-dropzone-input">{{ form.pdf_files }}</div>
-                        <ul class="shake-file-list" data-shake-file-list aria-label="Selected files" hidden></ul>
-                        {% for error in form.pdf_files.errors %}
-                            <div class="invalid-feedback d-block text-danger small mt-2">
-                                <i class="ti ti-alert-circle me-1"></i>{{ error }}
+                    <fieldset class="shake-form-block mb-4">
+                        <legend class="shake-form-block-title">Contract PDFs</legend>
+                        <div class="shake-dropzone" id="shake-dropzone" data-shake-dropzone>
+                            <div class="d-flex justify-content-center mb-2">
+                                {% include "partials/shake_state.html" with state="raw" %}
                             </div>
-                        {% endfor %}
-                        <div class="form-text small mt-2">{{ form.pdf_files.help_text }}</div>
-                    </div>
+                            <label for="{{ form.pdf_files.id_for_label }}" class="d-block fw-semibold mb-1">
+                                Drop contract PDFs here, or choose files<span class="shake-required" aria-hidden="true">*</span>
+                            </label>
+                            <div class="shake-dropzone-summary mb-3" data-shake-file-summary aria-live="polite">No files selected yet.</div>
+                            <div class="shake-dropzone-input">{{ form.pdf_files }}</div>
+                            <ul class="shake-file-list" data-shake-file-list aria-label="Selected files" hidden></ul>
+                            {% include "includes/field_feedback.html" with field=form.pdf_files %}
+                        </div>
+                    </fieldset>
 
                     <div class="shake-extracting mb-3" role="status">
                         {% include "partials/shake_mark.html" with tone="hull" size=44 %}

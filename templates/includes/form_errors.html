@@ -1,6 +1,6 @@
 {% if form.non_field_errors %}
     <div class="alert alert-danger d-flex align-items-start gap-2" role="alert">
-        <i class="ti ti-alert-octagon shake-alert-icon"></i>
+        <i class="ti ti-alert-octagon shake-alert-icon" aria-hidden="true"></i>
         <div>
             {% for error in form.non_field_errors %}
                 <div>{{ error }}</div>
@@ -8,4 +8,4 @@
         </div>
     </div>
 {% endif %}
-{% for hidden in form.hidden_fields %}{{ hidden }}{% for error in hidden.errors %}<div class="invalid-feedback d-block text-danger small">{{ error }}</div>{% endfor %}{% endfor %}
+{% for hidden in form.hidden_fields %}{{ hidden }}{% for error in hidden.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}{% endfor %}

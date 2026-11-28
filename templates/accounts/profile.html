@@ -137,7 +137,7 @@
                 <div class="small mb-2">It is shown only once. Store it somewhere safe; revoke it if it leaks.</div>
                 <div class="d-flex gap-2 align-items-center">
                     <input type="text" class="form-control font-monospace" value="{{ new_api_token }}"
-                           readonly aria-label="New API token" onfocus="this.select();"
+                           readonly aria-label="New API token" data-shake-select-on-focus
                            data-testid="new-api-token">
                     <button type="button" class="shake-copy" data-shake-copy="{{ new_api_token }}" aria-label="Copy new API token">
                         <i class="ti ti-copy" aria-hidden="true"></i><span data-shake-copy-label>Copy</span>
@@ -151,14 +151,7 @@
             <form method="post" action="{% url 'api_token_create' %}" class="row g-2 align-items-start">
                 {% csrf_token %}
                 <div class="col-12 col-md">
-                    <label for="{{ api_token_form.name.id_for_label }}" class="form-label mb-1">
-                        {{ api_token_form.name.label }}
-                    </label>
-                    {{ api_token_form.name }}
-                    {% for error in api_token_form.name.errors %}
-                        <div class="invalid-feedback d-block text-danger small mt-1"><i class="ti ti-alert-circle me-1"></i>{{ error }}</div>
-                    {% endfor %}
-                    <div class="form-text small">{{ api_token_form.name.help_text }}</div>
+                    {% include "includes/form_field.html" with field=api_token_form.name %}
                 </div>
                 <div class="col-12 col-md-auto shake-token-submit">
                     <button type="submit" class="btn btn-primary">

@@ -16,7 +16,10 @@
             <div class="card-body">
                 <form method="post" novalidate>
                     {% csrf_token %}
-                    {% include "includes/form_fields.html" %}
+                    {% include "includes/form_errors.html" %}
+                    {% for field in form.visible_fields %}
+                        <div class="mb-3">{% include "includes/form_field.html" %}</div>
+                    {% endfor %}
                     {% if next %}
                         <input type="hidden" name="next" value="{{ next }}">
                     {% endif %}

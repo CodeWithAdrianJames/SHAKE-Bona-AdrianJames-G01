@@ -25,9 +25,8 @@
         </div>
 
         <div class="card shake-form-card">
-            <!-- Form Body -->
             <div class="card-body">
-                <!-- Current Identity Banner (Read-Only Username & Role) -->
+                <!-- Current identity (read-only username and role) -->
                 <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 shake-well mb-4">
                     <div class="d-flex align-items-center gap-3">
                         {% if user.profile_photo %}
@@ -37,7 +36,7 @@
                         {% endif %}
                         <div>
                             <div class="shake-field-value">{{ user.full_name_or_username }}</div>
-                            <div class="small text-secondary">
+                            <div class="shake-secondary">
                                 Username: <strong>{{ user.username }}</strong> (read-only)
                             </div>
                         </div>
@@ -47,108 +46,40 @@
 
                 <form method="post" enctype="multipart/form-data" novalidate>
                     {% csrf_token %}
+                    {% include "includes/form_errors.html" %}
 
-                    {% if form.non_field_errors %}
-                        <div class="alert alert-danger d-flex align-items-start gap-2" role="alert">
-                            <i class="ti ti-alert-octagon mt-1"></i>
-                            <div>
-                                {% for error in form.non_field_errors %}
-                                    <div>{{ error }}</div>
-                                {% endfor %}
+                    <fieldset class="shake-form-block">
+                        <legend class="shake-form-block-title">Personal details</legend>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">{% include "includes/form_field.html" with field=form.first_name %}</div>
+                            <div class="col-12 col-md-6">{% include "includes/form_field.html" with field=form.last_name %}</div>
+                            <div class="col-12">{% include "includes/form_field.html" with field=form.email %}</div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="shake-form-block">
+                        <legend class="shake-form-block-title">Operations</legend>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-7">
+                                {% include "includes/form_field.html" with field=form.department %}
+                                <datalist id="shake-department-options">
+                                    <option value="Pricing & Tariff Management"></option>
+                                    <option value="Documentation"></option>
+                                    <option value="IT Operations"></option>
+                                    <option value="Carrier Relations"></option>
+                                    <option value="Ocean Freight Audit"></option>
+                                </datalist>
                             </div>
+                            <div class="col-12 col-md-5">{% include "includes/form_field.html" with field=form.contact_number %}</div>
                         </div>
-                    {% endif %}
+                    </fieldset>
 
-                    <div class="row g-3">
-                        <div class="col-12"><div class="shake-form-block-title mb-0">Personal details</div></div>
-                        <!-- First Name & Last Name -->
-                        <div class="col-12 col-md-6">
-                            <label for="{{ form.first_name.id_for_label }}" class="form-label mb-1">
-                                {{ form.first_name.label }} <span class="text-danger" title="Required field">*</span>
-                            </label>
-                            {{ form.first_name }}
-                            {% for error in form.first_name.errors %}
-                                <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
-                                </div>
-                            {% endfor %}
+                    <fieldset class="shake-form-block">
+                        <legend class="shake-form-block-title">Avatar</legend>
+                        <div class="row g-3">
+                            <div class="col-12">{% include "includes/form_field.html" with field=form.profile_photo %}</div>
                         </div>
-
-                        <div class="col-12 col-md-6">
-                            <label for="{{ form.last_name.id_for_label }}" class="form-label mb-1">
-                                {{ form.last_name.label }} <span class="text-danger" title="Required field">*</span>
-                            </label>
-                            {{ form.last_name }}
-                            {% for error in form.last_name.errors %}
-                                <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
-                                </div>
-                            {% endfor %}
-                        </div>
-
-                        <!-- Work Email Address -->
-                        <div class="col-12">
-                            <label for="{{ form.email.id_for_label }}" class="form-label mb-1">
-                                {{ form.email.label }} <span class="text-danger" title="Required field">*</span>
-                            </label>
-                            {{ form.email }}
-                            {% for error in form.email.errors %}
-                                <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
-                                </div>
-                            {% endfor %}
-                        </div>
-
-                        <div class="col-12 mt-4"><div class="shake-form-block-title mb-0">Operations</div></div>
-                        <!-- Department & Contact Number -->
-                        <div class="col-12 col-md-6">
-                            <label for="{{ form.department.id_for_label }}" class="form-label mb-1">
-                                {{ form.department.label }}
-                            </label>
-                            {{ form.department }}
-                            <datalist id="shake-department-options">
-                                <option value="Pricing & Tariff Management"></option>
-                                <option value="Documentation"></option>
-                                <option value="IT Operations"></option>
-                                <option value="Carrier Relations"></option>
-                                <option value="Ocean Freight Audit"></option>
-                            </datalist>
-                            {% for error in form.department.errors %}
-                                <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
-                                </div>
-                            {% endfor %}
-                        </div>
-
-                        <div class="col-12 col-md-6">
-                            <label for="{{ form.contact_number.id_for_label }}" class="form-label mb-1">
-                                {{ form.contact_number.label }}
-                            </label>
-                            {{ form.contact_number }}
-                            {% for error in form.contact_number.errors %}
-                                <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
-                                </div>
-                            {% endfor %}
-                        </div>
-
-                        <div class="col-12 mt-4"><div class="shake-form-block-title mb-0">Avatar</div></div>
-                        <!-- Profile Photo -->
-                        <div class="col-12">
-                            <label for="{{ form.profile_photo.id_for_label }}" class="form-label mb-1">
-                                {{ form.profile_photo.label }}
-                            </label>
-                            {{ form.profile_photo }}
-                            {% for error in form.profile_photo.errors %}
-                                <div class="invalid-feedback d-block text-danger small mt-1">
-                                    <i class="ti ti-alert-circle me-1"></i>{{ error }}
-                                </div>
-                            {% endfor %}
-                            {% if form.profile_photo.help_text %}
-                                <div class="form-text small text-muted">{{ form.profile_photo.help_text|safe }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
+                    </fieldset>
 
                     <div class="shake-form-actions">
                         <a href="{% url 'profile' %}" class="btn btn-outline-secondary px-4">

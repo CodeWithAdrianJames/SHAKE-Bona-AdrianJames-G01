@@ -1,0 +1,6 @@
+{% comment %}
+Error and help text for one bound field. Usage: {% include "includes/field_feedback.html" with field=form.pdf_files %}
+The ids match what Django's BoundField puts in the widget's aria-describedby ("<auto_id>_error",
+"<auto_id>_helptext"), and Django adds aria-invalid="true" to invalid widgets, so screen readers
+announce the message with the control. All of a field's errors share the one "_error" container.
+{% endcomment %}{% if field.errors %}<div class="invalid-feedback d-block" id="{{ field.auto_id }}_error">{% for error in field.errors %}<div class="shake-field-error"><i class="ti ti-alert-circle" aria-hidden="true"></i><span>{{ error }}</span></div>{% endfor %}</div>{% endif %}{% if field.help_text %}<div class="form-text" id="{{ field.auto_id }}_helptext">{{ field.help_text|safe }}</div>{% endif %}

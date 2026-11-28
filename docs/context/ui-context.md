@@ -108,7 +108,7 @@ Role chips: `badge-role-admin` (Deep Hull fill) and `badge-role-encoder` (Tide t
 
 ## Component Library
 
-Tabler / Bootstrap 5 components (cards, dropdowns, alerts) with standardized Django form rendering via `templates/includes/form_fields.html` (whole form) or `templates/includes/form_field.html` (one field, for sectioned layouts) and `BootstrapFormMixin`. Brand components in `shake-theme.css`:
+Tabler / Bootstrap 5 components (cards, dropdowns, alerts) with standardized Django form rendering: every visible field goes through `templates/includes/form_field.html` (label with a decorative `.shake-required` asterisk, control, then `includes/field_feedback.html` with the `<id>_error` / `<id>_helptext` targets of Django's `aria-describedby`), with `includes/form_errors.html` for non-field errors and hidden fields, on top of `BootstrapFormMixin`. Errors use one `.invalid-feedback` container per field (13px, Rejected, `.shake-field-error` line per message); code inputs (ports, carrier and currency codes) use `.shake-input-code` (JetBrains Mono, uppercase); an invalid upload dropzone turns Rejected via `:has(.is-invalid)`. Brand components in `shake-theme.css`:
 
 - Shell: `.shake-rail` (navigation rail), `.shake-topbar`, `.shake-page-head` (two-part page header).
 - Metrics: `.shake-kpi-strip` (4-card grid: one `.shake-hero` Deep Hull card with a Sea Glass `.shake-kpi-figure`, then three white `.shake-kpi` cards with a 12px uppercase `.shake-label`, a Manrope `.shake-kpi-figure` in `tabular-nums`, and a `.shake-kpi-caption`).

@@ -945,8 +945,13 @@ html.shake-drawer-open { overflow: hidden; }
     font-family: var(--shake-font-ui);
     font-weight: 600;
     font-size: var(--shake-text-sm);
+    line-height: 1.25rem;
+    margin-bottom: 0.375rem;
     color: var(--shake-deep-hull) !important;
 }
+/* Decorative required marker; the control's own "required" attribute is what assistive tech announces. */
+.shake-required { margin-inline-start: 0.2rem; color: var(--shake-rejected); font-weight: 600; }
+.form-check-label { font-weight: 600; font-size: var(--shake-text-sm); color: var(--shake-deep-hull); }
 .form-control, .form-select {
     font-size: var(--shake-text-base);
     border-color: var(--shake-line-input);
@@ -975,13 +980,16 @@ html.shake-drawer-open { overflow: hidden; }
     --tblr-form-select-bg-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23B23E37' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cline x1='18' y1='6' x2='6' y2='18'%3e%3c/line%3e%3cline x1='6' y1='6' x2='18' y2='18'%3e%3c/line%3e%3c/svg%3e");
 }
 .form-check-input:checked { background-color: var(--shake-tide); border-color: var(--shake-tide); }
-.form-text { color: var(--shake-slate) !important; }
+.form-text { margin-top: 0.375rem; font-size: var(--shake-text-sm); line-height: 1.25rem; color: var(--shake-slate) !important; }
+/* Field errors (includes/field_feedback.html): one container per field, one line per message. */
+.invalid-feedback { margin-top: 0.375rem; font-size: var(--shake-text-sm); line-height: 1.25rem; }
+.shake-field-error { display: flex; align-items: flex-start; gap: 0.35rem; }
+.shake-field-error + .shake-field-error { margin-top: 0.15rem; }
+.shake-field-error .ti { flex-shrink: 0; margin-top: 0.2rem; }
+/* Code inputs (UN/LOCODE ports, carrier and currency codes) read like the extracted chips they become. */
+.shake-input-code { font-family: var(--shake-font-mono); font-weight: 500; text-transform: uppercase; font-variant-numeric: slashed-zero; }
+.shake-input-code::placeholder { font-family: var(--shake-font-ui); font-weight: 400; text-transform: none; }
 .input-group-text { background: var(--shake-paper); border-color: var(--shake-line-input); color: var(--shake-slate); }
-.shake-form-section {
-    padding-bottom: 0.4rem;
-    margin-bottom: 1rem;
-    border-bottom: 1px solid var(--shake-mist);
-}
 
 /* Upload dropzone */
 .shake-dropzone {
@@ -999,6 +1007,7 @@ html.shake-drawer-open { overflow: hidden; }
     border-color: var(--shake-tide);
     background-color: var(--shake-tide-wash);
 }
+.shake-dropzone:has(.is-invalid) { border-color: var(--shake-rejected); background-color: var(--shake-rejected-tint); }
 .shake-dropzone label { color: var(--shake-deep-hull); font-size: var(--shake-text-base); cursor: pointer; }
 .shake-dropzone-input { max-width: 32rem; margin: 0 auto; }
 .shake-dropzone input[type="file"] { background: var(--shake-surface); }
@@ -1461,6 +1470,9 @@ tr:hover .shake-lane .shake-copy,
     text-transform: uppercase;
     color: var(--shake-slate);
 }
+/* Bootstrap floats <legend>; the field row after it clears the float, which cancels the row's negative
+   gutter margin and leaves an extra gutter of space. Drop the legend's own margin in that case. */
+.shake-form-block-title:has(+ .row) { margin-bottom: 0; }
 .shake-form-block-title + .shake-form-block-hint { margin: -0.5rem 0 0.875rem; font-size: var(--shake-text-sm); color: var(--shake-slate); }
 .shake-form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--shake-mist); }
 .shake-form-card .card-body { padding: 1.5rem; }

@@ -191,15 +191,15 @@ class FreightRateForm(BootstrapFormMixin, forms.ModelForm):
         }
         widgets = {
             "origin_port_code": forms.TextInput(
-                attrs={"placeholder": "e.g., USCHS", "style": "text-transform:uppercase;"}
+                attrs={"placeholder": "e.g., USCHS", "class": "shake-input-code"}
             ),
             "origin_port_name": forms.TextInput(attrs={"placeholder": "e.g., Charleston"}),
             "destination_port_code": forms.TextInput(
-                attrs={"placeholder": "e.g., CNDLC", "style": "text-transform:uppercase;"}
+                attrs={"placeholder": "e.g., CNDLC", "class": "shake-input-code"}
             ),
             "destination_port_name": forms.TextInput(attrs={"placeholder": "e.g., Dalian"}),
             "currency_code": forms.TextInput(
-                attrs={"placeholder": "USD", "maxlength": "3", "style": "text-transform:uppercase;"}
+                attrs={"placeholder": "USD", "maxlength": "3", "class": "shake-input-code"}
             ),
             "rate_amount": forms.NumberInput(
                 attrs={"step": "0.01", "min": "0.01", "placeholder": "0.00"}
@@ -270,7 +270,7 @@ class CarrierProfileForm(BootstrapFormMixin, forms.ModelForm):
         }
         widgets = {
             "carrier_code": forms.TextInput(
-                attrs={"placeholder": "e.g., ONE1", "style": "text-transform:uppercase;"}
+                attrs={"placeholder": "e.g., ONE1", "class": "shake-input-code"}
             ),
             "carrier_name": forms.TextInput(
                 attrs={"placeholder": "e.g., Ocean Network Express"}
