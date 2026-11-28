@@ -91,17 +91,17 @@
                                 {% if doc.contract_metadata %}
                                     <a href="{% url 'contract_detail' doc.contract_metadata.pk %}" class="font-mono-data text-decoration-none">{{ doc.contract_metadata.contract_number }}</a>
                                 {% else %}
-                                    <span class="text-secondary small">Not extracted</span>
+                                    <span class="shake-secondary">Not extracted</span>
                                 {% endif %}
                                 <div class="shake-secondary text-truncate shake-truncate" title="{{ doc.original_file_name }}">
-                                    {{ doc.original_file_name }} &middot; <span class="font-mono-data small">{{ doc.batch.batch_number }}</span>
+                                    {{ doc.original_file_name }} &middot; <span class="font-mono-data">{{ doc.batch.batch_number }}</span>
                                 </div>
                             </td>
                             <td>
                                 {% if doc.contract_metadata %}
                                     <span class="shake-chip shake-chip-carrier">{{ doc.contract_metadata.carrier.carrier_code }}</span>
                                 {% else %}
-                                    <span class="text-secondary small">—</span>
+                                    <span class="shake-secondary">—</span>
                                 {% endif %}
                             </td>
                             <td>{% include "includes/status_badge.html" with status=doc.status %}</td>
@@ -151,7 +151,7 @@
     <div class="col-12 col-lg-4">
         <div class="shake-side-stack">
             <div id="upload-contract" class="card shake-cta-tide">
-                <div class="card-body p-4">
+                <div class="card-body">
                     <div class="d-flex align-items-start gap-3 mb-3">
                         {% include "partials/shake_mark.html" with tone="tide" size=40 %}
                         <div>

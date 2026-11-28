@@ -92,7 +92,7 @@
                                     {% if job.document.contract_metadata %}
                                         <a href="{% url 'contract_detail' job.document.contract_metadata.pk %}" class="font-mono-data text-decoration-none">{{ job.document.contract_metadata.contract_number }}</a>
                                     {% else %}
-                                        <span class="text-secondary small">Not extracted</span>
+                                        <span class="shake-secondary">Not extracted</span>
                                     {% endif %}
                                     <div class="shake-secondary text-truncate shake-truncate" title="{{ job.document.original_file_name }}">{{ job.document.original_file_name }}</div>
                                 </td>
@@ -100,7 +100,7 @@
                                     {% if job.document.contract_metadata %}
                                         <span class="shake-chip shake-chip-carrier">{{ job.document.contract_metadata.carrier.carrier_code }}</span>
                                     {% else %}
-                                        <span class="text-secondary small">—</span>
+                                        <span class="shake-secondary">—</span>
                                     {% endif %}
                                 </td>
                                 <td class="shake-secondary">{{ job.document.batch.user.username }}</td>

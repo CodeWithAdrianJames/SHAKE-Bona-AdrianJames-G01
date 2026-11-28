@@ -30,7 +30,7 @@
     <div class="col-12 col-lg-4">
         <div class="card shake-hero h-100">
             {% include "partials/shake_mark.html" with tone="hull" extra_class="shake-hero-mark" %}
-            <div class="card-body p-4 d-flex flex-column gap-3">
+            <div class="card-body d-flex flex-column gap-3">
                 {% if user.profile_photo %}
                     <img src="{{ user.profile_photo.url }}" alt="{{ user.full_name_or_username }}" class="shake-avatar shake-avatar-xl">
                 {% else %}
@@ -58,7 +58,7 @@
                 </div>
                 <span class="badge badge-neutral"><i class="ti ti-user me-1"></i>Self-Only Access</span>
             </div>
-            <div class="card-body p-4">
+            <div class="card-body">
                 <div class="shake-form-block">
                     <span class="shake-form-block-title">Identity</span>
                     <div class="row g-3">
@@ -128,7 +128,7 @@
         </div>
         <span class="badge badge-neutral"><i class="ti ti-device-desktop me-1"></i>Localhost Only</span>
     </div>
-    <div class="card-body p-4">
+    <div class="card-body">
         {% if new_api_token %}
             <div class="alert alert-warning" role="alert">
                 <div class="fw-semibold mb-1">
@@ -188,8 +188,8 @@
                                 <tr>
                                     <td class="fw-semibold">{{ token.name }}</td>
                                     <td><code>{{ token.masked_key }}</code></td>
-                                    <td class="small text-secondary shake-num">{{ token.created_at|date:"M j, Y H:i" }}</td>
-                                    <td class="small text-secondary shake-num">{{ token.last_used_at|date:"M j, Y H:i"|default:"Never" }}</td>
+                                    <td class="shake-secondary shake-num">{{ token.created_at|date:"M j, Y H:i" }}</td>
+                                    <td class="shake-secondary shake-num">{{ token.last_used_at|date:"M j, Y H:i"|default:"Never" }}</td>
                                     <td>
                                         {% if token.is_active %}
                                             <span class="shake-pill shake-pill-verified">Active</span>
@@ -207,7 +207,7 @@
                                                 </button>
                                             </form>
                                         {% else %}
-                                            <span class="text-secondary small">—</span>
+                                            <span class="shake-secondary">—</span>
                                         {% endif %}
                                     </td>
                                 </tr>

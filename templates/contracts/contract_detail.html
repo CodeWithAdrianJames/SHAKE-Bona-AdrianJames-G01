@@ -59,7 +59,7 @@
             <span class="shake-chip shake-chip-carrier">{{ contract.carrier.carrier_code }}</span>
             <span class="shake-meta-primary">{{ contract.carrier.carrier_name }}</span>
         </div>
-        <div class="shake-meta-secondary">Batch <span class="font-mono-data small">{{ contract.document.batch.batch_number }}</span></div>
+        <div class="shake-meta-secondary">Batch <span class="font-mono-data">{{ contract.document.batch.batch_number }}</span></div>
     </div>
     <div class="shake-meta-cell">
         <span class="shake-meta-key"><i class="ti ti-calendar-event" aria-hidden="true"></i>Validity Window</span>
@@ -178,9 +178,9 @@
                     </td>
                     <td>
                         {% if rate.confidence_score >= 0.9 %}
-                            <span class="shake-pill shake-pill-verified" title="Confidence {{ rate.confidence_score }}">Verified <span class="font-mono-data small">{{ rate.confidence_score }}</span></span>
+                            <span class="shake-pill shake-pill-verified" title="Confidence {{ rate.confidence_score }}">Verified <span class="font-mono-data">{{ rate.confidence_score }}</span></span>
                         {% else %}
-                            <span class="shake-pill shake-pill-review" title="Confidence {{ rate.confidence_score }}">Needs review <span class="font-mono-data small">{{ rate.confidence_score }}</span></span>
+                            <span class="shake-pill shake-pill-review" title="Confidence {{ rate.confidence_score }}">Needs review <span class="font-mono-data">{{ rate.confidence_score }}</span></span>
                         {% endif %}
                     </td>
                     <td class="text-end text-nowrap">
@@ -248,11 +248,11 @@
                     </td>
                     <td>
                         <span class="shake-chip shake-chip-port">{{ charge.location_code }}</span>
-                        <span class="small ms-1 text-secondary">{{ charge.location_name }}</span>
+                        <span class="shake-secondary ms-1">{{ charge.location_name }}</span>
                     </td>
                     <td>{% if charge.via_gateway_port %}<span class="shake-chip shake-chip-port">{{ charge.via_gateway_port }}</span>{% else %}<span class="text-secondary">—</span>{% endif %}</td>
                     <td><span class="shake-chip shake-chip-equipment">{{ charge.equipment_type }}</span></td>
-                    <td class="small">{{ charge.transport_mode }}</td>
+                    <td>{{ charge.transport_mode }}</td>
                     <td class="text-end shake-amount"><span class="shake-currency">{{ charge.currency_code }}</span>{{ charge.charge_amount|floatformat:"2g" }}</td>
                     <td class="shake-secondary shake-num">Row #{{ charge.line_item_sequence }} &middot; p. {{ charge.source_page_num }}</td>
                 </tr>
@@ -286,14 +286,14 @@
                     <tbody>
                         {% for job in processing_jobs %}
                         <tr>
-                            <td class="shake-num small">#{{ job.job_id }}</td>
-                            <td class="small">{{ job.get_job_type_display }}</td>
+                            <td class="shake-num">#{{ job.job_id }}</td>
+                            <td>{{ job.get_job_type_display }}</td>
                             <td>{% include "includes/status_badge.html" with status=job.status %}</td>
-                            <td class="small text-secondary shake-num text-nowrap">{{ job.started_at|date:"Y-m-d H:i:s" }}</td>
-                            <td class="small text-secondary shake-num text-nowrap">{{ job.completed_at|date:"Y-m-d H:i:s"|default:"—" }}</td>
+                            <td class="shake-secondary shake-num text-nowrap">{{ job.started_at|date:"Y-m-d H:i:s" }}</td>
+                            <td class="shake-secondary shake-num text-nowrap">{{ job.completed_at|date:"Y-m-d H:i:s"|default:"—" }}</td>
                         </tr>
                         <tr>
-                            <td colspan="5" class="small text-secondary pt-0">{{ job.error_message|default:"Pipeline completed without errors." }}</td>
+                            <td colspan="5" class="shake-secondary pt-0">{{ job.error_message|default:"Pipeline completed without errors." }}</td>
                         </tr>
                         {% empty %}
                         <tr><td colspan="5">{% include "partials/empty_state.html" with title="No processing jobs recorded." %}</td></tr>
@@ -324,10 +324,10 @@
                     <tbody>
                         {% for exp in export_records %}
                         <tr>
-                            <td class="shake-num small" title="{{ exp.file_path }}">#{{ exp.export_id }}</td>
+                            <td class="shake-num" title="{{ exp.file_path }}">#{{ exp.export_id }}</td>
                             <td><span class="shake-chip shake-chip-format">{{ exp.export_format }}</span></td>
-                            <td class="small">{{ exp.user.username }}</td>
-                            <td class="small text-secondary shake-num text-nowrap">{{ exp.exported_at|date:"Y-m-d H:i:s" }}</td>
+                            <td>{{ exp.user.username }}</td>
+                            <td class="shake-secondary shake-num text-nowrap">{{ exp.exported_at|date:"Y-m-d H:i:s" }}</td>
                         </tr>
                         {% empty %}
                         <tr><td colspan="4">{% include "partials/empty_state.html" with title="No exports yet" message="No export downloads recorded yet for this contract." %}</td></tr>

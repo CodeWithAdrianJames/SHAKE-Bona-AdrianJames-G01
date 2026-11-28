@@ -51,18 +51,25 @@ Every rule in `shake-theme.css` outside the token block uses a `--shake-*` varia
 
 All three families are SIL OFL 1.1 WOFF2 files bundled in `static/fonts/` (latin + latin-ext subsets, `font-display: swap`); there is no Google Fonts or CDN request. Manrope speaks, Inter explains, Mono records.
 
-| Role | Font | Size / line height | Class |
-| --- | --- | --- | --- |
-| KPI figure | Manrope 800 | 32 / 38 | `.shake-kpi-figure` |
-| H1 | Manrope 800 | 28 / 34 | `h1`, `.h1` |
-| H2 | Manrope 700 | 20 / 28 | `h2`, `.h2` (card titles) |
-| Body | Inter 400 | 15 / 23 | `body` |
-| Label | Inter 600, uppercase, +6% | 12 | `.shake-label`, `.shake-meta-key`, table headers |
-| Data | JetBrains Mono 500 | 14 | `.font-mono-data`, `.shake-chip-*`, `.shake-amount` |
+| Role | Font | Size / line height | Token | Class |
+| --- | --- | --- | --- | --- |
+| KPI figure | Manrope 800 | 32 / 38 | `--shake-text-3xl` | `.shake-kpi-figure` |
+| H1 | Manrope 800 | 28 / 34 | `--shake-text-2xl` | `h1`, `.h1` |
+| H2 | Manrope 700 | 20 / 28 | `--shake-text-xl` | `h2`, `.h2` (card titles), inline counts in the metadata strip |
+| H3 | Manrope 700 | 17 / 24 | `--shake-text-lg` | `h3`/`h4`, side-card titles, `.shake-meta-primary`, empty-state titles |
+| Body | Inter 400 | 15 / 23 | `--shake-text-base` | `body`, form controls |
+| Table / data | Inter 400 · JetBrains Mono 500 | 14 | `--shake-text-md` | every `tbody td`, `.font-mono-data`, `.shake-amount`, list titles |
+| Secondary | Inter 400 | 13 / 20 | `--shake-text-sm` | `.shake-secondary`, card subtitles, breadcrumbs, `.shake-chip-*` |
+| Label | Inter 600, uppercase, +6% | 12 / 16 | `--shake-text-xs` | `.shake-label`, `.shake-meta-key`, table headers, pills |
 
 - JetBrains Mono is reserved for extracted/structured values: UN/LOCODE ports (`PHCEB`), ISO equipment (`40HC`), currencies and freight rates, contract and batch numbers, and SHA-256 hashes. Inline technical text (`<code>`: API paths, token prefixes) uses JetBrains Mono 400.
 - `font-variant-numeric: tabular-nums` is on for every table, badge, and numeric counter (`.shake-num`, `.shake-kpi-figure`).
 - Error pages cannot load static files, so they fall back to the system sans stack.
+- Text uses only these eight steps. Icon, avatar-initial, and wordmark sizes are component dimensions and stay literal. Inline mono values inside pills and secondary lines (`.shake-pill`, `.shake-secondary`, `.shake-meta-secondary`) inherit the surrounding size, so templates do not add `.small` to them.
+
+### Spacing rhythm
+
+Every card header, card body, toolbar, list row, and table edge shares one inline edge, `--shake-pad-x` (1.25rem), so content lines up from card to card. Block padding is `--shake-pad-y` (1rem) for card headers, KPI cells, and metadata cells, and `--shake-pad-y-compact` (0.75rem) for toolbars and list rows; card bodies use Tabler's 1.25rem. Form cards (`.shake-form-card`) keep their roomier 1.5rem / 1.75rem × 2rem body. Templates do not override card padding with `p-4`. Every card shares one elevation: a Mist hairline plus `--shake-shadow-card`.
 
 ## Border Radius & Elevation
 

@@ -85,14 +85,14 @@
                     <td>
                         <a href="{% url 'contract_detail' contract.pk %}" class="font-mono-data text-decoration-none">{{ contract.contract_number }}</a>
                         <div class="shake-secondary text-truncate shake-truncate-sm" title="{{ contract.document.original_file_name }}">
-                            {{ contract.document.original_file_name }} &middot; <span class="font-mono-data small">{{ contract.document.batch.batch_number }}</span>
+                            {{ contract.document.original_file_name }} &middot; <span class="font-mono-data">{{ contract.document.batch.batch_number }}</span>
                         </div>
                     </td>
                     <td>
                         <span class="shake-chip shake-chip-carrier" title="{{ contract.carrier.carrier_name }}">{{ contract.carrier.carrier_code }}</span>
                     </td>
-                    <td class="small">{{ contract.trade_scope }}</td>
-                    <td class="small text-nowrap shake-num">
+                    <td>{{ contract.trade_scope }}</td>
+                    <td class="text-nowrap shake-num">
                         {{ contract.effective_date|date:"Y-m-d" }} &rarr; {{ contract.expiration_date|date:"Y-m-d" }}
                     </td>
                     <td class="text-end shake-num fw-semibold">{{ contract.rate_count }}</td>
@@ -102,7 +102,7 @@
                         {% endwith %}
                     </td>
                     {% if is_admin_view %}
-                    <td class="small">{{ contract.document.batch.user.username }}</td>
+                    <td>{{ contract.document.batch.user.username }}</td>
                     {% endif %}
                     <td class="text-end text-nowrap">
                         <div class="d-inline-flex align-items-center gap-1">
@@ -189,7 +189,7 @@
             <tbody>
                 {% for doc in failed_documents %}
                 <tr>
-                    <td><span class="font-mono-data small">{{ doc.batch.batch_number }}</span></td>
+                    <td><span class="font-mono-data">{{ doc.batch.batch_number }}</span></td>
                     <td>{{ doc.original_file_name }}</td>
                     <td>{% include "includes/status_badge.html" with status=doc.status %}</td>
                     <td class="shake-secondary">
